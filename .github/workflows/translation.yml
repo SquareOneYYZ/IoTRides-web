@@ -20,8 +20,8 @@ jobs:
       run: ./tools/translate.py -t "$TRANSIFEX_TOKEN"
     - name: Commit changes
       run: |
-        git config --global user.name 'Traccar Bot'
-        git config --global user.email 'support@traccar.org'
+        git config --global user.name 'IoTRides Bot'
+        git config --global user.email 'support@IoTRides.com'
         git commit -am "Update localization files"
         git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
         git push

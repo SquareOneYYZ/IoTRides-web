@@ -1,26 +1,14 @@
-# Contributing to Traccar
+# Contributing to IoTRides
 
 Please make sure you read this guide before commenting on any issue or creating a new issue or pull request.
 
-Before asking anything, please search for an answer in:
 
-- [Traccar documentation](https://www.traccar.org/documentation/)
-- [Traccar forums](https://www.traccar.org/forums/)
-- Relevant repositories (see below)
-- [Google Search](https://www.google.com/)
+GitHub issues should be used ONLY for feature requests, code discussions and bug reports. For general discussions please reach out.
 
-GitHub issues should be used ONLY for feature requests, code discussions and bug reports. For general discussions please use [Traccar forums](https://www.traccar.org/forums/).
+There are multiple IoTRides projects. If you create a new issue you MUST do it in the relevant repository:
 
-There are multiple Traccar projects. If you create a new issue you MUST do it in the relevant repository:
 
-- [Traccar Server](https://github.com/tananaev/traccar/issues)
-- [Traccar Web Interface](https://github.com/tananaev/traccar-web/issues)
-- [Traccar Client for Android](https://github.com/tananaev/traccar-client-android/issues)
-- [Traccar Client for iOS](https://github.com/tananaev/traccar-client-ios/issues)
-- [Traccar Manager for Android](https://github.com/tananaev/traccar-manager-android/issues)
-- [Traccar Manager for iOS](https://github.com/tananaev/traccar-manager-ios/issues)
-
-If you are not sure where your issue belongs to, please use Traccar Server main repository.
+If you are not sure where your issue belongs to, please use IoTRides Server main repository.
 
 If you want to discuss something that applies to both Android and iOS apps, please use Android repository.
 
@@ -28,7 +16,7 @@ If you want to discuss something that applies to both Android and iOS apps, plea
 
 Before creating a bug report make sure that you have tested latest official release with default configuration.
 
-Only create a bug report issue if you are confident that there is a problem in Traccar software.
+Only create a bug report issue if you are confident that there is a problem in IoTRides software.
 
 Provide as much details as possible, including log fragments, operating system and hardware information.
 
@@ -42,6 +30,6 @@ Provide as much details as possible, including use case for your feature and any
 
 ## Pull Requests
 
-If you want to contribute some code to Traccar, it is recommended to discuss your solution with maintainers before starting any work.
+If you want to contribute some code to IoTRides, it is recommended to discuss your solution with maintainers before starting any work.
 
 Any code that you want to contribute must be of high quality and follow existing code patterns and styles.
