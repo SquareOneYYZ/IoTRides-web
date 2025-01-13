@@ -21,6 +21,7 @@
     "@vitejs/plugin-react": "^4.3.1",
     "dayjs": "^1.11.13",
     "events": "^3.3.0",
+    "lucide-react": "^0.471.0",
     "mapbox-gl": "^1.13.3",
     "maplibre-gl": "^4.7.0",
     "maplibre-google-maps": "^1.1.0",
