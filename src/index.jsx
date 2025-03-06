@@ -17,8 +17,9 @@ import AppThemeProvider from './AppThemeProvider';
 preloadImages();
 
 const options = {
-  api_host: import.meta.env.VITE_POSTHOG_API_HOST,
+  api_host: import.meta.env.REACT_APP_PUBLIC_POSTHOG_HOST,
   debug: true,
+  verbose: true,
 };
 
 const root = createRoot(document.getElementById('root'));
@@ -27,7 +28,7 @@ root.render(
     <Provider store={store}>
       <PostHogProvider
         options={options}
-        apiKey={import.meta.env.VITE_POSTHOG_API_KEY}
+        apiKey={import.meta.env.REACT_APP_PUBLIC_POSTHOG_KEY}
       >
         <LocalizationProvider>
           <StyledEngineProvider injectFirst>
