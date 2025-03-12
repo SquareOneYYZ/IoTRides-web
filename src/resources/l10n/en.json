@@ -542,6 +542,7 @@
 	"notificatorTraccar": "Traccar",
 	"notificatorTelegram": "Telegram",
 	"notificatorPushover": "Pushover",
+	"RemoveNotificationTypes": "Remove Notification Types",
 
 	"reportReplay": "Replay",
 	"reportCombined": "Combined",
