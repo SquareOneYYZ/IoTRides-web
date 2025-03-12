@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   Table, TableRow, TableCell, TableHead, TableBody,
 } from '@mui/material';
+import { useSelector } from 'react-redux';
 import { useEffectAsync } from '../reactHelper';
 import { prefixString } from '../common/util/stringUtils';
 import { formatBoolean } from '../common/util/formatter';
@@ -22,11 +23,12 @@ const NotificationsPage = () => {
   const [items, setItems] = useState([]);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [loading, setLoading] = useState(false);
+  const userId = useSelector((state) => state.session.user.id);
 
   useEffectAsync(async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/notifications');
+      const response = await fetch(`/api/notifications?userId=${userId}`);
       if (response.ok) {
         setItems(await response.json());
       } else {
@@ -35,7 +37,7 @@ const NotificationsPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [timestamp]);
+  }, [timestamp, userId]);
 
   const formatList = (prefix, value) => {
     if (value) {
