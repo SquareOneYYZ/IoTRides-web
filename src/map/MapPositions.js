@@ -20,6 +20,7 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
 
   const devices = useSelector((state) => state.devices.items);
   const selectedDeviceId = useSelector((state) => state.devices.selectedId);
+  const notifications = useSelector((state) => state.events.items);
 
   const mapCluster = useAttributePreference('mapCluster', true);
   const directionType = useAttributePreference('mapDirection', 'selected');
@@ -38,6 +39,10 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
         showDirection = selectedPositionId === position.id && position.course > 0;
         break;
     }
+
+    // Check if there's an active notification for this device
+    const hasActiveNotification = notifications.some((n) => n.deviceId === position.deviceId);
+
     return {
       id: position.id,
       deviceId: position.deviceId,
@@ -47,38 +52,73 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
       color: showStatus ? position.attributes.color || getStatusColor(device.status) : 'neutral',
       rotation: position.course,
       direction: showDirection,
+      hasNotification: hasActiveNotification,
     };
   };
 
-  const onMouseEnter = () => map.getCanvas().style.cursor = 'pointer';
-  const onMouseLeave = () => map.getCanvas().style.cursor = '';
+  const onMouseEnter = () => (map.getCanvas().style.cursor = 'pointer');
+  const onMouseLeave = () => (map.getCanvas().style.cursor = '');
 
-  const onMapClick = useCallback((event) => {
-    if (!event.defaultPrevented && onClick) {
-      onClick(event.lngLat.lat, event.lngLat.lng);
+  const onMapClick = useCallback(
+    (event) => {
+      if (!event.defaultPrevented && onClick) {
+        onClick(event.lngLat.lat, event.lngLat.lng);
+      }
+    },
+    [onClick],
+  );
+
+  const onMarkerClick = useCallback(
+    (event) => {
+      event.preventDefault();
+      const feature = event.features[0];
+      if (onClick) {
+        onClick(feature.properties.id, feature.properties.deviceId);
+      }
+    },
+    [onClick],
+  );
+
+  const onClusterClick = useCatchCallback(
+    async (event) => {
+      event.preventDefault();
+      const features = map.queryRenderedFeatures(event.point, {
+        layers: [clusters],
+      });
+      const clusterId = features[0].properties.cluster_id;
+      const zoom = await map.getSource(id).getClusterExpansionZoom(clusterId);
+      map.easeTo({
+        center: features[0].geometry.coordinates,
+        zoom,
+      });
+    },
+    [clusters],
+  );
+
+  const handleNotification = useCallback(
+    (deviceId) => {
+      const source = map.getSource(id);
+      if (source) {
+        const { features } = source.getData();
+        const deviceFeature = features.find((f) => f.properties.deviceId === deviceId);
+        if (deviceFeature) {
+          map.setLayoutProperty(id, 'icon-size', iconScale * 1.5);
+
+          setTimeout(() => {
+            map.setLayoutProperty(id, 'icon-size', iconScale);
+          }, 5000);
+        }
+      }
+    },
+    [id, iconScale],
+  );
+
+  useEffect(() => {
+    const latestNotification = notifications[0];
+    if (latestNotification && devices[latestNotification.deviceId]) {
+      handleNotification(latestNotification.deviceId);
     }
-  }, [onClick]);
-
-  const onMarkerClick = useCallback((event) => {
-    event.preventDefault();
-    const feature = event.features[0];
-    if (onClick) {
-      onClick(feature.properties.id, feature.properties.deviceId);
-    }
-  }, [onClick]);
-
-  const onClusterClick = useCatchCallback(async (event) => {
-    event.preventDefault();
-    const features = map.queryRenderedFeatures(event.point, {
-      layers: [clusters],
-    });
-    const clusterId = features[0].properties.cluster_id;
-    const zoom = await map.getSource(id).getClusterExpansionZoom(clusterId);
-    map.easeTo({
-      center: features[0].geometry.coordinates,
-      zoom,
-    });
-  }, [clusters]);
+  }, [notifications, devices, handleNotification]);
 
   useEffect(() => {
     map.addSource(id, {
@@ -96,6 +136,21 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
       data: {
         type: 'FeatureCollection',
         features: [],
+      },
+    });
+    map.addLayer({
+      id: `${id}-notification`,
+      type: 'symbol',
+      source: id,
+      filter: ['all', ['!has', 'point_count'], ['==', ['get', 'hasNotification'], true]],
+      layout: {
+        'icon-image': 'notification-dot',
+        'icon-size': iconScale * 0.3,
+        'icon-offset': [10, -10],
+        'icon-allow-overlap': true,
+      },
+      paint: {
+        'icon-color': '#f44336',
       },
     });
     [id, selected].forEach((source) => {
@@ -124,11 +179,7 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
         id: `direction-${source}`,
         type: 'symbol',
         source,
-        filter: [
-          'all',
-          ['!has', 'point_count'],
-          ['==', 'direction', true],
-        ],
+        filter: ['all', ['!has', 'point_count'], ['==', 'direction', true]],
         layout: {
           'icon-image': 'direction',
           'icon-size': iconScale,
@@ -186,6 +237,10 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
           map.removeSource(source);
         }
       });
+
+      if (map.getLayer(`${id}-notification`)) {
+        map.removeLayer(`${id}-notification`);
+      }
     };
   }, [mapCluster, clusters, onMarkerClick, onClusterClick]);
 
@@ -193,7 +248,8 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
     [id, selected].forEach((source) => {
       map.getSource(source)?.setData({
         type: 'FeatureCollection',
-        features: positions.filter((it) => devices.hasOwnProperty(it.deviceId))
+        features: positions
+          .filter((it) => devices.hasOwnProperty(it.deviceId))
           .filter((it) => (source === id ? it.deviceId !== selectedDeviceId : it.deviceId === selectedDeviceId))
           .map((position) => ({
             type: 'Feature',
