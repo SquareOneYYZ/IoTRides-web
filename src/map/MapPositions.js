@@ -43,6 +43,9 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
     // Check if there's an active notification for this device
     const hasActiveNotification = notifications.some((n) => n.deviceId === position.deviceId);
 
+    // Add notification timestamp for animation
+    const notificationAge = hasActiveNotification ? 0 : null;
+
     return {
       id: position.id,
       deviceId: position.deviceId,
@@ -53,6 +56,7 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
       rotation: position.course,
       direction: showDirection,
       hasNotification: hasActiveNotification,
+      notificationAge,
     };
   };
 
@@ -95,23 +99,20 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
     [clusters],
   );
 
-  const handleNotification = useCallback(
-    (deviceId) => {
-      const source = map.getSource(id);
-      if (source) {
-        const { features } = source.getData();
-        const deviceFeature = features.find((f) => f.properties.deviceId === deviceId);
-        if (deviceFeature) {
-          map.setLayoutProperty(id, 'icon-size', iconScale * 1.5);
+  const handleNotification = useCatchCallback(async (deviceId) => {
+    // Temporarily enlarge the marker
+    map.setLayoutProperty(id, 'icon-size', [
+      'case',
+      ['==', ['get', 'deviceId'], deviceId],
+      iconScale * 1.5, // 1.5x larger for notification
+      iconScale,
+    ]);
 
-          setTimeout(() => {
-            map.setLayoutProperty(id, 'icon-size', iconScale);
-          }, 5000);
-        }
-      }
-    },
-    [id, iconScale],
-  );
+    // Reset after 5 seconds
+    setTimeout(() => {
+      map.setLayoutProperty(id, 'icon-size', iconScale);
+    }, 5000);
+  }, []);
 
   useEffect(() => {
     const latestNotification = notifications[0];
@@ -145,12 +146,13 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
       filter: ['all', ['!has', 'point_count'], ['==', ['get', 'hasNotification'], true]],
       layout: {
         'icon-image': 'notification-dot',
-        'icon-size': iconScale * 0.3,
-        'icon-offset': [10, -10],
+        'icon-size': iconScale * 0.5,
+        'icon-offset': [15, -15],
         'icon-allow-overlap': true,
       },
       paint: {
         'icon-color': '#f44336',
+        'icon-opacity': ['interpolate', ['linear'], ['get', 'notificationAge'], 0, 1, 5, 0],
       },
     });
     [id, selected].forEach((source) => {
