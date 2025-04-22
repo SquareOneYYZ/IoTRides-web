@@ -8,12 +8,15 @@ import { mapIconKey } from './core/preloadImages';
 import { useAttributePreference } from '../common/util/preferences';
 import { useCatchCallback } from '../reactHelper';
 import { findFonts } from './core/mapUtil';
+import { useDispatch } from 'react-redux';
+import { eventsActions } from '../store';
+import { useRef } from 'react';
 
 const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleField }) => {
   const id = useId();
   const clusters = `${id}-clusters`;
   const selected = `${id}-selected`;
-
+  const dispatch = useDispatch();
   const theme = useTheme();
   const desktop = useMediaQuery(theme.breakpoints.up('md'));
   const iconScale = useAttributePreference('iconScale', desktop ? 0.75 : 1);
@@ -21,6 +24,9 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
   const devices = useSelector((state) => state.devices.items);
   const selectedDeviceId = useSelector((state) => state.devices.selectedId);
   const notifications = useSelector((state) => state.events.items);
+  console.log(notifications)
+
+  const processedNotificationsRef = useRef(new Set());
 
   const mapCluster = useAttributePreference('mapCluster', true);
   const directionType = useAttributePreference('mapDirection', 'selected');
@@ -40,10 +46,8 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
         break;
     }
 
-    // Check if there's an active notification for this device
     const hasActiveNotification = notifications.some((n) => n.deviceId === position.deviceId);
 
-    // Add notification timestamp for animation
     const notificationAge = hasActiveNotification ? 0 : null;
 
     return {
@@ -79,8 +83,18 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
       if (onClick) {
         onClick(feature.properties.id, feature.properties.deviceId);
       }
+      if (feature?.properties) {
+        const selectedEvent = {
+          id: feature.properties.id,
+          deviceId: feature.properties.deviceId,
+          type: feature.properties.type || feature.properties.eventType,
+          eventTime: feature.properties.eventTime,
+          attributes: feature.properties.attributes,
+        };
+        dispatch(eventsActions.select(selectedEvent));
+      }
     },
-    [onClick],
+    [onClick, dispatch],
   );
 
   const onClusterClick = useCatchCallback(
@@ -100,26 +114,37 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
   );
 
   const handleNotification = useCatchCallback(async (deviceId) => {
-    // Temporarily enlarge the marker
-    map.setLayoutProperty(id, 'icon-size', [
+    if (processedNotificationsRef.current.has(deviceId)) {
+      return;
+    }
+
+    processedNotificationsRef.current.add(deviceId);
+
+    map.setLayoutProperty(id, 'icon-image', [
       'case',
       ['==', ['get', 'deviceId'], deviceId],
-      iconScale * 1.5, // 1.5x larger for notification
-      iconScale,
+      'background-notified',
+      'background',
     ]);
 
-    // Reset after 5 seconds
     setTimeout(() => {
+      map.setLayoutProperty(id, 'icon-image', ['concat', ['get', 'category'], '-', ['get', 'color']]);
       map.setLayoutProperty(id, 'icon-size', iconScale);
+
+      processedNotificationsRef.current.delete(deviceId);
     }, 5000);
   }, []);
 
+
   useEffect(() => {
-    const latestNotification = notifications[0];
-    if (latestNotification && devices[latestNotification.deviceId]) {
-      handleNotification(latestNotification.deviceId);
+    const newNotification = notifications.find(n => !processedNotificationsRef.current.has(n.id));
+
+    if (newNotification && devices[newNotification.deviceId]) {
+      handleNotification(newNotification.deviceId);
+      processedNotificationsRef.current.add(newNotification.id);
     }
   }, [notifications, devices, handleNotification]);
+
 
   useEffect(() => {
     map.addSource(id, {

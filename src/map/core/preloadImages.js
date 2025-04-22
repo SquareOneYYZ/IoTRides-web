@@ -5,6 +5,7 @@ import { map } from './MapView';
 
 import directionSvg from '../../resources/images/direction.svg';
 import backgroundSvg from '../../resources/images/background.svg';
+import backgroundError from "../../resources/images/red-circle-48x48.svg"
 import animalSvg from '../../resources/images/icon/animal.svg';
 import bicycleSvg from '../../resources/images/icon/bicycle.svg';
 import boatSvg from '../../resources/images/icon/boat.svg';
@@ -77,6 +78,8 @@ const mapPalette = createPalette({
 });
 
 export default async () => {
+  const backgroundNotified = await loadImage(backgroundError);
+  mapImages['background-notified'] = await prepareIcon(backgroundNotified);
   const background = await loadImage(backgroundSvg);
   mapImages.background = await prepareIcon(background);
   mapImages.direction = await prepareIcon(await loadImage(directionSvg));
