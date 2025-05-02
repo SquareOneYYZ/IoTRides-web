@@ -1,9 +1,11 @@
 import { grey } from '@mui/material/colors';
 import createPalette from '@mui/material/styles/createPalette';
 import { loadImage, prepareIcon } from './mapUtil';
+import { map } from './MapView';
 
 import directionSvg from '../../resources/images/direction.svg';
 import backgroundSvg from '../../resources/images/background.svg';
+import backgroundError from "../../resources/images/red-circle-48x48.svg"
 import animalSvg from '../../resources/images/icon/animal.svg';
 import bicycleSvg from '../../resources/images/icon/bicycle.svg';
 import boatSvg from '../../resources/images/icon/boat.svg';
@@ -50,6 +52,11 @@ export const mapIcons = {
   tram: tramSvg,
   truck: truckSvg,
   van: vanSvg,
+  suv: vanSvg,
+  panelvan: vanSvg,
+  cubetruck: truckSvg,
+  shuttlebus: busSvg,
+  specialitybus: busSvg, // not showing in ma
 };
 
 export const mapIconKey = (category) => {
@@ -71,16 +78,32 @@ const mapPalette = createPalette({
 });
 
 export default async () => {
+  const backgroundNotified = await loadImage(backgroundError);
+  mapImages['background-notified'] = await prepareIcon(backgroundNotified);
   const background = await loadImage(backgroundSvg);
   mapImages.background = await prepareIcon(background);
   mapImages.direction = await prepareIcon(await loadImage(directionSvg));
-  await Promise.all(Object.keys(mapIcons).map(async (category) => {
-    const results = [];
-    ['info', 'success', 'error', 'neutral'].forEach((color) => {
-      results.push(loadImage(mapIcons[category]).then((icon) => {
-        mapImages[`${category}-${color}`] = prepareIcon(background, icon, mapPalette[color].main);
-      }));
-    });
-    await Promise.all(results);
-  }));
+  await Promise.all(
+    Object.keys(mapIcons).map(async (category) => {
+      const results = [];
+      ['info', 'success', 'error', 'neutral'].forEach((color) => {
+        results.push(
+          loadImage(mapIcons[category]).then((icon) => {
+            mapImages[`${category}-${color}`] = prepareIcon(background, icon, mapPalette[color].main);
+          }),
+        );
+      });
+      await Promise.all(results);
+    }),
+  );
+
+  if (map) {
+    map.loadImage(
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAOxAAADsQBlSsOGwAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAABASURBVBiVY2RgYPj/n+E/AxbAyMjICKKxycHlmLCpxiaHrAAmh0sDTB6XBrg8ugYmdA0wOXQNKHIwDXANyBoBhL4NIxBMJyIAAAAASUVORK5CYII=',
+      (error, image) => {
+        if (error) throw error;
+        map.addImage('notification-dot', image);
+      },
+    );
+  }
 };
