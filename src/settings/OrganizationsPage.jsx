@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Table,
   TableRow,
@@ -7,8 +6,6 @@ import {
   TableHead,
   TableBody,
 } from '@mui/material';
-import LinkIcon from '@mui/icons-material/Link';
-import PublishIcon from '@mui/icons-material/Publish';
 import { useEffectAsync } from '../reactHelper';
 import { useTranslation } from '../common/components/LocalizationProvider';
 import PageLayout from '../common/components/PageLayout';
@@ -17,15 +14,11 @@ import CollectionFab from './components/CollectionFab';
 import CollectionActions from './components/CollectionActions';
 import TableShimmer from '../common/components/TableShimmer';
 import SearchHeader, { filterByKeyword } from './components/SearchHeader';
-import { useRestriction } from '../common/util/permissions';
 import useSettingsStyles from './common/useSettingsStyles';
 
 const GroupsPage = () => {
   const classes = useSettingsStyles();
-  const navigate = useNavigate();
   const t = useTranslation();
-
-  const limitCommands = useRestriction('limitCommands');
 
   const [timestamp, setTimestamp] = useState(Date.now());
   const [items, setItems] = useState([]);
@@ -35,7 +28,7 @@ const GroupsPage = () => {
   useEffectAsync(async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/groups');
+      const response = await fetch('/api/organization');
       if (response.ok) {
         setItems(await response.json());
       } else {
@@ -46,19 +39,19 @@ const GroupsPage = () => {
     }
   }, [timestamp]);
 
-  const actionCommand = {
-    key: 'command',
-    title: t('deviceCommand'),
-    icon: <PublishIcon fontSize="small" />,
-    handler: (groupId) => navigate(`/settings/group/${groupId}/command`),
-  };
+  // const actionCommand = {
+  //   key: 'command',
+  //   title: t('deviceCommand'),
+  //   icon: <PublishIcon fontSize='small' />,
+  //   handler: (groupId) => navigate(`/settings/group/${groupId}/command`),
+  // };
 
-  const actionConnections = {
-    key: 'connections',
-    title: t('sharedConnections'),
-    icon: <LinkIcon fontSize="small" />,
-    handler: (groupId) => navigate(`/settings/group/${groupId}/connections`),
-  };
+  // const actionConnections = {
+  //   key: 'connections',
+  //   title: t('sharedConnections'),
+  //   icon: <LinkIcon fontSize='small' />,
+  //   handler: (groupId) => navigate(`/settings/group/${groupId}/connections`),
+  // };
 
   return (
     <PageLayout
@@ -81,14 +74,14 @@ const GroupsPage = () => {
                 <TableCell className={classes.columnAction} padding="none">
                   <CollectionActions
                     itemId={item.id}
-                    editPath="/settings/group"
-                    endpoint="groups"
+                    editPath="/settings/organization"
+                    endpoint="organization"
                     setTimestamp={setTimestamp}
-                    customActions={
-                      limitCommands
-                        ? [actionConnections]
-                        : [actionConnections, actionCommand]
-                    }
+                    // customActions={
+                    //   limitCommands
+                    //     ? [actionConnections]
+                    //     : [actionConnections, actionCommand]
+                    // }
                   />
                 </TableCell>
               </TableRow>
@@ -98,7 +91,7 @@ const GroupsPage = () => {
           )}
         </TableBody>
       </Table>
-      <CollectionFab editPath="/settings/group" />
+      <CollectionFab editPath="/settings/organization" />
     </PageLayout>
   );
 };
