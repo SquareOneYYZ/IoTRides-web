@@ -82,9 +82,9 @@ const SettingsMenu = () => {
                 selected={location.pathname.startsWith('/settings/group')}
               />
             )}
-            {!features.disableOrganization && (
+            {admin && (
               <MenuItem
-                title="Organizations"
+                title={t('settingsOrganization')}
                 link="/settings/organizations"
                 icon={<CorporateFareIcon />}
                 selected={location.pathname.startsWith(
@@ -142,6 +142,7 @@ const SettingsMenu = () => {
           </>
         )}
       </List>
+
       {manager && (
         <>
           <Divider />
