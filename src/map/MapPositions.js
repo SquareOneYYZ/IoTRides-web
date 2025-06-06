@@ -8,18 +8,25 @@ import { mapIconKey } from './core/preloadImages';
 import { useAttributePreference } from '../common/util/preferences';
 import { useCatchCallback } from '../reactHelper';
 import { findFonts } from './core/mapUtil';
+import { useDispatch } from 'react-redux';
+import { eventsActions } from '../store';
+import { useRef } from 'react';
 
 const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleField }) => {
   const id = useId();
   const clusters = `${id}-clusters`;
   const selected = `${id}-selected`;
-
+  const dispatch = useDispatch();
   const theme = useTheme();
   const desktop = useMediaQuery(theme.breakpoints.up('md'));
   const iconScale = useAttributePreference('iconScale', desktop ? 0.75 : 1);
 
   const devices = useSelector((state) => state.devices.items);
   const selectedDeviceId = useSelector((state) => state.devices.selectedId);
+  const notifications = useSelector((state) => state.events.items);
+  console.log(notifications)
+
+  const processedNotificationsRef = useRef(new Set());
 
   const mapCluster = useAttributePreference('mapCluster', true);
   const directionType = useAttributePreference('mapDirection', 'selected');
@@ -38,6 +45,11 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
         showDirection = selectedPositionId === position.id && position.course > 0;
         break;
     }
+
+    const hasActiveNotification = notifications.some((n) => n.deviceId === position.deviceId);
+
+    const notificationAge = hasActiveNotification ? 0 : null;
+
     return {
       id: position.id,
       deviceId: position.deviceId,
@@ -47,38 +59,92 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
       color: showStatus ? position.attributes.color || getStatusColor(device.status) : 'neutral',
       rotation: position.course,
       direction: showDirection,
+      hasNotification: hasActiveNotification,
+      notificationAge,
     };
   };
 
-  const onMouseEnter = () => map.getCanvas().style.cursor = 'pointer';
-  const onMouseLeave = () => map.getCanvas().style.cursor = '';
+  const onMouseEnter = () => (map.getCanvas().style.cursor = 'pointer');
+  const onMouseLeave = () => (map.getCanvas().style.cursor = '');
 
-  const onMapClick = useCallback((event) => {
-    if (!event.defaultPrevented && onClick) {
-      onClick(event.lngLat.lat, event.lngLat.lng);
+  const onMapClick = useCallback(
+    (event) => {
+      if (!event.defaultPrevented && onClick) {
+        onClick(event.lngLat.lat, event.lngLat.lng);
+      }
+    },
+    [onClick],
+  );
+
+  const onMarkerClick = useCallback(
+    (event) => {
+      event.preventDefault();
+      const feature = event.features[0];
+      if (onClick) {
+        onClick(feature.properties.id, feature.properties.deviceId);
+      }
+      if (feature?.properties) {
+        const selectedEvent = {
+          id: feature.properties.id,
+          deviceId: feature.properties.deviceId,
+          type: feature.properties.type || feature.properties.eventType,
+          eventTime: feature.properties.eventTime,
+          attributes: feature.properties.attributes,
+        };
+        dispatch(eventsActions.select(selectedEvent));
+      }
+    },
+    [onClick, dispatch],
+  );
+
+  const onClusterClick = useCatchCallback(
+    async (event) => {
+      event.preventDefault();
+      const features = map.queryRenderedFeatures(event.point, {
+        layers: [clusters],
+      });
+      const clusterId = features[0].properties.cluster_id;
+      const zoom = await map.getSource(id).getClusterExpansionZoom(clusterId);
+      map.easeTo({
+        center: features[0].geometry.coordinates,
+        zoom,
+      });
+    },
+    [clusters],
+  );
+
+  const handleNotification = useCatchCallback(async (deviceId) => {
+    if (processedNotificationsRef.current.has(deviceId)) {
+      return;
     }
-  }, [onClick]);
 
-  const onMarkerClick = useCallback((event) => {
-    event.preventDefault();
-    const feature = event.features[0];
-    if (onClick) {
-      onClick(feature.properties.id, feature.properties.deviceId);
+    processedNotificationsRef.current.add(deviceId);
+
+    map.setLayoutProperty(id, 'icon-image', [
+      'case',
+      ['==', ['get', 'deviceId'], deviceId],
+      'background-notified',
+      'background',
+    ]);
+
+    setTimeout(() => {
+      map.setLayoutProperty(id, 'icon-image', ['concat', ['get', 'category'], '-', ['get', 'color']]);
+      map.setLayoutProperty(id, 'icon-size', iconScale);
+
+      processedNotificationsRef.current.delete(deviceId);
+    }, 5000);
+  }, []);
+
+
+  useEffect(() => {
+    const newNotification = notifications.find(n => !processedNotificationsRef.current.has(n.id));
+
+    if (newNotification && devices[newNotification.deviceId]) {
+      handleNotification(newNotification.deviceId);
+      processedNotificationsRef.current.add(newNotification.id);
     }
-  }, [onClick]);
+  }, [notifications, devices, handleNotification]);
 
-  const onClusterClick = useCatchCallback(async (event) => {
-    event.preventDefault();
-    const features = map.queryRenderedFeatures(event.point, {
-      layers: [clusters],
-    });
-    const clusterId = features[0].properties.cluster_id;
-    const zoom = await map.getSource(id).getClusterExpansionZoom(clusterId);
-    map.easeTo({
-      center: features[0].geometry.coordinates,
-      zoom,
-    });
-  }, [clusters]);
 
   useEffect(() => {
     map.addSource(id, {
@@ -96,6 +162,22 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
       data: {
         type: 'FeatureCollection',
         features: [],
+      },
+    });
+    map.addLayer({
+      id: `${id}-notification`,
+      type: 'symbol',
+      source: id,
+      filter: ['all', ['!has', 'point_count'], ['==', ['get', 'hasNotification'], true]],
+      layout: {
+        'icon-image': 'notification-dot',
+        'icon-size': iconScale * 0.5,
+        'icon-offset': [15, -15],
+        'icon-allow-overlap': true,
+      },
+      paint: {
+        'icon-color': '#f44336',
+        'icon-opacity': ['interpolate', ['linear'], ['get', 'notificationAge'], 0, 1, 5, 0],
       },
     });
     [id, selected].forEach((source) => {
@@ -124,11 +206,7 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
         id: `direction-${source}`,
         type: 'symbol',
         source,
-        filter: [
-          'all',
-          ['!has', 'point_count'],
-          ['==', 'direction', true],
-        ],
+        filter: ['all', ['!has', 'point_count'], ['==', 'direction', true]],
         layout: {
           'icon-image': 'direction',
           'icon-size': iconScale,
@@ -186,6 +264,10 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
           map.removeSource(source);
         }
       });
+
+      if (map.getLayer(`${id}-notification`)) {
+        map.removeLayer(`${id}-notification`);
+      }
     };
   }, [mapCluster, clusters, onMarkerClick, onClusterClick]);
 
@@ -193,7 +275,8 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
     [id, selected].forEach((source) => {
       map.getSource(source)?.setData({
         type: 'FeatureCollection',
-        features: positions.filter((it) => devices.hasOwnProperty(it.deviceId))
+        features: positions
+          .filter((it) => devices.hasOwnProperty(it.deviceId))
           .filter((it) => (source === id ? it.deviceId !== selectedDeviceId : it.deviceId === selectedDeviceId))
           .map((position) => ({
             type: 'Feature',
