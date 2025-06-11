@@ -71,10 +71,10 @@ const GeofenceUpdateHandler = ({
           Do you want to save changes to this geofence?
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCancel} color='secondary'>
+          <Button onClick={handleCancel} color="secondary">
             No
           </Button>
-          <Button onClick={handleConfirm} variant='contained' color='primary'>
+          <Button onClick={handleConfirm} variant="contained" color="primary">
             Yes
           </Button>
         </DialogActions>
