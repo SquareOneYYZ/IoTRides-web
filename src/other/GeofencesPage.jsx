@@ -191,46 +191,29 @@ const GeofencesPage = () => {
     const [file] = files;
     const reader = new FileReader();
     reader.onload = async () => {
-      try {
-        const xml = new DOMParser().parseFromString(reader.result, 'text/xml');
+      const xml = new DOMParser().parseFromString(reader.result, 'text/xml');
+      const coordsArray = Array.from(xml.getElementsByTagName('trkpt')).map(
+        (pt) => `${pt.getAttribute('lat')} ${pt.getAttribute('lon')}`
+      );
 
-        const trkpts = Array.from(xml.getElementsByTagName('trkpt'));
-        if (trkpts.length === 0) {
-          throw new Error('No track points (trkpt) found in file.');
-        }
+      const isClosed = coordsArray[0] === coordsArray[coordsArray.length - 1];
+      const area = isClosed
+        ? `POLYGON ((${coordsArray.join(', ')}))`
+        : `LINESTRING (${coordsArray.join(', ')})`;
 
-        const coordsArray = trkpts.map(
-          (pt) => `${pt.getAttribute('lon')} ${pt.getAttribute('lat')}`
-        );
+      const newItem = { name: t('sharedGeofence'), area };
+      const response = await fetch('/api/geofences', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newItem),
+      });
 
-        if (coordsArray.length === 0) {
-          throw new Error('No valid coordinates extracted.');
-        }
-
-        const isClosed =
-          coordsArray[0] === coordsArray[coordsArray.length - 1] &&
-          coordsArray.length >= 4;
-
-        const area = isClosed
-          ? `POLYGON ((${coordsArray.join(', ')}))`
-          : `LINESTRING (${coordsArray.join(', ')})`;
-
-        const newItem = { name: t('sharedGeofence'), area };
-        const response = await fetch('/api/geofences', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newItem),
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(errorText || 'Failed to save geofence.');
-        }
-
+      if (response.ok) {
         const savedItem = await response.json();
         navigate(`/settings/geofence/${savedItem.id}`);
-      } catch (error) {
-        dispatch(errorsActions.push(error.message));
+      } else {
+        const errorText = await response.text();
+        dispatch(errorsActions.push(errorText || 'Failed to save geofence.'));
       }
     };
 
