@@ -17,11 +17,9 @@ const LinkField = ({
   const [active, setActive] = useState(true);
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([]);
-  const [linked, setLinked] = useState(JSON.parse(localStorage.getItem(localStorageKey)) || []);
-
-  useEffect(() => {
-    setActive(true);
-  }, []);
+  const [linkedIds, setLinkedIds] = useState(
+    JSON.parse(localStorage.getItem(localStorageKey)) || []
+  );
 
   useEffectAsync(async () => {
     if (active) {
@@ -39,14 +37,18 @@ const LinkField = ({
       const response = await fetch(endpointLinked);
       if (response.ok) {
         const linkedData = await response.json();
-        setLinked(linkedData);
-        // save to local storage on refresh
-        localStorage.setItem(localStorageKey, JSON.stringify(linkedData));
+        const ids = linkedData.map((it) => keyGetter(it));
+        setLinkedIds(ids);
+        localStorage.setItem(localStorageKey, JSON.stringify(ids));
       } else {
         throw Error(await response.text());
       }
     }
   }, [active]);
+
+  useEffect(() => {
+    localStorage.setItem(localStorageKey, JSON.stringify(linkedIds));
+  }, [linkedIds]);
 
   const createBody = (linkId) => {
     const body = {};
@@ -55,50 +57,50 @@ const LinkField = ({
     return body;
   };
 
-  useEffect(() => {
-    localStorage.setItem(localStorageKey, JSON.stringify(linked));
-  }, [linked]);
-
   const onChange = async (value) => {
-    const oldValue = linked.map((it) => keyGetter(it));
+    const oldValue = linkedIds;
     const newValue = value.map((it) => keyGetter(it));
     if (!newValue.find((it) => it < 0)) {
       const results = [];
+
       newValue
         .filter((it) => !oldValue.includes(it))
-        .forEach((added) => {
+        .forEach((added) =>
           results.push(
             fetch('/api/permissions', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(createBody(added)),
-            }),
-          );
-        });
+            })
+          )
+        );
       oldValue
         .filter((it) => !newValue.includes(it))
-        .forEach((removed) => {
+        .forEach((removed) =>
           results.push(
             fetch('/api/permissions', {
               method: 'DELETE',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(createBody(removed)),
-            }),
-          );
-        });
+            })
+          )
+        );
+
       await Promise.all(results);
-      setLinked(value);
+      setLinkedIds(newValue);
     }
   };
+
+  const linkedItems = items.filter((it) => linkedIds.includes(keyGetter(it)));
 
   return (
     <Autocomplete
       loading={active && !items}
       isOptionEqualToValue={(i1, i2) => keyGetter(i1) === keyGetter(i2)}
-      options={items || []}
+      options={items}
       getOptionLabel={(item) => titleGetter(item)}
       renderInput={(params) => <TextField {...params} label={label} />}
-      value={(items && linked) || []}
+      value={linkedItems}
       onChange={(_, value) => onChange(value)}
       open={open}
       onOpen={() => {
