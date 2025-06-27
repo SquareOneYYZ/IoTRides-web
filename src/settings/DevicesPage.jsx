@@ -2,7 +2,15 @@ import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
-  Table, TableRow, TableCell, TableHead, TableBody, Button, TableFooter, FormControlLabel, Switch,
+  Table,
+  TableRow,
+  TableCell,
+  TableHead,
+  TableBody,
+  Button,
+  TableFooter,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
 import LinkIcon from '@mui/icons-material/Link';
 import { useEffectAsync } from '../reactHelper';
@@ -62,7 +70,10 @@ const DevicesPage = () => {
   };
 
   return (
-    <PageLayout menu={<SettingsMenu />} breadcrumbs={['settingsTitle', 'deviceTitle']}>
+    <PageLayout
+      menu={<SettingsMenu />}
+      breadcrumbs={['settingsTitle', 'deviceTitle']}
+    >
       <SearchHeader keyword={searchKeyword} setKeyword={setSearchKeyword} />
       <Table className={classes.table}>
         <TableHead>
@@ -79,33 +90,45 @@ const DevicesPage = () => {
           </TableRow>
         </TableHead>
         <TableBody>
-          {!loading ? items.filter(filterByKeyword(searchKeyword)).map((item) => (
-            <TableRow key={item.id}>
-              <TableCell>{item.name}</TableCell>
-              <TableCell>{item.uniqueId}</TableCell>
-              <TableCell>{item.groupId ? groups[item.groupId]?.name : null}</TableCell>
-              <TableCell>{item.phone}</TableCell>
-              <TableCell>{item.model}</TableCell>
-              <TableCell>{item.contact}</TableCell>
-              <TableCell>{formatTime(item.expirationTime, 'date')}</TableCell>
-              {manager && <TableCell><DeviceUsersValue deviceId={item.id} /></TableCell>}
-              <TableCell className={classes.columnAction} padding="none">
-                <CollectionActions
-                  itemId={item.id}
-                  editPath="/settings/device"
-                  endpoint="devices"
-                  setTimestamp={setTimestamp}
-                  customActions={[actionConnections]}
-                  readonly={deviceReadonly}
-                />
-              </TableCell>
-            </TableRow>
-          )) : (<TableShimmer columns={manager ? 8 : 7} endAction />)}
+          {!loading ? (
+            items.filter(filterByKeyword(searchKeyword)).map((item) => (
+              <TableRow key={item.id}>
+                <TableCell>{item.name}</TableCell>
+                <TableCell>{item.uniqueId}</TableCell>
+                <TableCell>
+                  {item.groupId ? groups[item.groupId]?.name : null}
+                </TableCell>
+                <TableCell>{item.phone}</TableCell>
+                <TableCell>{item.model}</TableCell>
+                <TableCell>{item.contact}</TableCell>
+                <TableCell>{formatTime(item.expirationTime, 'date')}</TableCell>
+                {manager && (
+                  <TableCell>
+                    <DeviceUsersValue deviceId={item.id} />
+                  </TableCell>
+                )}
+                <TableCell className={classes.columnAction} padding="none">
+                  <CollectionActions
+                    itemId={item.id}
+                    editPath="/settings/device"
+                    endpoint="devices"
+                    setTimestamp={setTimestamp}
+                    customActions={[actionConnections]}
+                    readonly={deviceReadonly}
+                  />
+                </TableCell>
+              </TableRow>
+            ))
+          ) : (
+            <TableShimmer columns={manager ? 8 : 7} endAction />
+          )}
         </TableBody>
         <TableFooter>
           <TableRow>
             <TableCell>
-              <Button onClick={handleExport} variant="text">{t('reportExport')}</Button>
+              <Button onClick={handleExport} variant="text">
+                {t('reportExport')}
+              </Button>
             </TableCell>
             <TableCell colSpan={manager ? 8 : 7} align="right">
               <FormControlLabel

@@ -1,6 +1,8 @@
-import { Autocomplete, TextField } from '@mui/material';
+import { Autocomplete, Snackbar, TextField } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { useEffectAsync } from '../../reactHelper';
+import { snackBarDurationShortMs } from '../util/duration';
+import { useTranslation } from './LocalizationProvider';
 
 const LinkField = ({
   label,
@@ -14,12 +16,15 @@ const LinkField = ({
 }) => {
   const localStorageKey = `linked_${baseId}_${keyLink}`;
 
+  const t = useTranslation();
   const [active, setActive] = useState(true);
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([]);
   const [linkedIds, setLinkedIds] = useState(
     JSON.parse(localStorage.getItem(localStorageKey)) || []
   );
+  const [linked, setLinked] = useState(JSON.parse(localStorage.getItem(localStorageKey)) || []);
+  const [updated, setUpdated] = useState(false);
 
   useEffectAsync(async () => {
     if (active) {
@@ -86,6 +91,8 @@ const LinkField = ({
 
       await Promise.all(results);
       setLinkedIds(newValue);
+      setUpdated(results.length > 0);
+      setLinked(value);
     }
   };
 
@@ -108,6 +115,30 @@ const LinkField = ({
       onClose={() => setOpen(false)}
       multiple
     />
+    <>
+      <Autocomplete
+        loading={active && !items}
+        isOptionEqualToValue={(i1, i2) => keyGetter(i1) === keyGetter(i2)}
+        options={items || []}
+        getOptionLabel={(item) => titleGetter(item)}
+        renderInput={(params) => <TextField {...params} label={label} />}
+        value={(items && linked) || []}
+        onChange={(_, value) => onChange(value)}
+        open={open}
+        onOpen={() => {
+          setOpen(true);
+          setActive(true);
+        }}
+        onClose={() => setOpen(false)}
+        multiple
+      />
+      <Snackbar
+        open={Boolean(updated)}
+        onClose={() => setUpdated(false)}
+        autoHideDuration={snackBarDurationShortMs}
+        message={t('sharedSaved')}
+      />
+    </>
   );
 };
 
