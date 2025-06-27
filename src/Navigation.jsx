@@ -14,6 +14,8 @@ import NotificationsPage from './settings/NotificationsPage';
 import NotificationPage from './settings/NotificationPage';
 import GroupsPage from './settings/GroupsPage';
 import GroupPage from './settings/GroupPage';
+import OrganizationsPage from './settings/OrganizationsPage';
+import OrganizationPage from './settings/OrganizationPage';
 import PositionPage from './other/PositionPage';
 import NetworkPage from './other/NetworkPage';
 import EventReportPage from './reports/EventReportPage';
@@ -59,10 +61,12 @@ import AnnouncementPage from './settings/AnnouncementPage';
 import EmulatorPage from './other/EmulatorPage';
 import Loader from './common/components/Loader';
 import { generateLoginToken } from './common/components/NativeInterface';
+import { useLocalization } from './common/components/LocalizationProvider';
 
 const Navigation = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { setLanguage } = useLocalization();
 
   const [redirectsHandled, setRedirectsHandled] = useState(false);
 
@@ -70,6 +74,9 @@ const Navigation = () => {
   const query = useQuery();
 
   useEffectAsync(async () => {
+    if (query.get('locale')) {
+      setLanguage(query.get('locale'));
+    }
     if (query.get('token')) {
       const token = query.get('token');
       await fetch(`/api/session?token=${encodeURIComponent(token)}`);
@@ -100,11 +107,12 @@ const Navigation = () => {
   }, [query]);
 
   if (!redirectsHandled) {
-    return (<Loader />);
+    return <Loader />;
   }
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/change-server" element={<ChangeServerPage />} />
@@ -131,7 +139,10 @@ const Navigation = () => {
           <Route path="attribute/:id" element={<ComputedAttributePage />} />
           <Route path="attribute" element={<ComputedAttributePage />} />
           <Route path="devices" element={<DevicesPage />} />
-          <Route path="device/:id/connections" element={<DeviceConnectionsPage />} />
+          <Route
+            path="device/:id/connections"
+            element={<DeviceConnectionsPage />}
+          />
           <Route path="device/:id/command" element={<CommandDevicePage />} />
           <Route path="device/:id/share" element={<SharePage />} />
           <Route path="device/:id" element={<DevicePage />} />
@@ -142,10 +153,18 @@ const Navigation = () => {
           <Route path="geofence/:id" element={<GeofencePage />} />
           <Route path="geofence" element={<GeofencePage />} />
           <Route path="groups" element={<GroupsPage />} />
-          <Route path="group/:id/connections" element={<GroupConnectionsPage />} />
+          <Route
+            path="group/:id/connections"
+            element={<GroupConnectionsPage />}
+          />
           <Route path="group/:id/command" element={<CommandGroupPage />} />
           <Route path="group/:id" element={<GroupPage />} />
           <Route path="group" element={<GroupPage />} />
+
+          <Route path="organizations" element={<OrganizationsPage />} />
+          <Route path="organization/:id" element={<OrganizationPage />} />
+          <Route path="organization" element={<OrganizationPage />} />
+
           <Route path="maintenances" element={<MaintenancesPage />} />
           <Route path="maintenance/:id" element={<MaintenancePage />} />
           <Route path="maintenance" element={<MaintenancePage />} />
@@ -155,7 +174,10 @@ const Navigation = () => {
           <Route path="preferences" element={<PreferencesPage />} />
           <Route path="server" element={<ServerPage />} />
           <Route path="users" element={<UsersPage />} />
-          <Route path="user/:id/connections" element={<UserConnectionsPage />} />
+          <Route
+            path="user/:id/connections"
+            element={<UserConnectionsPage />}
+          />
           <Route path="user/:id" element={<UserPage />} />
           <Route path="user" element={<UserPage />} />
         </Route>

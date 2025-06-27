@@ -44,7 +44,13 @@ const DevicePage = () => {
         body: files[0],
       });
       if (response.ok) {
-        setItem({ ...item, attributes: { ...item.attributes, deviceImage: await response.text() } });
+        setItem({
+          ...item,
+          attributes: {
+            ...item.attributes,
+            deviceImage: await response.text(),
+          },
+        });
       } else {
         throw Error(await response.text());
       }
@@ -66,9 +72,7 @@ const DevicePage = () => {
         <>
           <Accordion defaultExpanded>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="subtitle1">
-                {t('sharedRequired')}
-              </Typography>
+              <Typography variant="subtitle1">{t('sharedRequired')}</Typography>
             </AccordionSummary>
             <AccordionDetails className={classes.details}>
               <TextField
@@ -87,9 +91,7 @@ const DevicePage = () => {
           </Accordion>
           <Accordion>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="subtitle1">
-                {t('sharedExtra')}
-              </Typography>
+              <Typography variant="subtitle1">{t('sharedExtra')}</Typography>
             </AccordionSummary>
             <AccordionDetails className={classes.details}>
               <SelectField
@@ -129,7 +131,7 @@ const DevicePage = () => {
                 data={deviceCategories.map((category) => ({
                   id: category,
                   name: t(`category${category.replace(/^\w/, (c) => c.toUpperCase())}`),
-                }))}
+                })).sort((a, b) => a.name.localeCompare(b.name))}
                 label={t('deviceCategory')}
               />
               <SelectField
@@ -139,21 +141,43 @@ const DevicePage = () => {
                 label={t('sharedCalendar')}
               />
               {admin && (
+                <SelectField
+                  value={item.organizationId || ''}
+                  onChange={(event) => setItem({ ...item, organizationId: event.target.value })}
+                  endpoint="/api/organization"
+                  label="Organization"
+                />
+              )}
+
+              {admin && (
                 <>
                   <TextField
                     label={t('userExpirationTime')}
                     type="date"
-                    value={item.expirationTime ? item.expirationTime.split('T')[0] : '2099-01-01'}
+                    value={
+                      item.expirationTime
+                        ? item.expirationTime.split('T')[0]
+                        : '2099-01-01'
+                    }
                     onChange={(e) => {
                       if (e.target.value) {
-                        setItem({ ...item, expirationTime: new Date(e.target.value).toISOString() });
+                        setItem({
+                          ...item,
+                          expirationTime: new Date(
+                            e.target.value,
+                          ).toISOString(),
+                        });
                       }
                     }}
                   />
                   <FormControlLabel
-                    control={<Checkbox checked={item.disabled} onChange={(event) => setItem({ ...item, disabled: event.target.checked })} />}
+                    control={(
+                      <Checkbox
+                        checked={item.disabled}
+                        onChange={(event) => setItem({ ...item, disabled: event.target.checked })}
+                      />
+                    )}
                     label={t('sharedDisabled')}
-
                   />
                 </>
               )}
