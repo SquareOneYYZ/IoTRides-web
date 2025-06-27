@@ -1,8 +1,6 @@
-import { Autocomplete, Snackbar, TextField } from '@mui/material';
+import { Autocomplete, TextField } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { useEffectAsync } from '../../reactHelper';
-import { snackBarDurationShortMs } from '../util/duration';
-import { useTranslation } from './LocalizationProvider';
 
 const LinkField = ({
   label,
@@ -16,17 +14,12 @@ const LinkField = ({
 }) => {
   const localStorageKey = `linked_${baseId}_${keyLink}`;
 
-  const t = useTranslation();
   const [active, setActive] = useState(true);
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([]);
   const [linkedIds, setLinkedIds] = useState(
-    JSON.parse(localStorage.getItem(localStorageKey)) || []
+    () => JSON.parse(localStorage.getItem(localStorageKey)) || []
   );
-  const [linked, setLinked] = useState(
-    JSON.parse(localStorage.getItem(localStorageKey)) || []
-  );
-  const [updated, setUpdated] = useState(false);
 
   useEffectAsync(async () => {
     if (active) {
@@ -57,46 +50,44 @@ const LinkField = ({
     localStorage.setItem(localStorageKey, JSON.stringify(linkedIds));
   }, [linkedIds]);
 
-  const createBody = (linkId) => {
-    const body = {};
-    body[keyBase] = baseId;
-    body[keyLink] = linkId;
-    return body;
-  };
+  const createBody = (linkId) => ({
+    [keyBase]: baseId,
+    [keyLink]: linkId,
+  });
 
   const onChange = async (value) => {
     const oldValue = linkedIds;
     const newValue = value.map((it) => keyGetter(it));
+
     if (!newValue.find((it) => it < 0)) {
       const results = [];
 
       newValue
         .filter((it) => !oldValue.includes(it))
-        .forEach((added) =>
+        .forEach((added) => {
           results.push(
             fetch('/api/permissions', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(createBody(added)),
             })
-          )
-        );
+          );
+        });
+
       oldValue
         .filter((it) => !newValue.includes(it))
-        .forEach((removed) =>
+        .forEach((removed) => {
           results.push(
             fetch('/api/permissions', {
               method: 'DELETE',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(createBody(removed)),
             })
-          )
-        );
+          );
+        });
 
       await Promise.all(results);
       setLinkedIds(newValue);
-      setUpdated(results.length > 0);
-      setLinked(value);
     }
   };
 
@@ -116,8 +107,12 @@ const LinkField = ({
         setOpen(true);
         setActive(true);
       }}
-      onClose={() => setOpen(false)}
+      onClose={() => {
+        setOpen(false);
+      }}
       multiple
     />
   );
 };
+
+export default LinkField;
