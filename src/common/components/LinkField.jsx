@@ -23,7 +23,9 @@ const LinkField = ({
   const [linkedIds, setLinkedIds] = useState(
     JSON.parse(localStorage.getItem(localStorageKey)) || []
   );
-  const [linked, setLinked] = useState(JSON.parse(localStorage.getItem(localStorageKey)) || []);
+  const [linked, setLinked] = useState(
+    JSON.parse(localStorage.getItem(localStorageKey)) || []
+  );
   const [updated, setUpdated] = useState(false);
 
   useEffectAsync(async () => {
@@ -77,7 +79,8 @@ const LinkField = ({
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(createBody(added)),
             })
-          ));
+          )
+        );
       oldValue
         .filter((it) => !newValue.includes(it))
         .forEach((removed) =>
@@ -87,7 +90,8 @@ const LinkField = ({
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(createBody(removed)),
             })
-          ));
+          )
+        );
 
       await Promise.all(results);
       setLinkedIds(newValue);
@@ -115,31 +119,5 @@ const LinkField = ({
       onClose={() => setOpen(false)}
       multiple
     />
-    <>
-      <Autocomplete
-        loading={active && !items}
-        isOptionEqualToValue={(i1, i2) => keyGetter(i1) === keyGetter(i2)}
-        options={items || []}
-        getOptionLabel={(item) => titleGetter(item)}
-        renderInput={(params) => <TextField {...params} label={label} />}
-        value={(items && linked) || []}
-        onChange={(_, value) => onChange(value)}
-        open={open}
-        onOpen={() => {
-          setOpen(true);
-          setActive(true);
-        }}
-        onClose={() => setOpen(false)}
-        multiple
-      />
-      <Snackbar
-        open={Boolean(updated)}
-        onClose={() => setUpdated(false)}
-        autoHideDuration={snackBarDurationShortMs}
-        message={t('sharedSaved')}
-      />
-    </>
   );
 };
-
-export default LinkField;
