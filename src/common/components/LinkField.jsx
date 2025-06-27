@@ -72,8 +72,7 @@ const LinkField = ({
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(createBody(added)),
             })
-          )
-        );
+          ));
       oldValue
         .filter((it) => !newValue.includes(it))
         .forEach((removed) =>
@@ -83,8 +82,7 @@ const LinkField = ({
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(createBody(removed)),
             })
-          )
-        );
+          ));
 
       await Promise.all(results);
       setLinkedIds(newValue);
