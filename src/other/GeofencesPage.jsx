@@ -192,43 +192,43 @@ const GeofencesPage = () => {
     const reader = new FileReader();
     reader.onload = async () => {
       const xml = new DOMParser().parseFromString(reader.result, 'text/xml');
-      const segment = xml.getElementsByTagName('trkseg')[0];
-      const coordinates = Array.from(segment.getElementsByTagName('trkpt'))
-        .map(
-          (point) => `${point.getAttribute('lat')} ${point.getAttribute('lon')}`,
-        )
-        .join(', ');
-      const area = `LINESTRING (${coordinates})`;
+      const coordsArray = Array.from(xml.getElementsByTagName('trkpt')).map(
+        (pt) => `${pt.getAttribute('lat')} ${pt.getAttribute('lon')}`
+      );
+
+      const isClosed = coordsArray[0] === coordsArray[coordsArray.length - 1];
+      const area = isClosed
+        ? `POLYGON ((${coordsArray.join(', ')}))`
+        : `LINESTRING (${coordsArray.join(', ')})`;
+
       const newItem = { name: t('sharedGeofence'), area };
-      try {
-        const response = await fetch('/api/geofences', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newItem),
-        });
-        if (response.ok) {
-          const item = await response.json();
-          navigate(`/settings/geofence/${item.id}`);
-        } else {
-          throw Error(await response.text());
-        }
-      } catch (error) {
-        dispatch(errorsActions.push(error.message));
+      const response = await fetch('/api/geofences', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newItem),
+      });
+
+      if (response.ok) {
+        const savedItem = await response.json();
+        navigate(`/settings/geofence/${savedItem.id}`);
+      } else {
+        const errorText = await response.text();
+        dispatch(errorsActions.push(errorText || 'Failed to save geofence.'));
       }
     };
+
     reader.onerror = (event) => {
       dispatch(errorsActions.push(event.target.error));
     };
     reader.readAsText(file);
   };
 
-  // Effect to handle snackbar reappearing when navigating back to edited geofence
   useEffect(() => {
     if (
-      selectedGeofenceId
-      && editedGeofenceId === selectedGeofenceId
-      && unsavedChanges
-      && !snackbar.open
+      selectedGeofenceId &&
+      editedGeofenceId === selectedGeofenceId &&
+      unsavedChanges &&
+      !snackbar.open
     ) {
       setSnackbar({
         open: true,
@@ -262,7 +262,7 @@ const GeofencesPage = () => {
             </Typography>
             <label htmlFor="upload-gpx">
               <input
-                accept=".gpx"
+                accept=".gpx,.kml,.txt"
                 id="upload-gpx"
                 type="file"
                 className={classes.fileInput}
