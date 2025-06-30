@@ -92,6 +92,7 @@ const LinkField = ({
 
       await Promise.all(results);
       setLinkedIds(newValue);
+      setUpdated(results.length > 0);
     }
   };
 
