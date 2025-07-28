@@ -630,6 +630,7 @@
 	"maintenancePeriod": "Period",
 	"eventDeviceTollRouteEnter": "Toll Route entered",
 	"eventDeviceTollRouteExit": "Toll Route exited",
+	"eventDeviceSurfaceType": "Surface Type",
 	"notificationTollRouteEnter": "Vehicle entered toll route",
 	"notificationTollRouteExit": "Vehicle exited toll route",
 	"tollName": "Toll Road Name",
