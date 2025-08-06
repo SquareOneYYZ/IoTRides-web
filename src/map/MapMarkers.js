@@ -11,7 +11,6 @@ const MapMarkers = ({ markers, showTitles }) => {
   const theme = useTheme();
   const desktop = useMediaQuery(theme.breakpoints.up('md'));
   const iconScale = useAttributePreference('iconScale', desktop ? 0.75 : 1);
-
   const features = useMemo(() => {
     return markers.map(({ latitude, longitude, image, title }) => ({
       type: 'Feature',
@@ -87,7 +86,7 @@ const MapMarkers = ({ markers, showTitles }) => {
 
     map.on('zoom', updateTextVisibility);
     updateTextVisibility(); s
-
+    // console.log(`check1`)
     return () => {
       map.off('zoom', updateTextVisibility);
     };
