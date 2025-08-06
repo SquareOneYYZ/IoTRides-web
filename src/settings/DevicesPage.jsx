@@ -336,7 +336,7 @@ const DevicesPage = () => {
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={2}>
+            {/* <Grid item xs={12} sm={6} md={2}>
               <FormControl fullWidth size="small">
                 <InputLabel>Model</InputLabel>
                 <Select
@@ -352,6 +352,16 @@ const DevicesPage = () => {
                   ))}
                 </Select>
               </FormControl>
+            </Grid> */}
+
+            <Grid item xs={12} sm={6} md={2}>
+              <TextField
+                fullWidth
+                size="small"
+                label="Model"
+                value={filters.model}
+                onChange={(e) => handleFilterChange('model', e.target.value)}
+              />
             </Grid>
 
             <Grid item xs={12} sm={6} md={2}>
