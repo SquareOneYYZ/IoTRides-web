@@ -35,7 +35,6 @@ import SettingsMenu from './components/SettingsMenu';
 import CollectionFab from './components/CollectionFab';
 import CollectionActions from './components/CollectionActions';
 import TableShimmer from '../common/components/TableShimmer';
-import SearchHeader, { filterByKeyword } from './components/SearchHeader';
 import { formatTime } from '../common/util/formatter';
 import { useDeviceReadonly, useManager } from '../common/util/permissions';
 import useSettingsStyles from './common/useSettingsStyles';
@@ -63,8 +62,7 @@ const filterByGlobalSearch = (keyword) => (item) => {
     item.contact,
   ];
   return searchFields.some((field) =>
-    (field || '').toLowerCase().includes(keyword.toLowerCase())
-  );
+    (field || '').toLowerCase().includes(keyword.toLowerCase()));
 };
 
 const DevicesPage = () => {
@@ -203,10 +201,16 @@ const DevicesPage = () => {
         { field: item.contact || '', filter: filters.contact },
       ];
 
-      for (const { field, filter } of textFilters) {
-        if (filter && !field.toLowerCase().includes(filter.toLowerCase())) {
-          return false;
-        }
+      // for (const { field, filter } of textFilters) {
+      //   if (filter && !field.toLowerCase().includes(filter.toLowerCase())) {
+      //     return false;
+      //   }
+      // }
+
+      const allMatch = textFilters.every(({ field, filter }) => !filter || field.toLowerCase().includes(filter.toLowerCase()));
+
+      if (!allMatch) {
+        return false;
       }
 
       return true;
@@ -303,7 +307,12 @@ const DevicesPage = () => {
               <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                 <FilterListIcon color="action" />
                 <Typography variant="body2" color="textSecondary">
-                  {processedItems.length} of {items.length} devices
+                  {processedItems.length}
+                  {' '}
+                  of
+                  {items.length}
+                  {' '}
+                  devices
                 </Typography>
                 {hasActiveFilters && (
                   <Tooltip title="Clear all filters">
@@ -370,8 +379,7 @@ const DevicesPage = () => {
                 <Select
                   value={filters.expired}
                   onChange={(e) =>
-                    handleFilterChange('expired', e.target.value)
-                  }
+                    handleFilterChange('expired', e.target.value)}
                   label="Status"
                 >
                   <MenuItem value="">All Status</MenuItem>
@@ -399,8 +407,7 @@ const DevicesPage = () => {
                 label="Identifier"
                 value={filters.identifier}
                 onChange={(e) =>
-                  handleFilterChange('identifier', e.target.value)
-                }
+                  handleFilterChange('identifier', e.target.value)}
               />
             </Grid>
 
@@ -534,13 +541,13 @@ const DevicesPage = () => {
                 </TableCell>
                 <TableCell colSpan={manager ? 9 : 8} align="right">
                   <FormControlLabel
-                    control={
+                    control={(
                       <Switch
                         checked={showAll}
                         onChange={(e) => setShowAll(e.target.checked)}
                         size="small"
                       />
-                    }
+                    )}
                     label={t('notificationAlways')}
                     labelPlacement="start"
                     disabled={!manager}

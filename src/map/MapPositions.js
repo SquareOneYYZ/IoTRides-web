@@ -1,5 +1,5 @@
 import { useId, useCallback, useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { useMediaQuery } from '@mui/material';
 import { useTheme } from '@mui/styles';
 import { map } from './core/MapView';
@@ -8,10 +8,8 @@ import { mapIconKey } from './core/preloadImages';
 import { useAttributePreference } from '../common/util/preferences';
 import { useCatchCallback } from '../reactHelper';
 import { findFonts } from './core/mapUtil';
-import { useDispatch } from 'react-redux';
+
 import { devicesActions } from '../store/devices';
-
-
 
 const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleField }) => {
   const id = useId();
@@ -85,8 +83,8 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
     const leaves = await clusterSource.getClusterLeaves(clusterId, Infinity);
 
     // Extract device information from the cluster
-    const clusterDevices = leaves.map(leaf => {
-      const properties = leaf.properties;
+    const clusterDevices = leaves.map((leaf) => {
+      const { properties } = leaf;
       return {
         id: properties.id,
         deviceId: properties.deviceId,
@@ -277,13 +275,13 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
           const deviceIdsToHide = new Set();
           const allHiddenDevices = [];
 
-          for (const clusterFeature of clusterFeatures) {
+          clusterFeatures.forEach((clusterFeature) => {
             const clusterId = clusterFeature.properties.cluster_id;
             const clusterSource = map.getSource(id);
-            const leaves = await clusterSource.getClusterLeaves(clusterId, Infinity);
+            const leaves = clusterSource.getClusterLeaves(clusterId, Infinity);
 
-            const clusterDevices = leaves.map(leaf => {
-              const properties = leaf.properties;
+            const clusterDevices = leaves.map((leaf) => {
+              const { properties } = leaf;
               return {
                 id: properties.id,
                 deviceId: properties.deviceId,
@@ -292,16 +290,16 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
                 category: properties.category,
                 color: properties.color,
                 coordinates: leaf.geometry.coordinates,
-                clusterId: clusterId
+                clusterId
               };
             });
 
             allHiddenDevices.push(...clusterDevices);
 
-            leaves.forEach(leaf => {
+            leaves.forEach((leaf) => {
               deviceIdsToHide.add(leaf.properties.deviceId);
             });
-          }
+          });
 
           if (map.getLayer(clusters)) {
             map.setLayoutProperty(clusters, 'visibility', 'none');
@@ -332,7 +330,6 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
           dispatch(devicesActions.setHiddenDevices(allHiddenDevices));
           // console.log(allHiddenDevices)
           wasAbove15Ref.current = true;
-
         } else if (zoom <= 15 && wasAbove15Ref.current) {
           if (map.getLayer(clusters)) {
             map.setLayoutProperty(clusters, 'visibility', 'visible');
@@ -378,20 +375,23 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
   }
 
   useEffect(() => {
-    if (!map) return;
+    if (!map) {
+      return undefined; // Explicit return for cases without cleanup
+    }
 
-    const cleanup = setupZoomClusterHandler({
-      map,
-      clusters,
-      positions,
-      devices,
-      selectedDeviceId,
-      selectedPosition,
-      dispatch,
-      id,
-      createFeature,
-      devicesActions
-    });
+    const cleanup = () =>
+      setupZoomClusterHandler({
+        map,
+        clusters,
+        positions,
+        devices,
+        selectedDeviceId,
+        selectedPosition,
+        dispatch,
+        id,
+        createFeature,
+        devicesActions
+      });
 
     return cleanup;
   }, [map, clusters, positions, devices, selectedDeviceId, selectedPosition]);
