@@ -48,38 +48,49 @@ const GeofencePage = () => {
         <>
           <Accordion defaultExpanded>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="subtitle1">
-                {t('sharedRequired')}
-              </Typography>
+              <Typography variant="subtitle1">{t('sharedRequired')}</Typography>
             </AccordionSummary>
             <AccordionDetails className={classes.details}>
               <TextField
                 value={item.name || ''}
-                onChange={(event) => setItem({ ...item, name: event.target.value })}
+                onChange={(event) =>
+                  setItem({ ...item, name: event.target.value })}
                 label={t('sharedName')}
               />
             </AccordionDetails>
           </Accordion>
           <Accordion>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="subtitle1">
-                {t('sharedExtra')}
-              </Typography>
+              <Typography variant="subtitle1">{t('sharedExtra')}</Typography>
             </AccordionSummary>
             <AccordionDetails className={classes.details}>
               <TextField
                 value={item.description || ''}
-                onChange={(event) => setItem({ ...item, description: event.target.value })}
+                onChange={(event) =>
+                  setItem({ ...item, description: event.target.value })}
                 label={t('sharedDescription')}
               />
               <SelectField
                 value={item.calendarId}
-                onChange={(event) => setItem({ ...item, calendarId: Number(event.target.value) })}
+                onChange={(event) =>
+                  setItem({ ...item, calendarId: Number(event.target.value) })}
                 endpoint="/api/calendars"
                 label={t('sharedCalendar')}
               />
               <FormControlLabel
-                control={<Checkbox checked={item.attributes.hide} onChange={(e) => setItem({ ...item, attributes: { ...item.attributes, hide: e.target.checked } })} />}
+                control={(
+                  <Checkbox
+                    checked={item.attributes.hide}
+                    onChange={(e) =>
+                      setItem({
+                        ...item,
+                        attributes: {
+                          ...item.attributes,
+                          hide: e.target.checked,
+                        },
+                      })}
+                  />
+                )}
                 label={t('sharedFilterMap')}
               />
             </AccordionDetails>

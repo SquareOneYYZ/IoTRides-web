@@ -11,29 +11,28 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import EditItemView from './components/EditItemView';
 import EditAttributesAccordion from './components/EditAttributesAccordion';
-import SelectField from '../common/components/SelectField';
 import { useTranslation } from '../common/components/LocalizationProvider';
 import SettingsMenu from './components/SettingsMenu';
 import useCommonDeviceAttributes from '../common/attributes/useCommonDeviceAttributes';
-import useGroupAttributes from '../common/attributes/useGroupAttributes';
+import useOrganizationAttributes from '../common/attributes/useOrganizationAttributes';
 import { useCatch } from '../reactHelper';
-import { groupsActions } from '../store';
+import { organizationsActions } from '../store/organizations';
 import useSettingsStyles from './common/useSettingsStyles';
 
-const GroupPage = () => {
+const OrganizationPage = () => {
   const classes = useSettingsStyles();
   const dispatch = useDispatch();
   const t = useTranslation();
 
   const commonDeviceAttributes = useCommonDeviceAttributes(t);
-  const groupAttributes = useGroupAttributes(t);
+  const organizationAttributes = useOrganizationAttributes(t);
 
   const [item, setItem] = useState();
 
   const onItemSaved = useCatch(async () => {
-    const response = await fetch('/api/groups');
+    const response = await fetch('/api/organization');
     if (response.ok) {
-      dispatch(groupsActions.refresh(await response.json()));
+      dispatch(organizationsActions.refresh(await response.json()));
     } else {
       throw Error(await response.text());
     }
@@ -43,7 +42,7 @@ const GroupPage = () => {
 
   return (
     <EditItemView
-      endpoint="groups"
+      endpoint="organization"
       item={item}
       setItem={setItem}
       validate={validate}
@@ -65,23 +64,13 @@ const GroupPage = () => {
               />
             </AccordionDetails>
           </Accordion>
-          <Accordion>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="subtitle1">{t('sharedExtra')}</Typography>
-            </AccordionSummary>
-            <AccordionDetails className={classes.details}>
-              <SelectField
-                value={item.groupId}
-                onChange={(event) => setItem({ ...item, groupId: Number(event.target.value) })}
-                endpoint="/api/groups"
-                label={t('groupParent')}
-              />
-            </AccordionDetails>
-          </Accordion>
           <EditAttributesAccordion
             attributes={item.attributes}
             setAttributes={(attributes) => setItem({ ...item, attributes })}
-            definitions={{ ...commonDeviceAttributes, ...groupAttributes }}
+            definitions={{
+              ...commonDeviceAttributes,
+              ...organizationAttributes,
+            }}
           />
         </>
       )}
@@ -89,4 +78,4 @@ const GroupPage = () => {
   );
 };
 
-export default GroupPage;
+export default OrganizationPage;
