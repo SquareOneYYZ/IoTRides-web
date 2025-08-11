@@ -93,25 +93,24 @@ const UsersPage = () => {
     // Global search
     if (globalSearch) {
       filtered = filtered.filter(
-        (item) =>
-          (item.name || '')
-            .toLowerCase()
-            .includes(globalSearch.toLowerCase()) ||
-          (item.email || '').toLowerCase().includes(globalSearch.toLowerCase())
+        (item) => (item.name || '')
+          .toLowerCase()
+          .includes(globalSearch.toLowerCase())
+          || (item.email || '').toLowerCase().includes(globalSearch.toLowerCase()),
       );
     }
 
     // Admin filter
     if (adminFilter !== '') {
       filtered = filtered.filter(
-        (item) => Boolean(item.administrator) === (adminFilter === 'true')
+        (item) => Boolean(item.administrator) === (adminFilter === 'true'),
       );
     }
 
     // Disabled filter
     if (disabledFilter !== '') {
       filtered = filtered.filter(
-        (item) => Boolean(item.disabled) === (disabledFilter === 'true')
+        (item) => Boolean(item.disabled) === (disabledFilter === 'true'),
       );
     }
 
@@ -146,14 +145,12 @@ const UsersPage = () => {
     expirationFilter,
   ]);
 
-  const hasActiveFilters =
-    globalSearch || adminFilter || disabledFilter || expirationFilter;
+  const hasActiveFilters = globalSearch || adminFilter || disabledFilter || expirationFilter;
 
   const getFilterLabel = (key, value) => {
     if (key === 'search') return `Search: "${value}"`;
     if (key === 'admin') return `Admin: ${value === 'true' ? 'Yes' : 'No'}`;
-    if (key === 'status')
-      return `Status: ${value === 'true' ? 'Disabled' : 'Active'}`;
+    if (key === 'status') { return `Status: ${value === 'true' ? 'Disabled' : 'Active'}`; }
     if (key === 'expiration') {
       const labels = { never: 'Never', active: 'Active', expired: 'Expired' };
       return `Expiration: ${labels[value]}`;
@@ -343,13 +340,13 @@ const UsersPage = () => {
           <TableRow>
             <TableCell colSpan={6} align="right">
               <FormControlLabel
-                control={
+                control={(
                   <Switch
                     checked={temporary}
                     onChange={(e) => setTemporary(e.target.checked)}
                     size="small"
                   />
-                }
+                )}
                 label={t('userTemporary')}
                 labelPlacement="start"
               />

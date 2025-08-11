@@ -54,15 +54,14 @@ const DriversPage = () => {
     if (searchKeyword.trim() !== '') {
       const lower = searchKeyword.toLowerCase();
       list = list.filter(
-        (item) =>
-          (item.name && item.name.toLowerCase().includes(lower)) ||
-          (item.uniqueId && item.uniqueId.toLowerCase().includes(lower))
+        (item) => (item.name && item.name.toLowerCase().includes(lower))
+          || (item.uniqueId && item.uniqueId.toLowerCase().includes(lower)),
       );
     }
 
     list.sort((a, b) => {
-      let valA = a[sortField] || '';
-      let valB = b[sortField] || '';
+      const valA = a[sortField] || '';
+      const valB = b[sortField] || '';
       if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
       if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
       return 0;
