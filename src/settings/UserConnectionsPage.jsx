@@ -6,8 +6,10 @@ import {
   AccordionDetails,
   Typography,
   Container,
+  Button,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import LinkField from '../common/components/LinkField';
 import { useTranslation } from '../common/components/LocalizationProvider';
 import SettingsMenu from './components/SettingsMenu';
@@ -18,7 +20,6 @@ import useSettingsStyles from './common/useSettingsStyles';
 const UserConnectionsPage = () => {
   const classes = useSettingsStyles();
   const t = useTranslation();
-
   const { id } = useParams();
 
   return (
@@ -121,6 +122,14 @@ const UserConnectionsPage = () => {
             />
           </AccordionDetails>
         </Accordion>
+        <Button
+          variant="outlined"
+          startIcon={<ArrowBackIcon />}
+          onClick={() => window.history.back()}
+          sx={{ mt: 2 }}
+        >
+          {t('back') || 'Back'}
+        </Button>
       </Container>
     </PageLayout>
   );
