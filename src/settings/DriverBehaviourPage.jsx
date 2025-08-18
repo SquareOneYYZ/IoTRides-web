@@ -13,6 +13,7 @@ import {
   Slider,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { useNavigate } from 'react-router-dom';
 import { prefixString } from '../common/util/stringUtils';
 import EditItemView from './components/EditItemView';
 import { useAttributePreference } from '../common/util/preferences';
@@ -20,7 +21,6 @@ import { useTranslation } from '../common/components/LocalizationProvider';
 import usePositionAttributes from '../common/attributes/usePositionAttributes';
 import SettingsMenu from './components/SettingsMenu';
 import useSettingsStyles from './common/useSettingsStyles';
-import { useNavigate } from 'react-router-dom';
 
 const DriverBehaviourPage = () => {
   const classes = useSettingsStyles();
@@ -93,7 +93,7 @@ const DriverBehaviourPage = () => {
           <FormControl fullWidth sx={{ mb: 2 }}>
             <InputLabel>Select Option</InputLabel>
             <Select
-              label={'Select Option'}
+              label="Select Option"
               value={item.selection || ''}
               onChange={(e) => setItem({ ...item, selection: e.target.value })}
             >
@@ -110,7 +110,7 @@ const DriverBehaviourPage = () => {
               <FormControl fullWidth sx={{ mb: 2 }}>
                 <InputLabel>Enable harsh driving detection</InputLabel>
                 <Select
-                  label={'Enable harsh driving detection'}
+                  label="Enable harsh driving detection"
                   value={item.enable || ''}
                   onChange={(e) => setItem({ ...item, enable: e.target.value })}
                 >
@@ -122,7 +122,7 @@ const DriverBehaviourPage = () => {
               <FormControl fullWidth sx={{ mb: 2 }}>
                 <InputLabel>Source</InputLabel>
                 <Select
-                  label={'Source'}
+                  label="Source"
                   value={item.source || ''}
                   onChange={(e) => setItem({ ...item, source: e.target.value })}
                 >
@@ -133,7 +133,11 @@ const DriverBehaviourPage = () => {
 
               {/* Sliders */}
               <Typography>
-                Acceleration: {item.acceleration || 0} ft/s²
+                Acceleration:
+                {' '}
+                {item.acceleration || 0}
+                {' '}
+                ft/s²
               </Typography>
               <Slider
                 min={0}
@@ -142,7 +146,12 @@ const DriverBehaviourPage = () => {
                 value={item.acceleration || 0}
                 onChange={(_, val) => setItem({ ...item, acceleration: val })}
               />
-              <Typography>Braking: {item.braking || 0} ft/s²</Typography>
+              <Typography>
+                Braking:
+                {item.braking || 0}
+                {' '}
+                ft/s²
+              </Typography>
               <Slider
                 min={0}
                 max={20}
@@ -150,7 +159,12 @@ const DriverBehaviourPage = () => {
                 value={item.braking || 0}
                 onChange={(_, val) => setItem({ ...item, braking: val })}
               />
-              <Typography>Turns: {item.turns || 0} ft/s²</Typography>
+              <Typography>
+                Turns:
+                {item.turns || 0}
+                {' '}
+                ft/s²
+              </Typography>
               <Slider
                 min={0}
                 max={20}
