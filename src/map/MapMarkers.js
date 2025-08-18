@@ -1,16 +1,17 @@
-import { useId, useEffect, useMemo, useCallback, useRef } from 'react';
+import {
+  useId, useEffect, useMemo, useCallback, useRef,
+} from 'react';
 import { useTheme } from '@mui/styles';
 import { useMediaQuery } from '@mui/material';
 import { map } from './core/MapView';
 import { useAttributePreference } from '../common/util/preferences';
 import { findFonts } from './core/mapUtil';
 
-// Throttle utility function
 const throttle = (func, delay) => {
   let timeoutId;
   let lastExecTime = 0;
 
-  return function (...args) {
+  return function throttled(...args) {
     const currentTime = Date.now();
 
     if (currentTime - lastExecTime > delay) {
@@ -69,20 +70,17 @@ const MapMarkers = ({ markers, showTitles }) => {
         }
       }
     }, 100),
-    [id]
+    [id],
   );
 
   useEffect(() => {
-    if (layerInitialized.current) return;
+    if (layerInitialized.current) return () => { };
 
     try {
       if (!map.getSource(id)) {
         map.addSource(id, {
           type: 'geojson',
-          data: {
-            type: 'FeatureCollection',
-            features: [],
-          },
+          data: { type: 'FeatureCollection', features: [] },
         });
       }
 
@@ -112,9 +110,9 @@ const MapMarkers = ({ markers, showTitles }) => {
 
       layerInitialized.current = true;
       map.on('zoom', updateTextVisibility);
-      updateTextVisibility(); // Initial call
-
+      updateTextVisibility();
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Failed to initialize map layer:', error);
     }
 
@@ -125,6 +123,7 @@ const MapMarkers = ({ markers, showTitles }) => {
         if (map.getSource(id)) map.removeSource(id);
         layerInitialized.current = false;
       } catch (error) {
+        // eslint-disable-next-line no-console
         console.warn('Cleanup error:', error);
       }
     };
