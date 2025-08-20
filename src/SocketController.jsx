@@ -34,7 +34,9 @@ const SocketController = () => {
 
   const connectSocket = () => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const socket = new WebSocket(`${protocol}//${window.location.host}/api/socket`);
+    const socket = new WebSocket(
+      `${protocol}//${window.location.host}/api/socket`
+    );
     socketRef.current = socket;
 
     socket.onopen = () => {
@@ -51,9 +53,14 @@ const SocketController = () => {
           }
           const positionsResponse = await fetch('/api/positions');
           if (positionsResponse.ok) {
-            dispatch(sessionActions.updatePositions(await positionsResponse.json()));
+            dispatch(
+              sessionActions.updatePositions(await positionsResponse.json())
+            );
           }
-          if (devicesResponse.status === 401 || positionsResponse.status === 401) {
+          if (
+            devicesResponse.status === 401 ||
+            positionsResponse.status === 401
+          ) {
             navigate('/login');
           }
         } catch (error) {
@@ -95,8 +102,13 @@ const SocketController = () => {
       } else {
         throw Error(await response.text());
       }
-      connectSocket();
+
+      const timer = setTimeout(() => {
+        connectSocket();
+      }, 5000);
+
       return () => {
+        clearTimeout(timer);
         const socket = socketRef.current;
         if (socket) {
           socket.close(logoutCode);
@@ -107,16 +119,21 @@ const SocketController = () => {
   }, [authenticated]);
 
   useEffect(() => {
-    setNotifications(events.map((event) => ({
-      id: event.id,
-      message: event.attributes.message,
-      show: true,
-    })));
+    setNotifications(
+      events.map((event) => ({
+        id: event.id,
+        message: event.attributes.message,
+        show: true,
+      }))
+    );
   }, [events, devices, t]);
 
   useEffect(() => {
     events.forEach((event) => {
-      if (soundEvents.includes(event.type) || (event.type === 'alarm' && soundAlarms.includes(event.attributes.alarm))) {
+      if (
+        soundEvents.includes(event.type) ||
+        (event.type === 'alarm' && soundAlarms.includes(event.attributes.alarm))
+      ) {
         new Audio(alarm).play();
       }
     });
@@ -130,7 +147,9 @@ const SocketController = () => {
           open={notification.show}
           message={notification.message}
           autoHideDuration={snackBarDurationLongMs}
-          onClose={() => setEvents(events.filter((e) => e.id !== notification.id))}
+          onClose={() =>
+            setEvents(events.filter((e) => e.id !== notification.id))
+          }
         />
       ))}
     </>
