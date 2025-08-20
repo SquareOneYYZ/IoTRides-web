@@ -26,6 +26,7 @@ const SocketController = () => {
 
   const [events, setEvents] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const [visibleDevices, setVisibleDevices] = useState([]);
 
   const soundEvents = useAttributePreference('soundEvents', '');
   const soundAlarms = useAttributePreference('soundAlarms', 'sos');
@@ -89,6 +90,25 @@ const SocketController = () => {
       }
     };
   };
+
+  useEffect(() => {
+    if (!devices) return;
+
+    if (devices.length > 500) {
+      setVisibleDevices([]);
+      let index = 0;
+      const interval = setInterval(() => {
+        index += 100;
+        setVisibleDevices(devices.slice(0, index));
+        if (index >= devices.length) {
+          clearInterval(interval);
+        }
+      }, 500);
+      return () => clearInterval(interval);
+    } else {
+      setVisibleDevices(devices);
+    }
+  }, [devices]);
 
   useEffect(() => {
     socketRef.current?.send(JSON.stringify({ logs: includeLogs }));
