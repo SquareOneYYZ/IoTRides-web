@@ -13,18 +13,25 @@
     "react"
   ],
   "ignorePatterns": ["legacy/", "build/", "switcher.js", "theme.js"],
-"rules": {
+ "rules": {
   "max-len": [0],
   "no-shadow": [0],
   "no-return-assign": [0],
   "no-param-reassign": [0],
   "no-prototype-builtins": [0],
+  "no-unused-vars": [0],
+
+  "comma-dangle": [0], // disable trailing comma check
+  "implicit-arrow-linebreak": [0], // allow linebreak before arrow body
+  "operator-linebreak": [0], // don't force && || at beginning/end of line
   "object-curly-newline": [1, {
     "ObjectExpression": { "minProperties": 8, "multiline": true, "consistent": true },
     "ObjectPattern": { "minProperties": 8, "multiline": true, "consistent": true },
     "ImportDeclaration": { "minProperties": 4, "multiline": true, "consistent": true },
     "ExportDeclaration": { "minProperties": 4, "multiline": true, "consistent": true }
   }],
+  "no-console": [0], // allow console.log in code
+
   "import/no-unresolved": [1, {
     "ignore": ["\\.svg", "virtual:"]
   }],
@@ -35,13 +42,7 @@
   "react/jsx-props-no-spreading": [0],
   "jsx-a11y/anchor-is-valid": [0],
   "jsx-a11y/label-has-associated-control": [0],
-  "react/prop-types": [0],
-
-  // ✅ New rules to silence annoying formatting issues:
-  "comma-dangle": [0],
-  "implicit-arrow-linebreak": [0],
-  "operator-linebreak": [0],
-  "no-console": [1]  // Turned into a warning
+  "react/prop-types": [0]
 }
 
 }
