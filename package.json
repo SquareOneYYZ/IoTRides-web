@@ -48,7 +48,7 @@
     "start": "vite",
     "build": "vite build",
     "generate-pwa-assets": "pwa-assets-generator --preset minimal public/logo.svg",
-    "lint": "eslint \"src/**/*.{js,jsx}\"",
+    "lint": "eslint .",
     "lint:fix": "eslint --fix ."
   },
   "browserslist": {
