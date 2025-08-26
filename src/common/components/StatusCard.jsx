@@ -288,7 +288,7 @@ const StatusCard = ({
                     onClick={() => navigate(-1)}
                     disabled={disableActions}
                   >
-                    <CloseIcon />
+                    <SensorsOff />
                   </IconButton>
                 </Tooltip>
 
