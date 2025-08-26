@@ -1,5 +1,5 @@
 import { useId, useCallback, useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { useMediaQuery } from '@mui/material';
 import { useTheme } from '@mui/styles';
 import { map } from './core/MapView';
@@ -8,10 +8,8 @@ import { mapIconKey } from './core/preloadImages';
 import { useAttributePreference } from '../common/util/preferences';
 import { useCatchCallback } from '../reactHelper';
 import { findFonts } from './core/mapUtil';
-import { useDispatch } from 'react-redux';
+
 import { devicesActions } from '../store/devices';
-
-
 
 const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleField }) => {
   const id = useId();
@@ -85,8 +83,8 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
     const leaves = await clusterSource.getClusterLeaves(clusterId, Infinity);
 
     // Extract device information from the cluster
-    const clusterDevices = leaves.map(leaf => {
-      const properties = leaf.properties;
+    const clusterDevices = leaves.map((leaf) => {
+      const { properties } = leaf;
       return {
         id: properties.id,
         deviceId: properties.deviceId,
@@ -277,31 +275,33 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
           const deviceIdsToHide = new Set();
           const allHiddenDevices = [];
 
-          for (const clusterFeature of clusterFeatures) {
-            const clusterId = clusterFeature.properties.cluster_id;
-            const clusterSource = map.getSource(id);
-            const leaves = await clusterSource.getClusterLeaves(clusterId, Infinity);
+          await Promise.all(
+            clusterFeatures.map(async (clusterFeature) => {
+              const clusterId = clusterFeature.properties.cluster_id;
+              const clusterSource = map.getSource(id);
+              const leaves = await clusterSource.getClusterLeaves(clusterId, Infinity);
 
-            const clusterDevices = leaves.map(leaf => {
-              const properties = leaf.properties;
-              return {
-                id: properties.id,
-                deviceId: properties.deviceId,
-                name: properties.name,
-                fixTime: properties.fixTime,
-                category: properties.category,
-                color: properties.color,
-                coordinates: leaf.geometry.coordinates,
-                clusterId: clusterId
-              };
-            });
+              const clusterDevices = leaves.map((leaf) => {
+                const { properties } = leaf;
+                return {
+                  id: properties.id,
+                  deviceId: properties.deviceId,
+                  name: properties.name,
+                  fixTime: properties.fixTime,
+                  category: properties.category,
+                  color: properties.color,
+                  coordinates: leaf.geometry.coordinates,
+                  clusterId
+                };
+              });
 
-            allHiddenDevices.push(...clusterDevices);
+              allHiddenDevices.push(...clusterDevices);
 
-            leaves.forEach(leaf => {
-              deviceIdsToHide.add(leaf.properties.deviceId);
-            });
-          }
+              leaves.forEach((leaf) => {
+                deviceIdsToHide.add(leaf.properties.deviceId);
+              });
+            })
+          );
 
           if (map.getLayer(clusters)) {
             map.setLayoutProperty(clusters, 'visibility', 'none');
@@ -327,12 +327,9 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
               features: filteredFeatures
             });
           }
-          // console.log('✅ Dispatching hiddenDevices:', allHiddenDevices.length, allHiddenDevices);
 
           dispatch(devicesActions.setHiddenDevices(allHiddenDevices));
-          // console.log(allHiddenDevices)
           wasAbove15Ref.current = true;
-
         } else if (zoom <= 15 && wasAbove15Ref.current) {
           if (map.getLayer(clusters)) {
             map.setLayoutProperty(clusters, 'visibility', 'visible');
@@ -378,7 +375,7 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
   }
 
   useEffect(() => {
-    if (!map) return;
+    if (!map) return () => { };
 
     const cleanup = setupZoomClusterHandler({
       map,

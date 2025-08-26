@@ -13,9 +13,9 @@ import {
   IconButton,
 } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
+import CloseIcon from '@mui/icons-material/Close';
 import { devicesActions } from '../../store';
 import { map } from '../../map/core/MapView';
-import CloseIcon from '@mui/icons-material/Close';
 
 const HiddenDeviceDropdown = () => {
   const dispatch = useDispatch();
@@ -83,9 +83,9 @@ const HiddenDeviceDropdown = () => {
 
   const filteredDevices = Array.isArray(hiddenDevices)
     ? hiddenDevices.filter((device) => {
-        const name = String(device.name || device.deviceId || '').toLowerCase();
-        return name.includes(search.toLowerCase());
-      })
+      const name = String(device.name || device.deviceId || '').toLowerCase();
+      return name.includes(search.toLowerCase());
+    })
     : [];
 
   const handleDeviceClick = (item) => {
@@ -181,7 +181,7 @@ const HiddenDeviceDropdown = () => {
                           onClick={() => handleDeviceClick(device)}
                         >
                           <ListItemText
-                            primary={
+                            primary={(
                               <Typography
                                 variant="subtitle2"
                                 fontWeight={600}
@@ -190,8 +190,8 @@ const HiddenDeviceDropdown = () => {
                               >
                                 {label}
                               </Typography>
-                            }
-                            secondary={
+                            )}
+                            secondary={(
                               <>
                                 {device.fixTime && (
                                   <Typography
@@ -199,25 +199,31 @@ const HiddenDeviceDropdown = () => {
                                     color="text.secondary"
                                     display="block"
                                   >
-                                    {isNaN(new Date(device.fixTime).getTime())
+                                    {Number.isNaN(
+                                      new Date(device.fixTime).getTime()
+                                    )
                                       ? 'Invalid time'
                                       : new Date(
-                                          device.fixTime
-                                        ).toLocaleString()}
+                                        device.fixTime
+                                      ).toLocaleString()}
                                   </Typography>
                                 )}
                                 {device.category && (
                                   <Typography variant="caption" display="block">
-                                    Category: {device.category}
+                                    Category:
+                                    {' '}
+                                    {device.category}
                                   </Typography>
                                 )}
                                 {device.clusterId && (
                                   <Typography variant="caption" display="block">
-                                    Cluster ID: {device.clusterId}
+                                    Cluster ID:
+                                    {' '}
+                                    {device.clusterId}
                                   </Typography>
                                 )}
                               </>
-                            }
+                            )}
                           />
                         </ListItem>
                         {index < filteredDevices.length - 1 && <Divider />}
@@ -237,7 +243,11 @@ const HiddenDeviceDropdown = () => {
                     display="block"
                     sx={{ mt: 1 }}
                   >
-                    Showing first 300 of {filteredDevices.length} devices
+                    Showing first 300 of
+                    {' '}
+                    {filteredDevices.length}
+                    {' '}
+                    devices
                   </Typography>
                 </>
               )}

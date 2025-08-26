@@ -12,19 +12,17 @@ const MapMarkers = ({ markers, showTitles }) => {
   const desktop = useMediaQuery(theme.breakpoints.up('md'));
   const iconScale = useAttributePreference('iconScale', desktop ? 0.75 : 1);
 
-  const features = useMemo(() => {
-    return markers.map(({ latitude, longitude, image, title }) => ({
-      type: 'Feature',
-      geometry: {
-        type: 'Point',
-        coordinates: [longitude, latitude],
-      },
-      properties: {
-        image: image || 'default-neutral',
-        title: title || '',
-      },
-    }));
-  }, [markers]);
+  const features = useMemo(() => markers.map(({ latitude, longitude, image, title }) => ({
+    type: 'Feature',
+    geometry: {
+      type: 'Point',
+      coordinates: [longitude, latitude],
+    },
+    properties: {
+      image: image || 'default-neutral',
+      title: title || '',
+    },
+  })), [markers]);
 
   useEffect(() => {
     if (!map.getSource(id)) {
@@ -86,7 +84,7 @@ const MapMarkers = ({ markers, showTitles }) => {
     };
 
     map.on('zoom', updateTextVisibility);
-    updateTextVisibility(); s
+    updateTextVisibility();
 
     return () => {
       map.off('zoom', updateTextVisibility);
