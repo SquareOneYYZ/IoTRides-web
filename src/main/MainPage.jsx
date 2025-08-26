@@ -1,6 +1,4 @@
-import React, {
-  useState, useCallback, useEffect,
-} from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Paper } from '@mui/material';
 import { makeStyles } from '@mui/styles';
 import { useTheme } from '@mui/material/styles';
@@ -16,6 +14,7 @@ import useFilter from './useFilter';
 import MainToolbar from './MainToolbar';
 import MainMap from './MainMap';
 import { useAttributePreference } from '../common/util/preferences';
+import HiddenDeviceDropdown from '../common/components/HiddenDeviceDropdown';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -74,7 +73,9 @@ const MainPage = () => {
   const selectedDeviceId = useSelector((state) => state.devices.selectedId);
   const positions = useSelector((state) => state.session.positions);
   const [filteredPositions, setFilteredPositions] = useState([]);
-  const selectedPosition = filteredPositions.find((position) => selectedDeviceId && position.deviceId === selectedDeviceId);
+  const selectedPosition = filteredPositions.find(
+    (position) => selectedDeviceId && position.deviceId === selectedDeviceId
+  );
 
   const [filteredDevices, setFilteredDevices] = useState([]);
 
@@ -97,7 +98,15 @@ const MainPage = () => {
     }
   }, [desktop, mapOnSelect, selectedDeviceId]);
 
-  useFilter(keyword, filter, filterSort, filterMap, positions, setFilteredDevices, setFilteredPositions);
+  useFilter(
+    keyword,
+    filter,
+    filterSort,
+    filterMap,
+    positions,
+    setFilteredDevices,
+    setFilteredPositions
+  );
 
   return (
     <div className={classes.root}>
@@ -134,7 +143,11 @@ const MainPage = () => {
               />
             </div>
           )}
-          <Paper square className={classes.contentList} style={devicesOpen ? {} : { visibility: 'hidden' }}>
+          <Paper
+            square
+            className={classes.contentList}
+            style={devicesOpen ? {} : { visibility: 'hidden' }}
+          >
             <DeviceList devices={filteredDevices} />
           </Paper>
         </div>
@@ -145,6 +158,7 @@ const MainPage = () => {
         )}
       </div>
       <EventsDrawer open={eventsOpen} onClose={() => setEventsOpen(false)} />
+      <HiddenDeviceDropdown />
       {selectedDeviceId && (
         <StatusCard
           deviceId={selectedDeviceId}

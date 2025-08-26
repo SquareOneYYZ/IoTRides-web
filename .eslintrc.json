@@ -36,12 +36,11 @@
   "jsx-a11y/anchor-is-valid": [0],
   "jsx-a11y/label-has-associated-control": [0],
   "react/prop-types": [0],
-
-  // ✅ New rules to silence annoying formatting issues:
+  "no-unused-vars":[1],
   "comma-dangle": [0],
   "implicit-arrow-linebreak": [0],
   "operator-linebreak": [0],
-  "no-console": [1]  // Turned into a warning
+  "no-console": [1] 
 }
 
 }

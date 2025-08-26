@@ -38,7 +38,6 @@ const MapMarkers = ({ markers, showTitles }) => {
 
   const features = useMemo(() => {
     if (!markers?.length) return [];
-
     return markers.map(({ latitude, longitude, image, title }) => ({
       type: 'Feature',
       geometry: {
@@ -52,6 +51,72 @@ const MapMarkers = ({ markers, showTitles }) => {
     }));
   }, [markers]);
 
+  useEffect(() => {
+    if (!map.getSource(id)) {
+      map.addSource(id, {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: [],
+        },
+      });
+    }
+
+    map.addLayer({
+      id,
+      type: 'symbol',
+      source: id,
+      filter: ['!has', 'point_count'],
+      layout: {
+        'icon-image': '{image}',
+        'icon-size': iconScale,
+        'icon-allow-overlap': true,
+        'text-field': showTitles ? '{title}' : '',
+        'text-allow-overlap': true,
+        'text-anchor': 'bottom',
+        'text-offset': [0, -2 * iconScale],
+        'text-font': findFonts(map),
+        'text-size': 12,
+      },
+      paint: {
+        'text-halo-color': 'white',
+        'text-halo-width': 1,
+      },
+    });
+
+    return () => {
+      if (map.getLayer(id)) map.removeLayer(id);
+      if (map.getSource(id)) map.removeSource(id);
+    };
+  }, [id, iconScale]);
+
+  useEffect(() => {
+    const source = map.getSource(id);
+    if (source) {
+      source.setData({
+        type: 'FeatureCollection',
+        features,
+      });
+    }
+  }, [id, features]);
+
+  useEffect(() => {
+    const updateTextVisibility = () => {
+      const zoom = map.getZoom();
+      const shouldShowTitles = zoom >= 14;
+
+      if (map.getLayer(id)) {
+        map.setLayoutProperty(id, 'text-field', shouldShowTitles ? '{title}' : '');
+      }
+    };
+
+    map.on('zoom', updateTextVisibility);
+    updateTextVisibility();
+
+    return () => {
+      map.off('zoom', updateTextVisibility);
+    };
+  }, [id]);
   const updateTextVisibility = useCallback(
     throttle(() => {
       const zoom = map.getZoom();
@@ -112,7 +177,6 @@ const MapMarkers = ({ markers, showTitles }) => {
       map.on('zoom', updateTextVisibility);
       updateTextVisibility();
     } catch (error) {
-      // eslint-disable-next-line no-console
       console.error('Failed to initialize map layer:', error);
     }
 
@@ -169,7 +233,6 @@ const MapMarkers = ({ markers, showTitles }) => {
       }
     }
   }, [id, features]);
-
   return null;
 };
 
