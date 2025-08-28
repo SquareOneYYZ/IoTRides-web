@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FormControl,
@@ -12,9 +12,16 @@ import {
   TableBody,
   Link,
   IconButton,
+  Paper,
+  Toolbar,
+  Typography,
+  Slider,
 } from '@mui/material';
 import GpsFixedIcon from '@mui/icons-material/GpsFixed';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import PauseIcon from '@mui/icons-material/Pause';
+import CloseIcon from '@mui/icons-material/Close';
 import { useSelector } from 'react-redux';
 import {
   formatSpeed,
@@ -38,10 +45,13 @@ import { useAttributePreference } from '../common/util/preferences';
 import MapView from '../map/core/MapView';
 import MapGeofence from '../map/MapGeofence';
 import MapPositions from '../map/MapPositions';
+import MapRoutePath from '../map/MapRoutePath';
+import MapRoutePoints from '../map/MapRoutePoints';
 import MapCamera from '../map/MapCamera';
 import scheduleReport from './common/scheduleReport';
 import MapScale from '../map/MapScale';
 import SelectField from '../common/components/SelectField';
+import StatusCard from '../common/components/StatusCard';
 
 const columnsArray = [
   ['eventTime', 'positionFixTime'],
@@ -54,9 +64,7 @@ const columnsArray = [
 
 const filterEvents = (events, typesToExclude) => {
   const excludeSet = new Set(typesToExclude);
-
   const data = events.filter((event) => !excludeSet.has(event.type));
-
   return data;
 };
 
@@ -66,6 +74,7 @@ const EventReportPage = () => {
   const navigate = useNavigate();
   const classes = useReportStyles();
   const t = useTranslation();
+  const timerRef = useRef();
 
   const devices = useSelector((state) => state.devices.items);
   const geofences = useSelector((state) => state.geofences.items);
@@ -97,24 +106,61 @@ const EventReportPage = () => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [position, setPosition] = useState(null);
 
+  // Replay functionality states
+  const [replayMode, setReplayMode] = useState(false);
+  const [replayPositions, setReplayPositions] = useState([]);
+  const [replayIndex, setReplayIndex] = useState(0);
+  const [replayPlaying, setReplayPlaying] = useState(false);
+  const [replayLoading, setReplayLoading] = useState(false);
+  const [eventPosition, setEventPosition] = useState(null);
+  const [showCard, setShowCard] = useState(false);
+
+  const deviceName = useSelector((state) => {
+    if (selectedItem?.deviceId) {
+      const device = state.devices.items[selectedItem.deviceId];
+      if (device) {
+        return device.name;
+      }
+    }
+    return null;
+  });
+
+  useEffect(() => {
+    if (replayPlaying && replayPositions.length > 0) {
+      timerRef.current = setInterval(() => {
+        setReplayIndex((index) => index + 1);
+      }, 500);
+    } else {
+      clearInterval(timerRef.current);
+    }
+
+    return () => clearInterval(timerRef.current);
+  }, [replayPlaying, replayPositions]);
+
+  useEffect(() => {
+    if (replayIndex >= replayPositions.length - 1) {
+      clearInterval(timerRef.current);
+      setReplayPlaying(false);
+    }
+  }, [replayIndex, replayPositions]);
+
   useEffectAsync(async () => {
-    if (selectedItem) {
+    if (selectedItem && !replayMode) {
       const response = await fetch(
         `/api/positions?id=${selectedItem.positionId}`
       );
       if (response.ok) {
         const positions = await response.json();
-
         if (positions.length > 0) {
           setPosition(positions[0]);
         }
       } else {
         throw Error(await response.text());
       }
-    } else {
+    } else if (!selectedItem) {
       setPosition(null);
     }
-  }, [selectedItem]);
+  }, [selectedItem, replayMode]);
 
   useEffectAsync(async () => {
     const response = await fetch('/api/notifications/types');
@@ -134,7 +180,6 @@ const EventReportPage = () => {
         ...allEventTypes,
         ...typeFiltered.map((it) => [it.type, prefixString('event', it.type)]),
       ]);
-      // console.log('Columns : ', columns.map((it) => columnsMap.get(it)));
     } else {
       throw Error(await response.text());
     }
@@ -167,7 +212,6 @@ const EventReportPage = () => {
         if (response.ok) {
           const data = await response.json();
           const typesToExclude = ['deviceOnline', 'deviceUnknown'];
-          // ? doing filteration here
           const ModifiedData = data.map((item) => ({
             ...item,
             speedLimit: item.attributes?.speedLimit || null,
@@ -195,6 +239,65 @@ const EventReportPage = () => {
       navigate('/reports/scheduled');
     }
   });
+
+  const handleReplayStart = useCatch(async (item) => {
+    setReplayLoading(true);
+    setReplayMode(true);
+    setSelectedItem(item);
+
+    try {
+      const eventTime = new Date(item.eventTime);
+      const fromTime = new Date(eventTime.getTime() - 60 * 60 * 1000); // 1 hour before
+      const toTime = new Date(eventTime.getTime() + 60 * 60 * 1000); // 1 hour after
+
+      const query = new URLSearchParams({
+        deviceId: item.deviceId,
+        from: fromTime.toISOString(),
+        to: toTime.toISOString(),
+      });
+
+      const response = await fetch(`/api/positions?${query.toString()}`);
+      if (response.ok) {
+        const positions = await response.json();
+        setReplayPositions(positions);
+        setReplayIndex(0);
+
+        const eventPositionResponse = await fetch(
+          `/api/positions?id=${item.positionId}`
+        );
+        if (eventPositionResponse.ok) {
+          const eventPositions = await eventPositionResponse.json();
+          if (eventPositions.length > 0) {
+            setEventPosition(eventPositions[0]);
+          }
+        }
+
+        if (positions.length === 0) {
+          throw Error(t('sharedNoData'));
+        }
+      } else {
+        throw Error(await response.text());
+      }
+    } finally {
+      setReplayLoading(false);
+    }
+  });
+
+  const handleReplayStop = () => {
+    setReplayMode(false);
+    setReplayPositions([]);
+    setReplayIndex(0);
+    setReplayPlaying(false);
+    setEventPosition(null);
+    clearInterval(timerRef.current);
+  };
+
+  const onMarkerClick = useCallback(
+    (positionId) => {
+      setShowCard(!!positionId);
+    },
+    [setShowCard]
+  );
 
   const formatValue = (item, key) => {
     const value = item[key];
@@ -238,37 +341,31 @@ const EventReportPage = () => {
           case 'commandResult':
             return item.attributes.result;
           case 'deviceTollRouteExit':
-            // eslint-disable-next-line vars-on-top, no-var
             var tollDetails = '';
             if ('tollName' in item.attributes) {
               tollDetails = tollDetails.concat('Toll name: ');
               tollDetails = tollDetails.concat(item.attributes.tollName);
               tollDetails = tollDetails.concat(' | ');
             }
-
             if ('tollDistance' in item.attributes) {
               tollDetails = tollDetails.concat('Toll Distance: ');
               tollDetails = tollDetails.concat(
                 formatDistance(item.attributes.tollDistance, distanceUnit, t)
               );
             }
-
             return tollDetails;
           case 'deviceTollRouteEnter':
-            // eslint-disable-next-line vars-on-top, no-var, no-redeclare
             var tollDetails = '';
             if ('tollName' in item.attributes) {
               tollDetails = tollDetails.concat('Toll name: ');
               tollDetails = tollDetails.concat(item.attributes.tollName);
               tollDetails = tollDetails.concat(' | ');
             }
-
             if ('tollRef' in item.attributes) {
               tollDetails = tollDetails.concat('Toll Reference: ');
               tollDetails = tollDetails.concat(item.attributes.tollRef);
               tollDetails = tollDetails.concat(' | ');
             }
-
             return tollDetails;
           default:
             return '';
@@ -277,6 +374,108 @@ const EventReportPage = () => {
         return value;
     }
   };
+
+  if (replayMode) {
+    return (
+      <div style={{ height: '100%' }}>
+        <MapView>
+          <MapGeofence />
+          <MapRoutePath positions={replayPositions} />
+          <MapRoutePoints positions={replayPositions} />
+          {eventPosition && (
+            <MapPositions
+              positions={[eventPosition]}
+              onClick={onMarkerClick}
+              titleField="fixTime"
+              color="red"
+            />
+          )}
+          {replayIndex < replayPositions.length && (
+            <MapPositions
+              positions={[replayPositions[replayIndex]]}
+              onClick={onMarkerClick}
+              titleField="fixTime"
+            />
+          )}
+        </MapView>
+        <MapScale />
+        <MapCamera positions={replayPositions} />
+
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            position: 'fixed',
+            zIndex: 3,
+            left: 0,
+            top: 0,
+            margin: 12,
+            width: 400,
+          }}
+        >
+          <Paper elevation={3} square>
+            <Toolbar>
+              <Typography variant="h6" style={{ flexGrow: 1 }}>
+                {t('reportReplay')} - {deviceName}
+              </Typography>
+              <IconButton edge="end" onClick={handleReplayStop}>
+                <CloseIcon />
+              </IconButton>
+            </Toolbar>
+          </Paper>
+
+          <Paper
+            style={{ display: 'flex', flexDirection: 'column', padding: 16 }}
+            square
+          >
+            <Typography variant="subtitle1" align="center">
+              {formatTime(selectedItem?.eventTime, 'seconds')} -{' '}
+              {t(prefixString('event', selectedItem?.type))}
+            </Typography>
+
+            <Slider
+              style={{ width: '100%', margin: '16px 0' }}
+              max={replayPositions.length - 1}
+              step={null}
+              marks={replayPositions.map((_, index) => ({ value: index }))}
+              value={replayIndex}
+              disabled
+            />
+
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <span>{`${replayIndex + 1}/${replayPositions.length}`}</span>
+              <IconButton
+                onClick={() => setReplayPlaying(!replayPlaying)}
+                disabled={replayIndex >= replayPositions.length - 1}
+              >
+                {replayPlaying ? <PauseIcon /> : <PlayArrowIcon />}
+              </IconButton>
+              <span>
+                {replayIndex < replayPositions.length
+                  ? formatTime(replayPositions[replayIndex].fixTime, 'seconds')
+                  : ''}
+              </span>
+            </div>
+          </Paper>
+        </div>
+
+        {showCard && replayIndex < replayPositions.length && (
+          <StatusCard
+            deviceId={selectedItem.deviceId}
+            position={replayPositions[replayIndex]}
+            onClose={() => setShowCard(false)}
+            disableActions
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
     <PageLayout
@@ -357,6 +556,7 @@ const EventReportPage = () => {
             <TableHead>
               <TableRow>
                 <TableCell className={classes.columnAction} />
+                <TableCell className={classes.columnAction} />
                 {columns.map((key) => (
                   <TableCell key={key}>{t(columnsMap.get(key))}</TableCell>
                 ))}
@@ -385,13 +585,24 @@ const EventReportPage = () => {
                         ))) ||
                         ''}
                     </TableCell>
+                    <TableCell className={classes.columnAction} padding="none">
+                      {item.positionId && (
+                        <IconButton
+                          size="small"
+                          onClick={() => handleReplayStart(item)}
+                          disabled={replayLoading}
+                        >
+                          <PlayArrowIcon fontSize="small" />
+                        </IconButton>
+                      )}
+                    </TableCell>
                     {columns.map((key) => (
                       <TableCell key={key}>{formatValue(item, key)}</TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : (
-                <TableShimmer columns={columns.length + 1} />
+                <TableShimmer columns={columns.length + 2} />
               )}
             </TableBody>
           </Table>
