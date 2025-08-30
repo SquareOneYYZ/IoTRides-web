@@ -16,6 +16,7 @@ import { devicesActions, reportsActions } from '../../store';
 import SplitButton from '../../common/components/SplitButton';
 import SelectField from '../../common/components/SelectField';
 import { useRestriction } from '../../common/util/permissions';
+import { prefixString, unprefixString } from '../../common/util/stringUtils';
 
 const ReportFilter = ({
   children,
@@ -39,11 +40,11 @@ const ReportFilter = ({
   const deviceId = useSelector((state) => state.devices.selectedId);
   const deviceIds = useSelector((state) => state.devices.selectedIds);
   const groupIds = useSelector((state) => state.reports.groupIds);
-  const eventIds = useSelector((state) => state.reports.eventIds) || [];
   const period = useSelector((state) => state.reports.period);
   const from = useSelector((state) => state.reports.from);
   const to = useSelector((state) => state.reports.to);
   const [button, setButton] = useState('json');
+  const eventIds = useSelector((state) => state.reports.eventIds) || [];
 
   const [description, setDescription] = useState();
   const [calendarId, setCalendarId] = useState();
@@ -56,7 +57,17 @@ const ReportFilter = ({
     loading;
 
   const handleClick = (type) => {
+    let selectedFrom;
+    let selectedTo;
+
     if (type === 'schedule') {
+      console.log('Schedule clicked with filters:', {
+        deviceIds,
+        groupIds,
+        eventIds,
+        description,
+        calendarId,
+      });
       handleSchedule(deviceIds, groupIds, {
         description,
         calendarId,
@@ -64,8 +75,6 @@ const ReportFilter = ({
         attributes: {},
       });
     } else {
-      let selectedFrom;
-      let selectedTo;
       switch (period) {
         case 'today':
           selectedFrom = dayjs().startOf('day');
@@ -91,11 +100,23 @@ const ReportFilter = ({
           selectedFrom = dayjs().subtract(1, 'month').startOf('month');
           selectedTo = dayjs().subtract(1, 'month').endOf('month');
           break;
+
         default:
           selectedFrom = dayjs(from, 'YYYY-MM-DDTHH:mm');
           selectedTo = dayjs(to, 'YYYY-MM-DDTHH:mm');
           break;
       }
+
+      console.log('Submit clicked with filters:', {
+        deviceId,
+        deviceIds,
+        groupIds,
+        eventIds,
+        from: selectedFrom.toISOString(),
+        to: selectedTo.toISOString(),
+        calendarId,
+        type,
+      });
 
       handleSubmit({
         deviceId,
@@ -150,28 +171,29 @@ const ReportFilter = ({
       )}
       {includeEvents && (
         <div className={classes.filterItem}>
-          <SelectField
-            label={t('reportEvents')}
-            value={eventIds}
-            onChange={(e) => {
-              console.log('Event selection changed:', e.target.value);
-              dispatch(reportsActions.updateEventIds(e.target.value));
-            }}
-            endpoint="/api/notifications/types"
-            keyGetter={(it) => it.type}
-            titleGetter={(it) => {
-              const translationKey = `event${it.type
-                .charAt(0)
-                .toUpperCase()}${it.type.slice(1)}`;
-              const translated = t(translationKey);
-              // Fallback to the original type if translation doesn't exist
-              return translated !== translationKey
-                ? translated
-                : it.type.replace(/([A-Z])/g, ' $1').trim();
-            }}
-            multiple
-            fullWidth
-          />
+          {includeEvents && (
+            <div className={classes.filterItem}>
+              {includeEvents && (
+                <div className={classes.filterItem}>
+                  <SelectField
+                    label={t('reportEvents')}
+                    value={eventIds}
+                    onChange={(e) => {
+                      const ids = e.target.value.map((it) =>
+                        it.type ? it.type : it
+                      );
+                      dispatch(reportsActions.updateEventIds(ids));
+                    }}
+                    endpoint="/api/notifications/types"
+                    keyGetter={(it) => it.type}
+                    titleGetter={(it) => t(prefixString('event', it.type))}
+                    multiple
+                    fullWidth
+                  />
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
       {button !== 'schedule' ? (

@@ -48,22 +48,35 @@ const CombinedReportPage = () => {
         }))
     );
 
-  const handleSubmit = useCatch(async ({ deviceIds, groupIds, from, to }) => {
-    const query = new URLSearchParams({ from, to });
-    deviceIds.forEach((deviceId) => query.append('deviceId', deviceId));
-    groupIds.forEach((groupId) => query.append('groupId', groupId));
-    setLoading(true);
-    try {
-      const response = await fetch(`/api/reports/combined?${query.toString()}`);
-      if (response.ok) {
-        setItems(await response.json());
-      } else {
-        throw Error(await response.text());
+  const handleSubmit = useCatch(
+    async ({ deviceIds, groupIds, from, to, eventIds }) => {
+      const query = new URLSearchParams({ from, to });
+      deviceIds.forEach((deviceId) => query.append('deviceId', deviceId));
+      groupIds.forEach((groupId) => query.append('groupId', groupId));
+      setLoading(true);
+      try {
+        const response = await fetch(
+          `/api/reports/combined?${query.toString()}`
+        );
+        if (response.ok) {
+          let data = await response.json();
+
+          if (eventIds && eventIds.length > 0) {
+            data = data.map((item) => ({
+              ...item,
+              events: item.events.filter((e) => eventIds.includes(e.type)),
+            }));
+          }
+
+          setItems(data);
+        } else {
+          throw Error(await response.text());
+        }
+      } finally {
+        setLoading(false);
       }
-    } finally {
-      setLoading(false);
     }
-  });
+  );
 
   return (
     <PageLayout
