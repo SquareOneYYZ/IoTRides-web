@@ -100,7 +100,6 @@ const ReportFilter = ({
           selectedFrom = dayjs().subtract(1, 'month').startOf('month');
           selectedTo = dayjs().subtract(1, 'month').endOf('month');
           break;
-
         default:
           selectedFrom = dayjs(from, 'YYYY-MM-DDTHH:mm');
           selectedTo = dayjs(to, 'YYYY-MM-DDTHH:mm');
@@ -153,6 +152,7 @@ const ReportFilter = ({
           />
         </div>
       )}
+
       {includeGroups && (
         <div className={classes.filterItem}>
           <SelectField
@@ -169,33 +169,25 @@ const ReportFilter = ({
           />
         </div>
       )}
+
       {includeEvents && (
         <div className={classes.filterItem}>
-          {includeEvents && (
-            <div className={classes.filterItem}>
-              {includeEvents && (
-                <div className={classes.filterItem}>
-                  <SelectField
-                    label={t('reportEvents')}
-                    value={eventIds}
-                    onChange={(e) => {
-                      const ids = e.target.value.map((it) =>
-                        it.type ? it.type : it
-                      );
-                      dispatch(reportsActions.updateEventIds(ids));
-                    }}
-                    endpoint="/api/notifications/types"
-                    keyGetter={(it) => it.type}
-                    titleGetter={(it) => t(prefixString('event', it.type))}
-                    multiple
-                    fullWidth
-                  />
-                </div>
-              )}
-            </div>
-          )}
+          <SelectField
+            label={t('reportEvents')}
+            value={eventIds}
+            onChange={(e) => {
+              const ids = e.target.value.map((it) => it.type || it);
+              dispatch(reportsActions.updateEventIds(ids));
+            }}
+            endpoint="/api/notifications/types"
+            keyGetter={(it) => it.type}
+            titleGetter={(it) => t(prefixString('event', it.type))}
+            multiple
+            fullWidth
+          />
         </div>
       )}
+
       {button !== 'schedule' ? (
         <>
           <div className={classes.filterItem}>
@@ -222,6 +214,7 @@ const ReportFilter = ({
               </Select>
             </FormControl>
           </div>
+
           {period === 'custom' && (
             <div className={classes.filterItem}>
               <TextField
@@ -235,6 +228,7 @@ const ReportFilter = ({
               />
             </div>
           )}
+
           {period === 'custom' && (
             <div className={classes.filterItem}>
               <TextField
@@ -270,7 +264,9 @@ const ReportFilter = ({
           </div>
         </>
       )}
+
       {children}
+
       <div className={classes.filterItem}>
         {showOnly ? (
           <Button
