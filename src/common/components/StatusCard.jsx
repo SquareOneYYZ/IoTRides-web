@@ -27,6 +27,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PendingIcon from '@mui/icons-material/Pending';
 
+import { SensorsOff } from '@mui/icons-material';
 import { useTranslation } from './LocalizationProvider';
 import RemoveDialog from './RemoveDialog';
 import PositionValue from './PositionValue';
@@ -35,7 +36,6 @@ import usePositionAttributes from '../attributes/usePositionAttributes';
 import { devicesActions } from '../../store';
 import { useCatch, useCatchCallback } from '../../reactHelper';
 import { useAttributePreference } from '../util/preferences';
-import { SensorsOff } from '@mui/icons-material';
 
 const useStyles = makeStyles((theme) => ({
   card: {
@@ -249,7 +249,7 @@ const StatusCard = ({
                           <StatusRow
                             key={key}
                             name={positionAttributes[key]?.name || key}
-                            content={
+                            content={(
                               <PositionValue
                                 position={position}
                                 property={
@@ -259,7 +259,7 @@ const StatusCard = ({
                                   position.hasOwnProperty(key) ? null : key
                                 }
                               />
-                            }
+                            )}
                           />
                         ))}
                     </TableBody>
@@ -310,8 +310,7 @@ const StatusCard = ({
                 <Tooltip title={t('commandTitle')}>
                   <IconButton
                     onClick={() =>
-                      navigate(`/settings/device/${deviceId}/command`)
-                    }
+                      navigate(`/settings/device/${deviceId}/command`)}
                     disabled={disableActions}
                   >
                     <PublishIcon />
