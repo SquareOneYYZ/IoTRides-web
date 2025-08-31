@@ -45,8 +45,7 @@ const CombinedReportPage = () => {
         .map((position) => ({
           latitude: position.latitude,
           longitude: position.longitude,
-        }))
-    );
+        })));
 
   const handleSubmit = useCatch(
     async ({ deviceIds, groupIds, from, to, eventIds }) => {
@@ -109,7 +108,7 @@ const CombinedReportPage = () => {
               showOnly
               multiDevice
               includeGroups
-              includeEvents={true}
+              includeEvents
               loading={loading}
             />
           </div>
@@ -136,8 +135,7 @@ const CombinedReportPage = () => {
                         {t(prefixString('event', event.type))}
                       </TableCell>
                     </TableRow>
-                  ))
-                )
+                  )))
               ) : (
                 <TableShimmer columns={3} />
               )}

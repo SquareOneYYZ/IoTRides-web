@@ -16,7 +16,7 @@ import { devicesActions, reportsActions } from '../../store';
 import SplitButton from '../../common/components/SplitButton';
 import SelectField from '../../common/components/SelectField';
 import { useRestriction } from '../../common/util/permissions';
-import { prefixString, unprefixString } from '../../common/util/stringUtils';
+import { prefixString } from '../../common/util/stringUtils';
 
 const ReportFilter = ({
   children,
