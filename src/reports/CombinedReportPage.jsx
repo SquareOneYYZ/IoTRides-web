@@ -1,7 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import {
-  Table, TableBody, TableCell, TableHead, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
 } from '@mui/material';
 import ReportFilter from './components/ReportFilter';
 import { useTranslation } from '../common/components/LocalizationProvider';
@@ -28,35 +32,56 @@ const CombinedReportPage = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const itemsCoordinates = useMemo(() => items.flatMap((item) => item.route), [items]);
+  const itemsCoordinates = useMemo(
+    () => items.flatMap((item) => item.route),
+    [items]
+  );
 
-  const createMarkers = () => items.flatMap((item) => item.events
-    .map((event) => item.positions.find((p) => event.positionId === p.id))
-    .filter((position) => position != null)
-    .map((position) => ({
-      latitude: position.latitude,
-      longitude: position.longitude,
-    })));
+  const createMarkers = () =>
+    items.flatMap((item) =>
+      item.events
+        .map((event) => item.positions.find((p) => event.positionId === p.id))
+        .filter((position) => position != null)
+        .map((position) => ({
+          latitude: position.latitude,
+          longitude: position.longitude,
+        })));
 
-  const handleSubmit = useCatch(async ({ deviceIds, groupIds, from, to }) => {
-    const query = new URLSearchParams({ from, to });
-    deviceIds.forEach((deviceId) => query.append('deviceId', deviceId));
-    groupIds.forEach((groupId) => query.append('groupId', groupId));
-    setLoading(true);
-    try {
-      const response = await fetch(`/api/reports/combined?${query.toString()}`);
-      if (response.ok) {
-        setItems(await response.json());
-      } else {
-        throw Error(await response.text());
+  const handleSubmit = useCatch(
+    async ({ deviceIds, groupIds, from, to, eventIds }) => {
+      const query = new URLSearchParams({ from, to });
+      deviceIds.forEach((deviceId) => query.append('deviceId', deviceId));
+      groupIds.forEach((groupId) => query.append('groupId', groupId));
+      setLoading(true);
+      try {
+        const response = await fetch(
+          `/api/reports/combined?${query.toString()}`
+        );
+        if (response.ok) {
+          let data = await response.json();
+
+          if (eventIds && eventIds.length > 0) {
+            data = data.map((item) => ({
+              ...item,
+              events: item.events.filter((e) => eventIds.includes(e.type)),
+            }));
+          }
+
+          setItems(data);
+        } else {
+          throw Error(await response.text());
+        }
+      } finally {
+        setLoading(false);
       }
-    } finally {
-      setLoading(false);
     }
-  });
+  );
 
   return (
-    <PageLayout menu={<ReportsMenu />} breadcrumbs={['reportTitle', 'reportCombined']}>
+    <PageLayout
+      menu={<ReportsMenu />}
+      breadcrumbs={['reportTitle', 'reportCombined']}
+    >
       <div className={classes.container}>
         {Boolean(items.length) && (
           <div className={classes.containerMap}>
@@ -78,7 +103,14 @@ const CombinedReportPage = () => {
         )}
         <div className={classes.containerMain}>
           <div className={classes.header}>
-            <ReportFilter handleSubmit={handleSubmit} showOnly multiDevice includeGroups loading={loading} />
+            <ReportFilter
+              handleSubmit={handleSubmit}
+              showOnly
+              multiDevice
+              includeGroups
+              includeEvents
+              loading={loading}
+            />
           </div>
           <Table>
             <TableHead>
@@ -89,13 +121,24 @@ const CombinedReportPage = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {!loading ? items.flatMap((item) => item.events.map((event, index) => (
-                <TableRow key={event.id}>
-                  <TableCell>{index ? '' : devices[item.deviceId].name}</TableCell>
-                  <TableCell>{formatTime(event.eventTime, 'seconds')}</TableCell>
-                  <TableCell>{t(prefixString('event', event.type))}</TableCell>
-                </TableRow>
-              ))) : (<TableShimmer columns={3} />)}
+              {!loading ? (
+                items.flatMap((item) =>
+                  item.events.map((event, index) => (
+                    <TableRow key={event.id}>
+                      <TableCell>
+                        {index ? '' : devices[item.deviceId].name}
+                      </TableCell>
+                      <TableCell>
+                        {formatTime(event.eventTime, 'seconds')}
+                      </TableCell>
+                      <TableCell>
+                        {t(prefixString('event', event.type))}
+                      </TableCell>
+                    </TableRow>
+                  )))
+              ) : (
+                <TableShimmer columns={3} />
+              )}
             </TableBody>
           </Table>
         </div>
