@@ -26,8 +26,6 @@ import PublishIcon from '@mui/icons-material/Publish';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PendingIcon from '@mui/icons-material/Pending';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import SignalCellularOffIcon from '@mui/icons-material/SignalCellularOff';
 
 import { useTranslation } from './LocalizationProvider';
 import RemoveDialog from './RemoveDialog';
