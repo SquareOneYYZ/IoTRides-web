@@ -137,16 +137,14 @@ const ReportFilter = ({
           <SelectField
             label={t(multiDevice ? 'deviceTitle' : 'reportDevice')}
             data={Object.values(devices).sort((a, b) =>
-              a.name.localeCompare(b.name)
-            )}
+              a.name.localeCompare(b.name))}
             value={multiDevice ? deviceIds : deviceId}
             onChange={(e) =>
               dispatch(
                 multiDevice
                   ? devicesActions.selectIds(e.target.value)
                   : devicesActions.selectId(e.target.value)
-              )
-            }
+              )}
             multiple={multiDevice}
             fullWidth
           />
@@ -158,12 +156,10 @@ const ReportFilter = ({
           <SelectField
             label={t('settingsGroups')}
             data={Object.values(groups).sort((a, b) =>
-              a.name.localeCompare(b.name)
-            )}
+              a.name.localeCompare(b.name))}
             value={groupIds}
             onChange={(e) =>
-              dispatch(reportsActions.updateGroupIds(e.target.value))
-            }
+              dispatch(reportsActions.updateGroupIds(e.target.value))}
             multiple
             fullWidth
           />
@@ -197,8 +193,7 @@ const ReportFilter = ({
                 label={t('reportPeriod')}
                 value={period}
                 onChange={(e) =>
-                  dispatch(reportsActions.updatePeriod(e.target.value))
-                }
+                  dispatch(reportsActions.updatePeriod(e.target.value))}
               >
                 <MenuItem value="today">{t('reportToday')}</MenuItem>
                 <MenuItem value="yesterday">{t('reportYesterday')}</MenuItem>
@@ -222,8 +217,7 @@ const ReportFilter = ({
                 type="datetime-local"
                 value={from}
                 onChange={(e) =>
-                  dispatch(reportsActions.updateFrom(e.target.value))
-                }
+                  dispatch(reportsActions.updateFrom(e.target.value))}
                 fullWidth
               />
             </div>
@@ -236,8 +230,7 @@ const ReportFilter = ({
                 type="datetime-local"
                 value={to}
                 onChange={(e) =>
-                  dispatch(reportsActions.updateTo(e.target.value))
-                }
+                  dispatch(reportsActions.updateTo(e.target.value))}
                 fullWidth
               />
             </div>
@@ -292,16 +285,16 @@ const ReportFilter = ({
             options={
               readonly
                 ? {
-                    json: t('reportShow'),
-                    export: t('reportExport'),
-                    mail: t('reportEmail'),
-                  }
+                  json: t('reportShow'),
+                  export: t('reportExport'),
+                  mail: t('reportEmail'),
+                }
                 : {
-                    json: t('reportShow'),
-                    export: t('reportExport'),
-                    mail: t('reportEmail'),
-                    schedule: t('reportSchedule'),
-                  }
+                  json: t('reportShow'),
+                  export: t('reportExport'),
+                  mail: t('reportEmail'),
+                  schedule: t('reportSchedule'),
+                }
             }
           />
         )}
