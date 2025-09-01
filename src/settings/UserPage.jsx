@@ -17,12 +17,15 @@ import {
   InputAdornment,
   IconButton,
   OutlinedInput,
+  Box
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import CachedIcon from '@mui/icons-material/Cached';
 import CloseIcon from '@mui/icons-material/Close';
 import { useDispatch, useSelector } from 'react-redux';
+import QrCodeIcon from '@mui/icons-material/QrCode';
+import { QRCodeSVG } from 'qrcode.react';
 import EditItemView from './components/EditItemView';
 import EditAttributesAccordion from './components/EditAttributesAccordion';
 import { useTranslation } from '../common/components/LocalizationProvider';
@@ -41,9 +44,6 @@ import { useCatch } from '../reactHelper';
 import useMapStyles from '../map/core/useMapStyles';
 import { map } from '../map/core/MapView';
 import useSettingsStyles from './common/useSettingsStyles';
-import QrCodeIcon from '@mui/icons-material/QrCode';
-import { Box } from '@mui/material';
-import { QRCodeSVG } from 'qrcode.react';
 
 const UserPage = () => {
   const classes = useSettingsStyles();
@@ -175,8 +175,7 @@ const UserPage = () => {
                 <TextField
                   type="password"
                   onChange={(e) =>
-                    setItem({ ...item, password: e.target.value })
-                  }
+                    setItem({ ...item, password: e.target.value })}
                   label={t('userPassword')}
                 />
               )}
@@ -188,7 +187,7 @@ const UserPage = () => {
                       readOnly
                       label={t('loginTotpKey')}
                       value={item.totpKey || ''}
-                      endAdornment={
+                      endAdornment={(
                         <InputAdornment position="end">
                           {/* QR Code Toggle Button - only show if totpKey exists */}
                           {item.totpKey && (
@@ -222,7 +221,7 @@ const UserPage = () => {
                             <CloseIcon fontSize="small" />
                           </IconButton>
                         </InputAdornment>
-                      }
+                      )}
                     />
                   </FormControl>
 
@@ -245,7 +244,7 @@ const UserPage = () => {
                         value={generateTotpUri()}
                         size={150}
                         level="M"
-                        includeMargin={true}
+                        includeMargin
                         bgColor="#ffffff"
                         fgColor="#000000"
                       />
@@ -296,8 +295,7 @@ const UserPage = () => {
                   label={t('settingsCoordinateFormat')}
                   value={item.coordinateFormat || 'dd'}
                   onChange={(e) =>
-                    setItem({ ...item, coordinateFormat: e.target.value })
-                  }
+                    setItem({ ...item, coordinateFormat: e.target.value })}
                 >
                   <MenuItem value="dd">{t('sharedDecimalDegrees')}</MenuItem>
                   <MenuItem value="ddm">
@@ -320,8 +318,7 @@ const UserPage = () => {
                         ...item.attributes,
                         speedUnit: e.target.value,
                       },
-                    })
-                  }
+                    })}
                 >
                   <MenuItem value="kn">{t('sharedKn')}</MenuItem>
                   <MenuItem value="kmh">{t('sharedKmh')}</MenuItem>
@@ -342,8 +339,7 @@ const UserPage = () => {
                         ...item.attributes,
                         distanceUnit: e.target.value,
                       },
-                    })
-                  }
+                    })}
                 >
                   <MenuItem value="km">{t('sharedKm')}</MenuItem>
                   <MenuItem value="mi">{t('sharedMi')}</MenuItem>
@@ -364,8 +360,7 @@ const UserPage = () => {
                         ...item.attributes,
                         altitudeUnit: e.target.value,
                       },
-                    })
-                  }
+                    })}
                 >
                   <MenuItem value="m">{t('sharedMeters')}</MenuItem>
                   <MenuItem value="ft">{t('sharedFeet')}</MenuItem>
@@ -385,8 +380,7 @@ const UserPage = () => {
                         ...item.attributes,
                         volumeUnit: e.target.value,
                       },
-                    })
-                  }
+                    })}
                 >
                   <MenuItem value="ltr">{t('sharedLiter')}</MenuItem>
                   <MenuItem value="usGal">{t('sharedUsGallon')}</MenuItem>
@@ -402,8 +396,7 @@ const UserPage = () => {
                       ...item.attributes,
                       timezone: e.target.value,
                     },
-                  })
-                }
+                  })}
                 endpoint="/api/server/timezones"
                 keyGetter={(it) => it}
                 titleGetter={(it) => it}
@@ -418,8 +411,7 @@ const UserPage = () => {
                 <SelectField
                   value={item.organizationId || ''}
                   onChange={(e) =>
-                    setItem({ ...item, organizationId: e.target.value })
-                  }
+                    setItem({ ...item, organizationId: e.target.value })}
                   endpoint="/api/organization"
                   label="Organization"
                 />
@@ -435,24 +427,21 @@ const UserPage = () => {
                 type="number"
                 value={item.latitude || 0}
                 onChange={(e) =>
-                  setItem({ ...item, latitude: Number(e.target.value) })
-                }
+                  setItem({ ...item, latitude: Number(e.target.value) })}
                 label={t('positionLatitude')}
               />
               <TextField
                 type="number"
                 value={item.longitude || 0}
                 onChange={(e) =>
-                  setItem({ ...item, longitude: Number(e.target.value) })
-                }
+                  setItem({ ...item, longitude: Number(e.target.value) })}
                 label={t('positionLongitude')}
               />
               <TextField
                 type="number"
                 value={item.zoom || 0}
                 onChange={(e) =>
-                  setItem({ ...item, zoom: Number(e.target.value) })
-                }
+                  setItem({ ...item, zoom: Number(e.target.value) })}
                 label={t('serverZoom')}
               />
               <Button
@@ -503,103 +492,94 @@ const UserPage = () => {
                     type="number"
                     value={item.deviceLimit || 0}
                     onChange={(e) =>
-                      setItem({ ...item, deviceLimit: Number(e.target.value) })
-                    }
+                      setItem({ ...item, deviceLimit: Number(e.target.value) })}
                     label={t('userDeviceLimit')}
                   />
                   <TextField
                     type="number"
                     value={item.userLimit || 0}
                     onChange={(e) =>
-                      setItem({ ...item, userLimit: Number(e.target.value) })
-                    }
+                      setItem({ ...item, userLimit: Number(e.target.value) })}
                     label={t('userUserLimit')}
                   />
                 </>
               )}
               <FormGroup>
                 <FormControlLabel
-                  control={
+                  control={(
                     <Checkbox
                       checked={item.disabled}
                       onChange={(e) =>
-                        setItem({ ...item, disabled: e.target.checked })
-                      }
+                        setItem({ ...item, disabled: e.target.checked })}
                     />
-                  }
+                  )}
                   label={t('sharedDisabled')}
                   disabled={!manager}
                 />
                 {admin && (
                   <FormControlLabel
-                    control={
+                    control={(
                       <Checkbox
                         checked={item.administrator}
                         onChange={(e) =>
-                          setItem({ ...item, administrator: e.target.checked })
-                        }
+                          setItem({ ...item, administrator: e.target.checked })}
                       />
-                    }
+                    )}
                     label={t('userAdmin')}
                   />
                 )}
                 <FormControlLabel
-                  control={
+                  control={(
                     <Checkbox
                       checked={item.readonly}
                       onChange={(e) =>
-                        setItem({ ...item, readonly: e.target.checked })
-                      }
+                        setItem({ ...item, readonly: e.target.checked })}
                     />
-                  }
+                  )}
                   label={t('serverReadonly')}
                   disabled={!manager}
                 />
                 <FormControlLabel
-                  control={
+                  control={(
                     <Checkbox
                       checked={item.deviceReadonly}
                       onChange={(e) =>
-                        setItem({ ...item, deviceReadonly: e.target.checked })
-                      }
+                        setItem({ ...item, deviceReadonly: e.target.checked })}
                     />
-                  }
+                  )}
                   label={t('userDeviceReadonly')}
                   disabled={!manager}
                 />
                 <FormControlLabel
-                  control={
+                  control={(
                     <Checkbox
                       checked={item.limitCommands}
                       onChange={(e) =>
-                        setItem({ ...item, limitCommands: e.target.checked })
-                      }
+                        setItem({ ...item, limitCommands: e.target.checked })}
                     />
-                  }
+                  )}
                   label={t('userLimitCommands')}
                   disabled={!manager}
                 />
                 <FormControlLabel
-                  control={
+                  control={(
                     <Checkbox
                       checked={item.disableReports}
                       onChange={(e) =>
-                        setItem({ ...item, disableReports: e.target.checked })
-                      }
+                        setItem({ ...item, disableReports: e.target.checked })}
                     />
-                  }
+                  )}
                   label={t('userDisableReports')}
                   disabled={!manager}
                 />
                 <FormControlLabel
-                  control={
+                  control={(
                     <Checkbox
                       checked={item.fixedEmail}
                       onChange={(e) =>
-                        setItem({ ...item, fixedEmail: e.target.checked })
-                      }
+                        setItem({ ...item, fixedEmail: e.target.checked })}
                     />
-                  }
+                  )}
                   label={t('userFixedEmail')}
                   disabled={!manager}
                 />
