@@ -77,15 +77,19 @@ const DevicePage = () => {
             <AccordionDetails className={classes.details}>
               <TextField
                 value={item.name || ''}
-                onChange={(event) => setItem({ ...item, name: event.target.value })}
+                onChange={(event) =>
+                  setItem({ ...item, name: event.target.value })
+                }
                 label={t('sharedName')}
               />
               <TextField
                 value={item.uniqueId || ''}
-                onChange={(event) => setItem({ ...item, uniqueId: event.target.value })}
+                onChange={(event) =>
+                  setItem({ ...item, uniqueId: event.target.value })
+                }
                 label={t('deviceIdentifier')}
                 helperText={t('deviceIdentifierHelp')}
-                disabled={!admin}
+                disabled={!admin || Boolean(uniqueId)}
               />
             </AccordionDetails>
           </Accordion>
@@ -96,43 +100,59 @@ const DevicePage = () => {
             <AccordionDetails className={classes.details}>
               <SelectField
                 value={item.groupId}
-                onChange={(event) => setItem({ ...item, groupId: Number(event.target.value) })}
+                onChange={(event) =>
+                  setItem({ ...item, groupId: Number(event.target.value) })
+                }
                 endpoint="/api/groups"
                 label={t('groupParent')}
               />
               <TextField
                 value={item.phone || ''}
-                onChange={(event) => setItem({ ...item, phone: event.target.value })}
+                onChange={(event) =>
+                  setItem({ ...item, phone: event.target.value })
+                }
                 label={t('sharedPhone')}
               />
               <TextField
                 value={item.license || ''}
-                onChange={(event) => setItem({ ...item, license: event.target.value })}
+                onChange={(event) =>
+                  setItem({ ...item, license: event.target.value })
+                }
                 label={t('deviceLicenseNumber')}
               />
               <TextField
                 value={item.vin || ''}
-                onChange={(event) => setItem({ ...item, vin: event.target.value })}
+                onChange={(event) =>
+                  setItem({ ...item, vin: event.target.value })
+                }
                 label={t('deviceVinNumber')}
               />
               <TextField
                 value={item.model || ''}
-                onChange={(event) => setItem({ ...item, model: event.target.value })}
+                onChange={(event) =>
+                  setItem({ ...item, model: event.target.value })
+                }
                 label={t('deviceModel')}
               />
               <TextField
                 value={item.contact || ''}
-                onChange={(event) => setItem({ ...item, contact: event.target.value })}
+                onChange={(event) =>
+                  setItem({ ...item, contact: event.target.value })
+                }
                 label={t('deviceContact')}
               />
               <SelectField
                 value={item.category || 'default'}
-                onChange={(event) => setItem({ ...item, category: event.target.value })}
+                onChange={(event) =>
+                  setItem({ ...item, category: event.target.value })
+                }
                 data={deviceCategories
                   .map((category) => ({
                     id: category,
                     name: t(
-                      `category${category.replace(/^\w/, (c) => c.toUpperCase())}`,
+                      `category${category.replace(/^\w/, (c) =>
+                        c.toUpperCase()
+                      )}`
                     ),
                   }))
                   .sort((a, b) => a.name.localeCompare(b.name))}
@@ -140,14 +160,18 @@ const DevicePage = () => {
               />
               <SelectField
                 value={item.calendarId}
-                onChange={(event) => setItem({ ...item, calendarId: Number(event.target.value) })}
+                onChange={(event) =>
+                  setItem({ ...item, calendarId: Number(event.target.value) })
+                }
                 endpoint="/api/calendars"
                 label={t('sharedCalendar')}
               />
               {admin && (
                 <SelectField
                   value={item.organizationId || ''}
-                  onChange={(event) => setItem({ ...item, organizationId: event.target.value })}
+                  onChange={(event) =>
+                    setItem({ ...item, organizationId: event.target.value })
+                  }
                   endpoint="/api/organization"
                   label="Organization"
                 />
@@ -168,19 +192,21 @@ const DevicePage = () => {
                         setItem({
                           ...item,
                           expirationTime: new Date(
-                            e.target.value,
+                            e.target.value
                           ).toISOString(),
                         });
                       }
                     }}
                   />
                   <FormControlLabel
-                    control={(
+                    control={
                       <Checkbox
                         checked={item.disabled}
-                        onChange={(event) => setItem({ ...item, disabled: event.target.checked })}
+                        onChange={(event) =>
+                          setItem({ ...item, disabled: event.target.checked })
+                        }
                       />
-                    )}
+                    }
                     label={t('sharedDisabled')}
                   />
                 </>
