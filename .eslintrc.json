@@ -16,6 +16,7 @@
 "rules": {
   "max-len": [0],
   "no-shadow": [0],
+  "no-unused-vars":"off",
   "no-return-assign": [0],
   "no-param-reassign": [0],
   "no-prototype-builtins": [0],

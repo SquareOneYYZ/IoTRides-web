@@ -1,8 +1,8 @@
 import React, {
-  useState, useEffect, useRef, useCallback,
+  useState, useEffect, useRef, useCallback
 } from 'react';
 import {
-  IconButton, Paper, Slider, Toolbar, Typography,
+  IconButton, Paper, Slider, Toolbar, Typography
 } from '@mui/material';
 import makeStyles from '@mui/styles/makeStyles';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -93,6 +93,9 @@ const ReplayPage = () => {
   const [expanded, setExpanded] = useState(true);
   const [playing, setPlaying] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [smoothPosition, setSmoothPosition] = useState(null);
+  const [animationProgress, setAnimationProgress] = useState(0);
+  const [speed, setSpeed] = useState(1);
 
   const deviceName = useSelector((state) => {
     if (selectedDeviceId) {
@@ -107,29 +110,73 @@ const ReplayPage = () => {
   useEffect(() => {
     if (playing && positions.length > 0) {
       timerRef.current = setInterval(() => {
-        setIndex((index) => index + 1);
-      }, 500);
+        setAnimationProgress((progress) => {
+          const newProgress = progress + 0.02 * speed;
+          if (newProgress >= 1) {
+            setIndex((prevIndex) => {
+              const nextIndex = prevIndex + 1;
+              if (nextIndex >= positions.length - 1) {
+                setPlaying(false);
+                return nextIndex;
+              }
+              return nextIndex;
+            });
+            return 0;
+          }
+
+          return newProgress;
+        });
+      }, 16);
     } else {
       clearInterval(timerRef.current);
     }
 
     return () => clearInterval(timerRef.current);
-  }, [playing, positions]);
+  }, [playing, positions, speed]);
 
   useEffect(() => {
-    if (index >= positions.length - 1) {
-      clearInterval(timerRef.current);
-      setPlaying(false);
+    if (positions.length > 0 && index < positions.length - 1) {
+      const currentPos = positions[index];
+      const nextPos = positions[index + 1];
+
+      if (currentPos && nextPos) {
+        const interpolatedPosition = {
+          ...currentPos,
+          latitude:
+            currentPos.latitude +
+            (nextPos.latitude - currentPos.latitude) * animationProgress,
+          longitude:
+            currentPos.longitude +
+            (nextPos.longitude - currentPos.longitude) * animationProgress,
+          // Interpolate other numeric fields if needed
+          speed:
+            currentPos.speed +
+            (nextPos.speed - currentPos.speed) * animationProgress,
+          course:
+            currentPos.course +
+            (nextPos.course - currentPos.course) * animationProgress,
+        };
+
+        setSmoothPosition(interpolatedPosition);
+      }
+    } else if (positions.length > 0 && index < positions.length) {
+      setSmoothPosition(positions[index]);
     }
-  }, [index, positions]);
+  }, [positions, index, animationProgress]);
 
-  const onPointClick = useCallback((_, index) => {
-    setIndex(index);
-  }, [setIndex]);
+  const onPointClick = useCallback(
+    (_, index) => {
+      setIndex(index);
+    },
+    [setIndex]
+  );
 
-  const onMarkerClick = useCallback((positionId) => {
-    setShowCard(!!positionId);
-  }, [setShowCard]);
+  const onMarkerClick = useCallback(
+    (positionId) => {
+      setShowCard(!!positionId);
+    },
+    [setShowCard]
+  );
 
   const handleSubmit = useCatch(async ({ deviceId, from, to }) => {
     setLoading(true);
@@ -167,8 +214,12 @@ const ReplayPage = () => {
         <MapGeofence />
         <MapRoutePath positions={positions} />
         <MapRoutePoints positions={positions} onClick={onPointClick} />
-        {index < positions.length && (
-          <MapPositions positions={[positions[index]]} onClick={onMarkerClick} titleField="fixTime" />
+        {smoothPosition && (
+          <MapPositions
+            positions={[smoothPosition]}
+            onClick={onMarkerClick}
+            titleField="fixTime"
+          />
         )}
       </MapView>
       <MapScale />
@@ -176,10 +227,16 @@ const ReplayPage = () => {
       <div className={classes.sidebar}>
         <Paper elevation={3} square>
           <Toolbar>
-            <IconButton edge="start" sx={{ mr: 2 }} onClick={() => navigate(-1)}>
+            <IconButton
+              edge="start"
+              sx={{ mr: 2 }}
+              onClick={() => navigate(-1)}
+            >
               <ArrowBackIcon />
             </IconButton>
-            <Typography variant="h6" className={classes.title}>{t('reportReplay')}</Typography>
+            <Typography variant="h6" className={classes.title}>
+              {t('reportReplay')}
+            </Typography>
             {!expanded && (
               <>
                 <IconButton onClick={handleDownload}>
@@ -195,7 +252,9 @@ const ReplayPage = () => {
         <Paper className={classes.content} square>
           {!expanded ? (
             <>
-              <Typography variant="subtitle1" align="center">{deviceName}</Typography>
+              <Typography variant="subtitle1" align="center">
+                {deviceName}
+              </Typography>
               <Slider
                 className={classes.slider}
                 max={positions.length - 1}
@@ -206,20 +265,34 @@ const ReplayPage = () => {
               />
               <div className={classes.controls}>
                 {`${index + 1}/${positions.length}`}
-                <IconButton onClick={() => setIndex((index) => index - 1)} disabled={playing || index <= 0}>
+                <IconButton
+                  onClick={() => setIndex((index) => index - 1)}
+                  disabled={playing || index <= 0}
+                >
                   <FastRewindIcon />
                 </IconButton>
-                <IconButton onClick={() => setPlaying(!playing)} disabled={index >= positions.length - 1}>
-                  {playing ? <PauseIcon /> : <PlayArrowIcon /> }
+                <IconButton
+                  onClick={() => setPlaying(!playing)}
+                  disabled={index >= positions.length - 1}
+                >
+                  {playing ? <PauseIcon /> : <PlayArrowIcon />}
                 </IconButton>
-                <IconButton onClick={() => setIndex((index) => index + 1)} disabled={playing || index >= positions.length - 1}>
+                <IconButton
+                  onClick={() => setIndex((index) => index + 1)}
+                  disabled={playing || index >= positions.length - 1}
+                >
                   <FastForwardIcon />
                 </IconButton>
                 {formatTime(positions[index].fixTime, 'seconds')}
               </div>
             </>
           ) : (
-            <ReportFilter handleSubmit={handleSubmit} fullScreen showOnly loading={loading} />
+            <ReportFilter
+              handleSubmit={handleSubmit}
+              fullScreen
+              showOnly
+              loading={loading}
+            />
           )}
         </Paper>
       </div>
