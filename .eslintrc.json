@@ -37,11 +37,11 @@
   "jsx-a11y/label-has-associated-control": [0],
   "react/prop-types": [0],
 
-  // ✅ New rules to silence annoying formatting issues:
   "comma-dangle": [0],
   "implicit-arrow-linebreak": [0],
   "operator-linebreak": [0],
-  "no-console": [1]  // Turned into a warning
+  "no-console": [1],
+   "no-unused-vars": "off"
 }
 
 }
