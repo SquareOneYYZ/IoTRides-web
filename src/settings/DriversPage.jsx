@@ -54,9 +54,8 @@ const DriversPage = () => {
     if (searchKeyword.trim() !== '') {
       const lower = searchKeyword.toLowerCase();
       list = list.filter(
-        (item) =>
-          (item.name && item.name.toLowerCase().includes(lower)) ||
-          (item.uniqueId && item.uniqueId.toLowerCase().includes(lower))
+        (item) => (item.name && item.name.toLowerCase().includes(lower))
+          || (item.uniqueId && item.uniqueId.toLowerCase().includes(lower)),
       );
     }
 

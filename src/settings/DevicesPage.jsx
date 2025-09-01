@@ -61,9 +61,7 @@ const filterByGlobalSearch = (keyword) => (item) => {
     item.model,
     item.contact,
   ];
-  return searchFields.some((field) =>
-    (field || '').toLowerCase().includes(keyword.toLowerCase())
-  );
+  return searchFields.some((field) => (field || '').toLowerCase().includes(keyword.toLowerCase()));
 };
 
 const DevicesPage = () => {
@@ -152,8 +150,7 @@ const DevicesPage = () => {
     setPage(1);
   };
 
-  const hasActiveFilters =
-    Object.values(filters).some((value) => value !== '') || globalSearch !== '';
+  const hasActiveFilters = Object.values(filters).some((value) => value !== '') || globalSearch !== '';
 
   const processedItems = useMemo(() => {
     let filtered = items;
@@ -174,20 +171,20 @@ const DevicesPage = () => {
           ? new Date(item.expirationTime)
           : null;
         if (
-          filters.expired === 'expired' &&
-          (!expirationDate || expirationDate > now)
+          filters.expired === 'expired'
+          && (!expirationDate || expirationDate > now)
         ) {
           return false;
         }
         if (
-          filters.expired === 'soon' &&
-          !isExpiringSoon(item.expirationTime)
+          filters.expired === 'soon'
+          && !isExpiringSoon(item.expirationTime)
         ) {
           return false;
         }
         if (
-          filters.expired === 'active' &&
-          (!expirationDate || expirationDate <= now)
+          filters.expired === 'active'
+          && (!expirationDate || expirationDate <= now)
         ) {
           return false;
         }
@@ -203,8 +200,7 @@ const DevicesPage = () => {
       ];
 
       const isValid = textFilters.every(
-        ({ field, filter }) =>
-          !filter || field.toLowerCase().includes(filter.toLowerCase())
+        ({ field, filter }) => !filter || field.toLowerCase().includes(filter.toLowerCase()),
       );
 
       if (!isValid) {
@@ -235,7 +231,7 @@ const DevicesPage = () => {
   const startIndex = (page - 1) * pageSize;
   const paginatedItems = processedItems.slice(
     startIndex,
-    startIndex + pageSize
+    startIndex + pageSize,
   );
 
   const handleExport = () => {
@@ -304,8 +300,12 @@ const DevicesPage = () => {
               <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                 <FilterListIcon color="action" />
                 <Typography variant="body2" color="textSecondary">
-                  {processedItems.length} of
-                  {items.length} devices
+                  {processedItems.length}
+                  {' '}
+                  of
+                  {items.length}
+                  {' '}
+                  devices
                 </Typography>
                 {hasActiveFilters && (
                   <Tooltip title="Clear all filters">
@@ -371,9 +371,7 @@ const DevicesPage = () => {
                 <InputLabel>Status</InputLabel>
                 <Select
                   value={filters.expired}
-                  onChange={(e) =>
-                    handleFilterChange('expired', e.target.value)
-                  }
+                  onChange={(e) => handleFilterChange('expired', e.target.value)}
                   label="Status"
                 >
                   <MenuItem value="">All Status</MenuItem>
@@ -400,9 +398,7 @@ const DevicesPage = () => {
                 size="small"
                 label="Identifier"
                 value={filters.identifier}
-                onChange={(e) =>
-                  handleFilterChange('identifier', e.target.value)
-                }
+                onChange={(e) => handleFilterChange('identifier', e.target.value)}
               />
             </Grid>
 
@@ -536,13 +532,13 @@ const DevicesPage = () => {
                 </TableCell>
                 <TableCell colSpan={manager ? 9 : 8} align="right">
                   <FormControlLabel
-                    control={
+                    control={(
                       <Switch
                         checked={showAll}
                         onChange={(e) => setShowAll(e.target.checked)}
                         size="small"
                       />
-                    }
+                    )}
                     label={t('notificationAlways')}
                     labelPlacement="start"
                     disabled={!manager}
