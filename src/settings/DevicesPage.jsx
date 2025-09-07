@@ -156,7 +156,6 @@ const DevicesPage = () => {
     let filtered = items;
     if (globalSearch) {
       filtered = filtered.filter(filterByGlobalSearch(globalSearch));
-      console.log('After global search:', filtered.length); // Debug log
     }
     filtered = filtered.filter((item) => {
       if (filters.group && String(item.groupId) !== String(filters.group)) {
