@@ -3,7 +3,7 @@ import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 import maplibregl from 'maplibre-gl';
 import MapboxDraw from '@mapbox/mapbox-gl-draw';
 import {
-  useCallback, useEffect, useMemo, useRef, useState
+  useCallback, useEffect, useMemo, useRef, useState,
 } from 'react';
 
 import { useDispatch, useSelector } from 'react-redux';
@@ -191,7 +191,7 @@ const MapGeofenceEdit = ({
 
             map.fitBounds(bounds, {
               padding: 50,
-              maxZoom: 16, 
+              maxZoom: 16,
               duration: 1000,
             });
           } catch (error) {
@@ -232,8 +232,10 @@ const MapGeofenceEdit = ({
     window.geofenceEditor = {
       save: () => {
         if (
-          editedGeofenceId && unsavedChangesRef.current
-          && pendingFeatureRef.current) {
+          editedGeofenceId
+          && unsavedChangesRef.current
+          && pendingFeatureRef.current
+        ) {
           saveChanges(editedGeofenceId, pendingFeatureRef.current);
         }
       },
@@ -333,7 +335,9 @@ const MapGeofenceEdit = ({
   }, [geofences]);
 
   useEffect(() => {
-    if (selectedGeofenceId && focusSelectedGeofence(selectedGeofenceId)) {
+    if (selectedGeofenceId) {
+      focusSelectedGeofence(selectedGeofenceId);
+    }
   }, [selectedGeofenceId, focusSelectedGeofence]);
 
   return null;
