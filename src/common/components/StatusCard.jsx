@@ -137,7 +137,7 @@ const StatusCard = ({
   const deviceReadonly = useDeviceReadonly();
 
   const shareDisabled = useSelector(
-    (state) => state.session.server.attributes.disableShare
+    (state) => state.session.server.attributes.disableShare,
   );
   const user = useSelector((state) => state.session.user);
   const device = useSelector((state) => state.devices.items[deviceId]);
@@ -147,7 +147,7 @@ const StatusCard = ({
   const positionAttributes = usePositionAttributes(t);
   const positionItems = useAttributePreference(
     'positionItems',
-    'fixTime,address,speed,totalDistance'
+    'fixTime,address,speed,totalDistance',
   );
 
   const navigationAppLink = useAttributePreference('navigationAppLink');
@@ -241,9 +241,8 @@ const StatusCard = ({
                       {positionItems
                         .split(',')
                         .filter(
-                          (key) =>
-                            position.hasOwnProperty(key) ||
-                            position.attributes.hasOwnProperty(key)
+                          (key) => position.hasOwnProperty(key)
+                            || position.attributes.hasOwnProperty(key),
                         )
                         .map((key) => (
                           <StatusRow
@@ -309,8 +308,7 @@ const StatusCard = ({
                 </Tooltip>
                 <Tooltip title={t('commandTitle')}>
                   <IconButton
-                    onClick={() =>
-                      navigate(`/settings/device/${deviceId}/command`)}
+                    onClick={() => navigate(`/settings/device/${deviceId}/command`)}
                     disabled={disableActions}
                   >
                     <PublishIcon />
