@@ -240,8 +240,10 @@ const MapGeofenceEdit = ({
     window.geofenceEditor = {
       save: () => {
         if (
-          editedGeofenceId && unsavedChangesRef.current
-          && pendingFeatureRef.current) {
+          editedGeofenceId
+          && unsavedChangesRef.current
+          && pendingFeatureRef.current
+        ) {
           saveChanges(editedGeofenceId, pendingFeatureRef.current);
         }
       },
@@ -342,8 +344,8 @@ const MapGeofenceEdit = ({
   }, [geofences]);
 
   useEffect(() => {
-    if (selectedGeofenceId && focusSelectedGeofence(selectedGeofenceId)) {
-      // Successfully focused on selected geofence
+    if (selectedGeofenceId) {
+      focusSelectedGeofence(selectedGeofenceId);
     }
   }, [selectedGeofenceId, focusSelectedGeofence]);
 
