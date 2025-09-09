@@ -22,4 +22,3 @@ yarn-error.log*
 
 /legacy/web/lib
 /legacy/web/app.min.js
-/.idea
