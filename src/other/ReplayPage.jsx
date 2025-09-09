@@ -1,8 +1,8 @@
 import React, {
-  useState, useEffect, useRef, useCallback
+  useState, useEffect, useRef, useCallback,
 } from 'react';
 import {
-  IconButton, Paper, Slider, Toolbar, Typography
+  IconButton, Paper, Slider, Toolbar, Typography,
 } from '@mui/material';
 import makeStyles from '@mui/styles/makeStyles';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -143,18 +143,18 @@ const ReplayPage = () => {
         const interpolatedPosition = {
           ...currentPos,
           latitude:
-            currentPos.latitude +
-            (nextPos.latitude - currentPos.latitude) * animationProgress,
+            currentPos.latitude
+            + (nextPos.latitude - currentPos.latitude) * animationProgress,
           longitude:
-            currentPos.longitude +
-            (nextPos.longitude - currentPos.longitude) * animationProgress,
+            currentPos.longitude
+            + (nextPos.longitude - currentPos.longitude) * animationProgress,
           // Interpolate other numeric fields if needed
           speed:
-            currentPos.speed +
-            (nextPos.speed - currentPos.speed) * animationProgress,
+            currentPos.speed
+            + (nextPos.speed - currentPos.speed) * animationProgress,
           course:
-            currentPos.course +
-            (nextPos.course - currentPos.course) * animationProgress,
+            currentPos.course
+            + (nextPos.course - currentPos.course) * animationProgress,
         };
 
         setSmoothPosition(interpolatedPosition);
@@ -168,14 +168,14 @@ const ReplayPage = () => {
     (_, index) => {
       setIndex(index);
     },
-    [setIndex]
+    [setIndex],
   );
 
   const onMarkerClick = useCallback(
     (positionId) => {
       setShowCard(!!positionId);
     },
-    [setShowCard]
+    [setShowCard],
   );
 
   const handleSubmit = useCatch(async ({ deviceId, from, to }) => {
