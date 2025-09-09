@@ -85,7 +85,7 @@ const DevicePage = () => {
                 onChange={(event) => setItem({ ...item, uniqueId: event.target.value })}
                 label={t('deviceIdentifier')}
                 helperText={t('deviceIdentifierHelp')}
-                disabled={Boolean(uniqueId)}
+                disabled={!admin || Boolean(uniqueId)}
               />
             </AccordionDetails>
           </Accordion>
@@ -128,10 +128,14 @@ const DevicePage = () => {
               <SelectField
                 value={item.category || 'default'}
                 onChange={(event) => setItem({ ...item, category: event.target.value })}
-                data={deviceCategories.map((category) => ({
-                  id: category,
-                  name: t(`category${category.replace(/^\w/, (c) => c.toUpperCase())}`),
-                })).sort((a, b) => a.name.localeCompare(b.name))}
+                data={deviceCategories
+                  .map((category) => ({
+                    id: category,
+                    name: t(
+                      `category${category.replace(/^\w/, (c) => c.toUpperCase())}`,
+                    ),
+                  }))
+                  .sort((a, b) => a.name.localeCompare(b.name))}
                 label={t('deviceCategory')}
               />
               <SelectField
