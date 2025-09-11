@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, {
+  useState, useEffect, useRef, useCallback,
+} from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FormControl,
@@ -90,7 +92,7 @@ const EventReportPage = () => {
     (it) => ({
       key: unprefixString('alarm', it),
       name: t(it),
-    })
+    }),
   );
 
   const [columns, setColumns] = usePersistedState('eventColumns', [
@@ -105,8 +107,6 @@ const EventReportPage = () => {
   const [loading, setLoading] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [position, setPosition] = useState(null);
-
-  // Replay functionality states
   const [replayMode, setReplayMode] = useState(false);
   const [replayPositions, setReplayPositions] = useState([]);
   const [replayIndex, setReplayIndex] = useState(0);
@@ -147,7 +147,7 @@ const EventReportPage = () => {
   useEffectAsync(async () => {
     if (selectedItem && !replayMode) {
       const response = await fetch(
-        `/api/positions?id=${selectedItem.positionId}`
+        `/api/positions?id=${selectedItem.positionId}`,
       );
       if (response.ok) {
         const positions = await response.json();
@@ -174,7 +174,7 @@ const EventReportPage = () => {
         'media',
       ];
       const typeFiltered = types.filter(
-        (item) => !FilteredTypes.includes(item.type)
+        (item) => !FilteredTypes.includes(item.type),
       );
       setAllEventTypes([
         ...allEventTypes,
@@ -195,7 +195,7 @@ const EventReportPage = () => {
       window.location.assign(`/api/reports/events/xlsx?${query.toString()}`);
     } else if (type === 'mail') {
       const response = await fetch(
-        `/api/reports/events/mail?${query.toString()}`
+        `/api/reports/events/mail?${query.toString()}`,
       );
       if (!response.ok) {
         throw Error(await response.text());
@@ -207,7 +207,7 @@ const EventReportPage = () => {
           `/api/reports/events?${query.toString()}`,
           {
             headers: { Accept: 'application/json' },
-          }
+          },
         );
         if (response.ok) {
           const data = await response.json();
@@ -226,6 +226,28 @@ const EventReportPage = () => {
       }
     }
   });
+
+  const findClosestPositionIndex = (positions, eventTime) => {
+    if (!positions || positions.length === 0) return 0;
+
+    const eventTimestamp = new Date(eventTime).getTime();
+    let closestIndex = 0;
+    let minDifference = Math.abs(
+      new Date(positions[0].fixTime).getTime() - eventTimestamp,
+    );
+
+    for (let i = 1; i < positions.length; i += 1) {
+      const positionTimestamp = new Date(positions[i].fixTime).getTime();
+      const difference = Math.abs(positionTimestamp - eventTimestamp);
+
+      if (difference < minDifference) {
+        minDifference = difference;
+        closestIndex = i;
+      }
+    }
+
+    return closestIndex;
+  };
 
   const handleSchedule = useCatch(async (deviceIds, groupIds, report) => {
     report.type = 'events';
@@ -247,23 +269,34 @@ const EventReportPage = () => {
 
     try {
       const eventTime = new Date(item.eventTime);
-      const fromTime = new Date(eventTime.getTime() - 60 * 60 * 1000); // 1 hour before
-      const toTime = new Date(eventTime.getTime() + 60 * 60 * 1000); // 1 hour after
+      const fromTime = new Date(eventTime.getTime() - 60 * 60 * 1000); // 1hr before
+      const toTime = new Date(eventTime.getTime() + 60 * 60 * 1000); // 1hr after
 
+      console.log(fromTime);
+      console.log(eventTime);
+      console.log(toTime);
+      // 🔹 1hr data fetch
       const query = new URLSearchParams({
         deviceId: item.deviceId,
         from: fromTime.toISOString(),
         to: toTime.toISOString(),
       });
 
+      console.log(query.toString());
       const response = await fetch(`/api/positions?${query.toString()}`);
       if (response.ok) {
         const positions = await response.json();
-        setReplayPositions(positions);
-        setReplayIndex(0);
+        console.log(positions);
 
+        setReplayPositions(positions);
+
+        // Event index find karo
+        const eventIndex = findClosestPositionIndex(positions, item.eventTime);
+        setReplayIndex(eventIndex);
+
+        // 🔹 Event marker ke liye alag API
         const eventPositionResponse = await fetch(
-          `/api/positions?id=${item.positionId}`
+          `/api/positions?id=${item.positionId}`,
         );
         if (eventPositionResponse.ok) {
           const eventPositions = await eventPositionResponse.json();
@@ -296,7 +329,7 @@ const EventReportPage = () => {
     (positionId) => {
       setShowCard(!!positionId);
     },
-    [setShowCard]
+    [setShowCard],
   );
 
   const formatValue = (item, key) => {
@@ -341,7 +374,7 @@ const EventReportPage = () => {
           case 'commandResult':
             return item.attributes.result;
           case 'deviceTollRouteExit':
-            var tollDetails = '';
+            let tollDetails = '';
             if ('tollName' in item.attributes) {
               tollDetails = tollDetails.concat('Toll name: ');
               tollDetails = tollDetails.concat(item.attributes.tollName);
@@ -350,12 +383,11 @@ const EventReportPage = () => {
             if ('tollDistance' in item.attributes) {
               tollDetails = tollDetails.concat('Toll Distance: ');
               tollDetails = tollDetails.concat(
-                formatDistance(item.attributes.tollDistance, distanceUnit, t)
+                formatDistance(item.attributes.tollDistance, distanceUnit, t),
               );
             }
             return tollDetails;
           case 'deviceTollRouteEnter':
-            var tollDetails = '';
             if ('tollName' in item.attributes) {
               tollDetails = tollDetails.concat('Toll name: ');
               tollDetails = tollDetails.concat(item.attributes.tollName);
@@ -386,15 +418,15 @@ const EventReportPage = () => {
             <MapPositions
               positions={[eventPosition]}
               onClick={onMarkerClick}
-              titleField="fixTime"
-              color="red"
+              titleField="tollName"
+              customIcon="event-error"
             />
           )}
           {replayIndex < replayPositions.length && (
             <MapPositions
               positions={[replayPositions[replayIndex]]}
               onClick={onMarkerClick}
-              titleField="fixTime"
+              // titleField="fixTime"
             />
           )}
         </MapView>
@@ -416,7 +448,10 @@ const EventReportPage = () => {
           <Paper elevation={3} square>
             <Toolbar>
               <Typography variant="h6" style={{ flexGrow: 1 }}>
-                {t('reportReplay')} - {deviceName}
+                {t('reportReplay')}
+                {' '}
+                -
+                {deviceName}
               </Typography>
               <IconButton edge="end" onClick={handleReplayStop}>
                 <CloseIcon />
@@ -429,18 +464,35 @@ const EventReportPage = () => {
             square
           >
             <Typography variant="subtitle1" align="center">
-              {formatTime(selectedItem?.eventTime, 'seconds')} -{' '}
+              {formatTime(selectedItem?.eventTime, 'seconds')}
+              {' '}
+              -
+              {' '}
               {t(prefixString('event', selectedItem?.type))}
             </Typography>
 
             <Slider
               style={{ width: '100%', margin: '16px 0' }}
+              min={0}
               max={replayPositions.length - 1}
-              step={null}
-              marks={replayPositions.map((_, index) => ({ value: index }))}
+              step={1}
               value={replayIndex}
-              disabled
+              onChange={(e, newValue) => {
+                setReplayIndex(newValue);
+                setReplayPlaying(false);
+              }}
             />
+
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                marginTop: -15,
+              }}
+            >
+              <Typography variant="caption">1hr before</Typography>
+              <Typography variant="caption">1hr after</Typography>
+            </div>
 
             <div
               style={{
@@ -531,8 +583,8 @@ const EventReportPage = () => {
                   </Select>
                 </FormControl>
               </div>
-              {eventTypes[0] !== 'allEvents' &&
-                eventTypes.includes('alarm') && (
+              {eventTypes[0] !== 'allEvents'
+                && eventTypes.includes('alarm') && (
                   <div className={classes.filterItem}>
                     <SelectField
                       multiple
@@ -544,7 +596,7 @@ const EventReportPage = () => {
                       fullWidth
                     />
                   </div>
-                )}
+              )}
               <ColumnSelect
                 columns={columns}
                 setColumns={setColumns}
@@ -567,8 +619,8 @@ const EventReportPage = () => {
                 items.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell className={classes.columnAction} padding="none">
-                      {(item.positionId &&
-                        (selectedItem === item ? (
+                      {(item.positionId
+                        && (selectedItem === item ? (
                           <IconButton
                             size="small"
                             onClick={() => setSelectedItem(null)}
@@ -582,8 +634,8 @@ const EventReportPage = () => {
                           >
                             <LocationSearchingIcon fontSize="small" />
                           </IconButton>
-                        ))) ||
-                        ''}
+                        )))
+                        || ''}
                     </TableCell>
                     <TableCell className={classes.columnAction} padding="none">
                       {item.positionId && (

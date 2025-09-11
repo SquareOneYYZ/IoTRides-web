@@ -1,5 +1,9 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { IconButton, Paper, Slider, Toolbar, Typography } from '@mui/material';
+import React, {
+  useState, useEffect, useRef, useCallback,
+} from 'react';
+import {
+  IconButton, Paper, Slider, Toolbar, Typography,
+} from '@mui/material';
 import makeStyles from '@mui/styles/makeStyles';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import TuneIcon from '@mui/icons-material/Tune';
@@ -123,14 +127,14 @@ const ReplayPage = () => {
     (_, index) => {
       setIndex(index);
     },
-    [setIndex]
+    [setIndex],
   );
 
   const onMarkerClick = useCallback(
     (positionId) => {
       setShowCard(!!positionId);
     },
-    [setShowCard]
+    [setShowCard],
   );
 
   const handleSubmit = useCatch(async ({ deviceId, from, to }) => {
