@@ -1,6 +1,4 @@
-import React, {
-  useState, useEffect, useRef, useCallback,
-} from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FormControl,
@@ -92,7 +90,7 @@ const EventReportPage = () => {
     (it) => ({
       key: unprefixString('alarm', it),
       name: t(it),
-    }),
+    })
   );
 
   const [columns, setColumns] = usePersistedState('eventColumns', [
@@ -147,7 +145,7 @@ const EventReportPage = () => {
   useEffectAsync(async () => {
     if (selectedItem && !replayMode) {
       const response = await fetch(
-        `/api/positions?id=${selectedItem.positionId}`,
+        `/api/positions?id=${selectedItem.positionId}`
       );
       if (response.ok) {
         const positions = await response.json();
@@ -174,7 +172,7 @@ const EventReportPage = () => {
         'media',
       ];
       const typeFiltered = types.filter(
-        (item) => !FilteredTypes.includes(item.type),
+        (item) => !FilteredTypes.includes(item.type)
       );
       setAllEventTypes([
         ...allEventTypes,
@@ -195,7 +193,7 @@ const EventReportPage = () => {
       window.location.assign(`/api/reports/events/xlsx?${query.toString()}`);
     } else if (type === 'mail') {
       const response = await fetch(
-        `/api/reports/events/mail?${query.toString()}`,
+        `/api/reports/events/mail?${query.toString()}`
       );
       if (!response.ok) {
         throw Error(await response.text());
@@ -207,7 +205,7 @@ const EventReportPage = () => {
           `/api/reports/events?${query.toString()}`,
           {
             headers: { Accept: 'application/json' },
-          },
+          }
         );
         if (response.ok) {
           const data = await response.json();
@@ -233,7 +231,7 @@ const EventReportPage = () => {
     const eventTimestamp = new Date(eventTime).getTime();
     let closestIndex = 0;
     let minDifference = Math.abs(
-      new Date(positions[0].fixTime).getTime() - eventTimestamp,
+      new Date(positions[0].fixTime).getTime() - eventTimestamp
     );
 
     for (let i = 1; i < positions.length; i += 1) {
@@ -296,7 +294,7 @@ const EventReportPage = () => {
 
         // 🔹 Event marker ke liye alag API
         const eventPositionResponse = await fetch(
-          `/api/positions?id=${item.positionId}`,
+          `/api/positions?id=${item.positionId}`
         );
         if (eventPositionResponse.ok) {
           const eventPositions = await eventPositionResponse.json();
@@ -329,7 +327,7 @@ const EventReportPage = () => {
     (positionId) => {
       setShowCard(!!positionId);
     },
-    [setShowCard],
+    [setShowCard]
   );
 
   const formatValue = (item, key) => {
@@ -337,29 +335,37 @@ const EventReportPage = () => {
     switch (key) {
       case 'eventTime':
         return formatTime(value, 'seconds');
+
       case 'type':
         return t(prefixString('event', value));
+
       case 'geofenceId':
         if (value > 0) {
           const geofence = geofences[value];
           return geofence && geofence.name;
         }
         return null;
+
       case 'maintenanceId':
         return value > 0 ? value : null;
+
       case 'speedLimit':
         if (item.type === 'deviceOverspeed' && item.attributes?.speedLimit) {
           return formatSpeed(item.attributes.speedLimit, speedUnit, t);
         }
         return null;
+
       case 'attributes':
         switch (item.type) {
           case 'alarm':
             return t(prefixString('alarm', item.attributes.alarm));
+
           case 'deviceOverspeed':
             return formatSpeed(item.attributes.speed, speedUnit, t);
+
           case 'driverChanged':
             return item.attributes.driverUniqueId;
+
           case 'media':
             return (
               <Link
@@ -371,37 +377,40 @@ const EventReportPage = () => {
                 {item.attributes.file}
               </Link>
             );
+
           case 'commandResult':
             return item.attributes.result;
-          case 'deviceTollRouteExit':
+
+          case 'deviceTollRouteExit': {
             let tollDetails = '';
             if ('tollName' in item.attributes) {
-              tollDetails = tollDetails.concat('Toll name: ');
-              tollDetails = tollDetails.concat(item.attributes.tollName);
-              tollDetails = tollDetails.concat(' | ');
+              tollDetails += `Toll name: ${item.attributes.tollName} | `;
             }
             if ('tollDistance' in item.attributes) {
-              tollDetails = tollDetails.concat('Toll Distance: ');
-              tollDetails = tollDetails.concat(
-                formatDistance(item.attributes.tollDistance, distanceUnit, t),
-              );
+              tollDetails += `Toll Distance: ${formatDistance(
+                item.attributes.tollDistance,
+                distanceUnit,
+                t
+              )}`;
             }
             return tollDetails;
-          case 'deviceTollRouteEnter':
+          }
+
+          case 'deviceTollRouteEnter': {
+            let tollDetails = '';
             if ('tollName' in item.attributes) {
-              tollDetails = tollDetails.concat('Toll name: ');
-              tollDetails = tollDetails.concat(item.attributes.tollName);
-              tollDetails = tollDetails.concat(' | ');
+              tollDetails += `Toll name: ${item.attributes.tollName} | `;
             }
             if ('tollRef' in item.attributes) {
-              tollDetails = tollDetails.concat('Toll Reference: ');
-              tollDetails = tollDetails.concat(item.attributes.tollRef);
-              tollDetails = tollDetails.concat(' | ');
+              tollDetails += `Toll Reference: ${item.attributes.tollRef} | `;
             }
             return tollDetails;
+          }
+
           default:
             return '';
         }
+
       default:
         return value;
     }
@@ -448,10 +457,7 @@ const EventReportPage = () => {
           <Paper elevation={3} square>
             <Toolbar>
               <Typography variant="h6" style={{ flexGrow: 1 }}>
-                {t('reportReplay')}
-                {' '}
-                -
-                {deviceName}
+                {t('reportReplay')} -{deviceName}
               </Typography>
               <IconButton edge="end" onClick={handleReplayStop}>
                 <CloseIcon />
@@ -464,10 +470,7 @@ const EventReportPage = () => {
             square
           >
             <Typography variant="subtitle1" align="center">
-              {formatTime(selectedItem?.eventTime, 'seconds')}
-              {' '}
-              -
-              {' '}
+              {formatTime(selectedItem?.eventTime, 'seconds')} -{' '}
               {t(prefixString('event', selectedItem?.type))}
             </Typography>
 
@@ -583,8 +586,8 @@ const EventReportPage = () => {
                   </Select>
                 </FormControl>
               </div>
-              {eventTypes[0] !== 'allEvents'
-                && eventTypes.includes('alarm') && (
+              {eventTypes[0] !== 'allEvents' &&
+                eventTypes.includes('alarm') && (
                   <div className={classes.filterItem}>
                     <SelectField
                       multiple
@@ -596,7 +599,7 @@ const EventReportPage = () => {
                       fullWidth
                     />
                   </div>
-              )}
+                )}
               <ColumnSelect
                 columns={columns}
                 setColumns={setColumns}
@@ -619,8 +622,8 @@ const EventReportPage = () => {
                 items.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell className={classes.columnAction} padding="none">
-                      {(item.positionId
-                        && (selectedItem === item ? (
+                      {(item.positionId &&
+                        (selectedItem === item ? (
                           <IconButton
                             size="small"
                             onClick={() => setSelectedItem(null)}
@@ -634,8 +637,8 @@ const EventReportPage = () => {
                           >
                             <LocationSearchingIcon fontSize="small" />
                           </IconButton>
-                        )))
-                        || ''}
+                        ))) ||
+                        ''}
                     </TableCell>
                     <TableCell className={classes.columnAction} padding="none">
                       {item.positionId && (
