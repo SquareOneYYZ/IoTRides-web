@@ -1,8 +1,11 @@
-import React, { useCallback, useState, useRef, useEffect } from 'react';
+import React, {
+  useCallback, useState, useRef, useEffect
+} from 'react';
 import {
   Typography,
   AppBar,
   Toolbar,
+  Tooltip,
   IconButton,
   Paper,
   Slider,
@@ -118,7 +121,7 @@ const EventPage = () => {
     let minDiff = Math.abs(
       new Date(positions[0].fixTime).getTime() - eventTimestamp
     );
-    for (let i = 1; i < positions.length; i++) {
+    for (let i = 1; i < positions.length; i += 1) {
       const diff = Math.abs(
         new Date(positions[i].fixTime).getTime() - eventTimestamp
       );
@@ -184,6 +187,7 @@ const EventPage = () => {
               positions={[eventPosition]}
               onClick={onMarkerClick}
               customIcon="event-error"
+              titleField="tollName"
             />
           )}
           {replayIndex < replayPositions.length && (
@@ -211,7 +215,10 @@ const EventPage = () => {
           <Paper elevation={3} square>
             <Toolbar>
               <Typography variant="h6" style={{ flexGrow: 1 }}>
-                {t('reportReplay')} - {formatType(event)}
+                {t('reportReplay')}
+                {' '}
+                -
+                {formatType(event)}
               </Typography>
               <IconButton edge="end" onClick={handleReplayStop}>
                 <CloseIcon />
@@ -224,7 +231,10 @@ const EventPage = () => {
             square
           >
             <Typography variant="subtitle1" align="center">
-              {formatTime(event?.eventTime, 'seconds')} -{' '}
+              {formatTime(event?.eventTime, 'seconds')}
+              {' '}
+              -
+              {' '}
             </Typography>
 
             <Slider
@@ -299,9 +309,11 @@ const EventPage = () => {
           </IconButton>
           <Typography variant="h6">{event && formatType(event)}</Typography>
           {event && (
-            <IconButton onClick={handleReplayStart} sx={{ ml: 2 }}>
-              <PlayArrowIcon />
-            </IconButton>
+            <Tooltip title="Start replay">
+              <IconButton onClick={handleReplayStart} sx={{ ml: 2 }}>
+                <PlayArrowIcon />
+              </IconButton>
+            </Tooltip>
           )}
         </Toolbar>
       </AppBar>
