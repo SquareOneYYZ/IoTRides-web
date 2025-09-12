@@ -1,5 +1,5 @@
 import React, {
-  useCallback, useState, useRef, useEffect
+  useCallback, useState, useRef, useEffect,
 } from 'react';
 import {
   Typography,
@@ -59,13 +59,12 @@ const EventPage = () => {
   const [eventPosition, setEventPosition] = useState(null);
   const timerRef = useRef();
 
-  const formatType = (event) =>
-    formatNotificationTitle(t, {
-      type: event.type,
-      attributes: {
-        alarms: event.attributes.alarm,
-      },
-    });
+  const formatType = (event) => formatNotificationTitle(t, {
+    type: event.type,
+    attributes: {
+      alarms: event.attributes.alarm,
+    },
+  });
 
   const onMarkerClick = useCallback((positionId) => {
     setShowCard(!!positionId);
@@ -119,11 +118,11 @@ const EventPage = () => {
     const eventTimestamp = new Date(eventTime).getTime();
     let closestIndex = 0;
     let minDiff = Math.abs(
-      new Date(positions[0].fixTime).getTime() - eventTimestamp
+      new Date(positions[0].fixTime).getTime() - eventTimestamp,
     );
     for (let i = 1; i < positions.length; i += 1) {
       const diff = Math.abs(
-        new Date(positions[i].fixTime).getTime() - eventTimestamp
+        new Date(positions[i].fixTime).getTime() - eventTimestamp,
       );
       if (diff < minDiff) {
         minDiff = diff;

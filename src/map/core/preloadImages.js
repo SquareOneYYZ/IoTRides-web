@@ -90,12 +90,12 @@ export default async () => {
             mapImages[`${category}-${color}`] = prepareIcon(
               background,
               icon,
-              mapPalette[color].main
+              mapPalette[color].main,
             );
-          })
+          }),
         );
       });
       await Promise.all(results);
-    })
+    }),
   );
 };
