@@ -278,11 +278,9 @@ const EventReportPage = () => {
         to: toTime.toISOString(),
       });
 
-      console.log(query.toString());
       const response = await fetch(`/api/positions?${query.toString()}`);
       if (response.ok) {
         const positions = await response.json();
-        console.log(positions);
 
         setReplayPositions(positions);
         const eventIndex = findClosestPositionIndex(positions, item.eventTime);
@@ -460,7 +458,12 @@ const EventReportPage = () => {
           </Paper>
 
           <Paper
-            style={{ display: 'flex', flexDirection: 'column', padding: 16 }}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              padding: 16,
+              marginTop: 6,
+            }}
             square
           >
             <Typography variant="h6" align="center">
