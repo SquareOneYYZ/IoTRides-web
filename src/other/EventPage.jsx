@@ -101,6 +101,7 @@ const EventPage = () => {
   const [replayIndex, setReplayIndex] = useState(0);
   const [replayPlaying, setReplayPlaying] = useState(false);
   const [eventPosition, setEventPosition] = useState(null);
+  const [device, setDevice] = useState(null);
   const timerRef = useRef();
 
   const formatType = (event) =>
@@ -154,6 +155,15 @@ const EventPage = () => {
         }
       } else {
         throw Error(await response.text());
+      }
+    }
+  }, [event]);
+
+  useEffectAsync(async () => {
+    if (event && event.deviceId) {
+      const response = await fetch(`/api/devices/${event.deviceId}`);
+      if (response.ok) {
+        setDevice(await response.json());
       }
     }
   }, [event]);
@@ -259,7 +269,7 @@ const EventPage = () => {
           <Paper elevation={3} square>
             <Toolbar>
               <Typography variant="h6" style={{ flexGrow: 1 }}>
-                {t('reportReplay')} - {''}
+                {t('reportReplay')} - {device ? device.name : ''}
               </Typography>
               <IconButton edge="end" onClick={handleReplayStop}>
                 <CloseIcon />
@@ -291,11 +301,17 @@ const EventPage = () => {
               style={{
                 display: 'flex',
                 justifyContent: 'space-between',
+                alignItems: 'center',
                 marginTop: -15,
               }}
             >
-              <Typography variant="caption">1hr -</Typography>
-              <Typography variant="caption">1hr +</Typography>
+              <Typography variant="caption">-1hr</Typography>
+
+              <Typography variant="h5" style={{ lineHeight: 1 }}>
+                •
+              </Typography>
+
+              <Typography variant="caption">+1hr</Typography>
             </div>
 
             <div
