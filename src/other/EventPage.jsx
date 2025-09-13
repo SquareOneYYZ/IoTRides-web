@@ -259,7 +259,7 @@ const EventPage = () => {
           <Paper elevation={3} square>
             <Toolbar>
               <Typography variant="h6" style={{ flexGrow: 1 }}>
-                {t('reportReplay')}
+                {t('reportReplay')} - {''}
               </Typography>
               <IconButton edge="end" onClick={handleReplayStop}>
                 <CloseIcon />
@@ -294,8 +294,8 @@ const EventPage = () => {
                 marginTop: -15,
               }}
             >
-              <Typography variant="caption">1hr before</Typography>
-              <Typography variant="caption">1hr after</Typography>
+              <Typography variant="caption">1hr -</Typography>
+              <Typography variant="caption">1hr +</Typography>
             </div>
 
             <div
