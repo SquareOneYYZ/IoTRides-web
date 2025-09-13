@@ -486,11 +486,17 @@ const EventReportPage = () => {
               style={{
                 display: 'flex',
                 justifyContent: 'space-between',
+                alignItems: 'center',
                 marginTop: -15,
               }}
             >
-              <Typography variant="caption">1hr before</Typography>
-              <Typography variant="caption">1hr after</Typography>
+              <Typography variant="caption">-1hr</Typography>
+
+              <Typography variant="h5" style={{ lineHeight: 1 }}>
+                •
+              </Typography>
+
+              <Typography variant="caption">+1hr</Typography>
             </div>
 
             <div
