@@ -463,8 +463,7 @@ const EventReportPage = () => {
             style={{ display: 'flex', flexDirection: 'column', padding: 16 }}
             square
           >
-            <Typography variant="subtitle1" align="center">
-              {formatTime(selectedItem?.eventTime, 'seconds')} -{' '}
+            <Typography variant="h6" align="center">
               {t(prefixString('event', selectedItem?.type))}
             </Typography>
 
