@@ -1,6 +1,4 @@
-import React, {
-  useCallback, useState, useRef, useEffect,
-} from 'react';
+import React, { useCallback, useState, useRef, useEffect } from 'react';
 import {
   Typography,
   AppBar,
@@ -14,7 +12,10 @@ import makeStyles from '@mui/styles/makeStyles';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CloseIcon from '@mui/icons-material/Close';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import ReplayIcon from '@mui/icons-material/Replay';
 import PauseIcon from '@mui/icons-material/Pause';
+import FastForwardIcon from '@mui/icons-material/FastForward';
+import FastRewindIcon from '@mui/icons-material/FastRewind';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useEffectAsync, useCatch } from '../reactHelper';
 import { useTranslation } from '../common/components/LocalizationProvider';
@@ -28,7 +29,7 @@ import MapScale from '../map/MapScale';
 import MapRoutePath from '../map/MapRoutePath';
 import MapRoutePoints from '../map/MapRoutePoints';
 
-const useStyles = makeStyles(() => ({
+const useStyles = makeStyles((theme) => ({
   root: {
     height: '100%',
     display: 'flex',
@@ -39,6 +40,49 @@ const useStyles = makeStyles(() => ({
   },
   mapContainer: {
     flexGrow: 1,
+  },
+  sidebar: {
+    display: 'flex',
+    flexDirection: 'column',
+    position: 'fixed',
+    zIndex: 3,
+    left: 0,
+    top: 0,
+    margin: theme.spacing(1.5),
+    width: theme.dimensions.drawerWidthDesktop,
+    [theme.breakpoints.down('md')]: {
+      width: '100%',
+      margin: 0,
+    },
+  },
+  title: {
+    flexGrow: 1,
+  },
+  slider: {
+    width: '100%',
+  },
+  controls: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  formControlLabel: {
+    height: '100%',
+    width: '100%',
+    paddingRight: theme.spacing(1),
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  content: {
+    display: 'flex',
+    flexDirection: 'column',
+    padding: theme.spacing(2),
+    [theme.breakpoints.down('md')]: {
+      margin: theme.spacing(1),
+    },
+    [theme.breakpoints.up('md')]: {
+      marginTop: theme.spacing(1),
+    },
   },
 }));
 
@@ -59,12 +103,13 @@ const EventPage = () => {
   const [eventPosition, setEventPosition] = useState(null);
   const timerRef = useRef();
 
-  const formatType = (event) => formatNotificationTitle(t, {
-    type: event.type,
-    attributes: {
-      alarms: event.attributes.alarm,
-    },
-  });
+  const formatType = (event) =>
+    formatNotificationTitle(t, {
+      type: event.type,
+      attributes: {
+        alarms: event.attributes.alarm,
+      },
+    });
 
   const onMarkerClick = useCallback((positionId) => {
     setShowCard(!!positionId);
@@ -118,11 +163,11 @@ const EventPage = () => {
     const eventTimestamp = new Date(eventTime).getTime();
     let closestIndex = 0;
     let minDiff = Math.abs(
-      new Date(positions[0].fixTime).getTime() - eventTimestamp,
+      new Date(positions[0].fixTime).getTime() - eventTimestamp
     );
     for (let i = 1; i < positions.length; i += 1) {
       const diff = Math.abs(
-        new Date(positions[i].fixTime).getTime() - eventTimestamp,
+        new Date(positions[i].fixTime).getTime() - eventTimestamp
       );
       if (diff < minDiff) {
         minDiff = diff;
@@ -215,25 +260,19 @@ const EventPage = () => {
             <Toolbar>
               <Typography variant="h6" style={{ flexGrow: 1 }}>
                 {t('reportReplay')}
-                {' '}
-                -
-                {formatType(event)}
               </Typography>
               <IconButton edge="end" onClick={handleReplayStop}>
                 <CloseIcon />
               </IconButton>
             </Toolbar>
           </Paper>
-
           <Paper
+            className={classes.content}
             style={{ display: 'flex', flexDirection: 'column', padding: 16 }}
             square
           >
-            <Typography variant="subtitle1" align="center">
-              {formatTime(event?.eventTime, 'seconds')}
-              {' '}
-              -
-              {' '}
+            <Typography variant="h6" style={{ flexGrow: 1 }} align="center">
+              {formatType(event)}
             </Typography>
 
             <Slider
@@ -268,10 +307,26 @@ const EventPage = () => {
             >
               <span>{`${replayIndex + 1}/${replayPositions.length}`}</span>
               <IconButton
+                onClick={() => setReplayIndex((i) => i - 1)}
+                disabled={replayPlaying || replayIndex <= 0}
+              >
+                <FastRewindIcon />
+              </IconButton>
+
+              <IconButton
                 onClick={() => setReplayPlaying(!replayPlaying)}
                 disabled={replayIndex >= replayPositions.length - 1}
               >
                 {replayPlaying ? <PauseIcon /> : <PlayArrowIcon />}
+              </IconButton>
+
+              <IconButton
+                onClick={() => setReplayIndex((i) => i + 1)}
+                disabled={
+                  replayPlaying || replayIndex >= replayPositions.length - 1
+                }
+              >
+                <FastForwardIcon />
               </IconButton>
               <span>
                 {replayIndex < replayPositions.length
@@ -309,8 +364,8 @@ const EventPage = () => {
           <Typography variant="h6">{event && formatType(event)}</Typography>
           {event && (
             <Tooltip title="Start replay">
-              <IconButton onClick={handleReplayStart} sx={{ ml: 2 }}>
-                <PlayArrowIcon />
+              <IconButton onClick={handleReplayStart}>
+                <ReplayIcon />
               </IconButton>
             </Tooltip>
           )}
