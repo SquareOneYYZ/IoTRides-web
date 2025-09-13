@@ -21,6 +21,8 @@ import GpsFixedIcon from '@mui/icons-material/GpsFixed';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ReplayIcon from '@mui/icons-material/Replay';
+import FastForwardIcon from '@mui/icons-material/FastForward';
+import FastRewindIcon from '@mui/icons-material/FastRewind';
 import PauseIcon from '@mui/icons-material/Pause';
 import CloseIcon from '@mui/icons-material/Close';
 import { useSelector } from 'react-redux';
@@ -498,10 +500,26 @@ const EventReportPage = () => {
             >
               <span>{`${replayIndex + 1}/${replayPositions.length}`}</span>
               <IconButton
+                onClick={() => setReplayIndex((i) => i - 1)}
+                disabled={replayPlaying || replayIndex <= 0}
+              >
+                <FastRewindIcon />
+              </IconButton>
+
+              <IconButton
                 onClick={() => setReplayPlaying(!replayPlaying)}
                 disabled={replayIndex >= replayPositions.length - 1}
               >
                 {replayPlaying ? <PauseIcon /> : <PlayArrowIcon />}
+              </IconButton>
+
+              <IconButton
+                onClick={() => setReplayIndex((i) => i + 1)}
+                disabled={
+                  replayPlaying || replayIndex >= replayPositions.length - 1
+                }
+              >
+                <FastForwardIcon />
               </IconButton>
               <span>
                 {replayIndex < replayPositions.length
