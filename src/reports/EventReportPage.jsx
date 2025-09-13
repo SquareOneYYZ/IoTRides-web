@@ -491,11 +491,6 @@ const EventReportPage = () => {
               }}
             >
               <Typography variant="caption">-1hr</Typography>
-
-              <Typography variant="h5" style={{ lineHeight: 1 }}>
-                •
-              </Typography>
-
               <Typography variant="caption">+1hr</Typography>
             </div>
 
