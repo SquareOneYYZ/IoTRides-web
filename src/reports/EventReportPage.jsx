@@ -408,13 +408,18 @@ const EventReportPage = () => {
     }
   };
 
+  const onPointClick = useCallback((_, index) => {
+    setReplayIndex(index);
+    setReplayPlaying(false);
+  }, []);
+
   if (replayMode) {
     return (
       <div style={{ height: '100%' }}>
         <MapView>
           <MapGeofence />
           <MapRoutePath positions={replayPositions} />
-          <MapRoutePoints positions={replayPositions} />
+          <MapRoutePoints positions={replayPositions} onClick={onPointClick} />
           {eventPosition && (
             <MapPositions
               positions={[eventPosition]}
@@ -449,7 +454,7 @@ const EventReportPage = () => {
           <Paper elevation={3} square>
             <Toolbar>
               <Typography variant="h6" style={{ flexGrow: 1 }}>
-                {t('reportReplay')} - {deviceName}
+                {t('reportReplay')} -{deviceName}
               </Typography>
               <IconButton edge="end" onClick={handleReplayStop}>
                 <CloseIcon />
@@ -469,12 +474,12 @@ const EventReportPage = () => {
             <Typography variant="h6" align="center">
               {t(prefixString('event', selectedItem?.type))}
             </Typography>
-
             <Slider
               style={{ width: '100%', margin: '16px 0' }}
               min={0}
               max={replayPositions.length - 1}
-              step={1}
+              step={null}
+              marks={replayPositions.map((_, index) => ({ value: index }))}
               value={replayIndex}
               onChange={(e, newValue) => {
                 setReplayIndex(newValue);
