@@ -1,4 +1,6 @@
-import React, { useCallback, useState, useRef, useEffect } from 'react';
+import React, {
+  useCallback, useState, useRef, useEffect,
+} from 'react';
 import {
   Typography,
   AppBar,
@@ -104,13 +106,12 @@ const EventPage = () => {
   const [device, setDevice] = useState(null);
   const timerRef = useRef();
 
-  const formatType = (event) =>
-    formatNotificationTitle(t, {
-      type: event.type,
-      attributes: {
-        alarms: event.attributes.alarm,
-      },
-    });
+  const formatType = (event) => formatNotificationTitle(t, {
+    type: event.type,
+    attributes: {
+      alarms: event.attributes.alarm,
+    },
+  });
 
   const onMarkerClick = useCallback((positionId) => {
     setShowCard(!!positionId);
@@ -173,11 +174,11 @@ const EventPage = () => {
     const eventTimestamp = new Date(eventTime).getTime();
     let closestIndex = 0;
     let minDiff = Math.abs(
-      new Date(positions[0].fixTime).getTime() - eventTimestamp
+      new Date(positions[0].fixTime).getTime() - eventTimestamp,
     );
     for (let i = 1; i < positions.length; i += 1) {
       const diff = Math.abs(
-        new Date(positions[i].fixTime).getTime() - eventTimestamp
+        new Date(positions[i].fixTime).getTime() - eventTimestamp,
       );
       if (diff < minDiff) {
         minDiff = diff;
@@ -229,13 +230,17 @@ const EventPage = () => {
     clearInterval(timerRef.current);
   };
 
+  const onPointClick = useCallback((_, index) => {
+    setReplayIndex(index);
+  }, []);
+
   if (replayMode) {
     return (
       <div style={{ height: '100%' }}>
         <MapView>
           <MapGeofence />
           <MapRoutePath positions={replayPositions} />
-          <MapRoutePoints positions={replayPositions} />
+          <MapRoutePoints positions={replayPositions} onClick={onPointClick} />
           {eventPosition && (
             <MapPositions
               positions={[eventPosition]}
@@ -269,7 +274,10 @@ const EventPage = () => {
           <Paper elevation={3} square>
             <Toolbar>
               <Typography variant="h6" style={{ flexGrow: 1 }}>
-                {t('reportReplay')} - {device ? device.name : ''}
+                {t('reportReplay')}
+                {' '}
+                -
+                {device ? device.name : ''}
               </Typography>
               <IconButton edge="end" onClick={handleReplayStop}>
                 <CloseIcon />
@@ -289,12 +297,10 @@ const EventPage = () => {
               style={{ width: '100%', margin: '16px 0' }}
               min={0}
               max={replayPositions.length - 1}
-              step={1}
+              step={null}
+              marks={replayPositions.map((_, index) => ({ value: index }))}
               value={replayIndex}
-              onChange={(e, newValue) => {
-                setReplayIndex(newValue);
-                setReplayPlaying(false);
-              }}
+              onChange={(_, newValue) => setReplayIndex(newValue)}
             />
 
             <div
