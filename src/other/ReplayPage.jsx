@@ -123,13 +123,19 @@ const ReplayPage = () => {
     }
   }, [index, positions]);
 
-  const onPointClick = useCallback((_, index) => {
-    setIndex(index);
-  }, [setIndex]);
+  const onPointClick = useCallback(
+    (_, index) => {
+      setIndex(index);
+    },
+    [setIndex],
+  );
 
-  const onMarkerClick = useCallback((positionId) => {
-    setShowCard(!!positionId);
-  }, [setShowCard]);
+  const onMarkerClick = useCallback(
+    (positionId) => {
+      setShowCard(!!positionId);
+    },
+    [setShowCard],
+  );
 
   const handleSubmit = useCatch(async ({ deviceId, from, to }) => {
     setLoading(true);
@@ -168,7 +174,11 @@ const ReplayPage = () => {
         <MapRoutePath positions={positions} />
         <MapRoutePoints positions={positions} onClick={onPointClick} />
         {index < positions.length && (
-          <MapPositions positions={[positions[index]]} onClick={onMarkerClick} titleField="fixTime" />
+          <MapPositions
+            positions={[positions[index]]}
+            onClick={onMarkerClick}
+            titleField="fixTime"
+          />
         )}
       </MapView>
       <MapScale />
@@ -176,10 +186,16 @@ const ReplayPage = () => {
       <div className={classes.sidebar}>
         <Paper elevation={3} square>
           <Toolbar>
-            <IconButton edge="start" sx={{ mr: 2 }} onClick={() => navigate(-1)}>
+            <IconButton
+              edge="start"
+              sx={{ mr: 2 }}
+              onClick={() => navigate(-1)}
+            >
               <ArrowBackIcon />
             </IconButton>
-            <Typography variant="h6" className={classes.title}>{t('reportReplay')}</Typography>
+            <Typography variant="h6" className={classes.title}>
+              {t('reportReplay')}
+            </Typography>
             {!expanded && (
               <>
                 <IconButton onClick={handleDownload}>
@@ -195,7 +211,9 @@ const ReplayPage = () => {
         <Paper className={classes.content} square>
           {!expanded ? (
             <>
-              <Typography variant="subtitle1" align="center">{deviceName}</Typography>
+              <Typography variant="subtitle1" align="center">
+                {deviceName}
+              </Typography>
               <Slider
                 className={classes.slider}
                 max={positions.length - 1}
@@ -206,20 +224,34 @@ const ReplayPage = () => {
               />
               <div className={classes.controls}>
                 {`${index + 1}/${positions.length}`}
-                <IconButton onClick={() => setIndex((index) => index - 1)} disabled={playing || index <= 0}>
+                <IconButton
+                  onClick={() => setIndex((index) => index - 1)}
+                  disabled={playing || index <= 0}
+                >
                   <FastRewindIcon />
                 </IconButton>
-                <IconButton onClick={() => setPlaying(!playing)} disabled={index >= positions.length - 1}>
-                  {playing ? <PauseIcon /> : <PlayArrowIcon /> }
+                <IconButton
+                  onClick={() => setPlaying(!playing)}
+                  disabled={index >= positions.length - 1}
+                >
+                  {playing ? <PauseIcon /> : <PlayArrowIcon />}
                 </IconButton>
-                <IconButton onClick={() => setIndex((index) => index + 1)} disabled={playing || index >= positions.length - 1}>
+                <IconButton
+                  onClick={() => setIndex((index) => index + 1)}
+                  disabled={playing || index >= positions.length - 1}
+                >
                   <FastForwardIcon />
                 </IconButton>
                 {formatTime(positions[index].fixTime, 'seconds')}
               </div>
             </>
           ) : (
-            <ReportFilter handleSubmit={handleSubmit} fullScreen showOnly loading={loading} />
+            <ReportFilter
+              handleSubmit={handleSubmit}
+              fullScreen
+              showOnly
+              loading={loading}
+            />
           )}
         </Paper>
       </div>
