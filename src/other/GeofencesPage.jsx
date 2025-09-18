@@ -193,7 +193,7 @@ const GeofencesPage = () => {
     reader.onload = async () => {
       const xml = new DOMParser().parseFromString(reader.result, 'text/xml');
       const coordsArray = Array.from(xml.getElementsByTagName('trkpt')).map(
-        (pt) => `${pt.getAttribute('lat')} ${pt.getAttribute('lon')}`
+        (pt) => `${pt.getAttribute('lat')} ${pt.getAttribute('lon')}`,
       );
 
       const isClosed = coordsArray[0] === coordsArray[coordsArray.length - 1];
@@ -225,10 +225,10 @@ const GeofencesPage = () => {
 
   useEffect(() => {
     if (
-      selectedGeofenceId &&
-      editedGeofenceId === selectedGeofenceId &&
-      unsavedChanges &&
-      !snackbar.open
+      selectedGeofenceId
+      && editedGeofenceId === selectedGeofenceId
+      && unsavedChanges
+      && !snackbar.open
     ) {
       setSnackbar({
         open: true,
