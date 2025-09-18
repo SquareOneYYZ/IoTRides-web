@@ -23,7 +23,7 @@ const MapRoutePoints = ({ positions, onClick }) => {
         onClick(feature.properties.id, feature.properties.index);
       }
     },
-    [onClick]
+    [onClick],
   );
 
   useEffect(() => {
@@ -74,7 +74,7 @@ const MapRoutePoints = ({ positions, onClick }) => {
 
     const maxSpeed = positions.reduce(
       (a, b) => Math.max(a, b.speed),
-      -Infinity
+      -Infinity,
     );
     const minSpeed = positions.reduce((a, b) => Math.min(a, b.speed), Infinity);
 
@@ -85,7 +85,7 @@ const MapRoutePoints = ({ positions, onClick }) => {
         ...p,
       })),
       0.0005,
-      true
+      true,
     );
 
     let step = 1;
@@ -95,7 +95,7 @@ const MapRoutePoints = ({ positions, onClick }) => {
     else step = 2;
 
     const filteredPositions = simplified.filter(
-      (p, i) => i === 0 || i === simplified.length - 1 || i % step === 0
+      (p, i) => i === 0 || i === simplified.length - 1 || i % step === 0,
     );
 
     const control = new SpeedLegendControl(
@@ -103,7 +103,7 @@ const MapRoutePoints = ({ positions, onClick }) => {
       speedUnit,
       t,
       maxSpeed,
-      minSpeed
+      minSpeed,
     );
     map.addControl(control, 'bottom-left');
 
