@@ -1,4 +1,4 @@
-import { useId, useCallback, useEffect, useMemo } from 'react';
+import { useId, useEffect, useMemo } from 'react';
 import { map } from './core/MapView';
 import getSpeedColor from '../common/util/colors';
 import { findFonts } from './core/mapUtil';
@@ -6,7 +6,7 @@ import { SpeedLegendControl } from './legend/MapSpeedLegend';
 import { useTranslation } from '../common/components/LocalizationProvider';
 import { useAttributePreference } from '../common/util/preferences';
 
-const MapRoutePoints = ({ positions, onClick }) => {
+const MapRoutePoints = ({ positions }) => {
   const id = useId();
   const t = useTranslation();
   const speedUnit = useAttributePreference('speedUnit');
@@ -24,39 +24,9 @@ const MapRoutePoints = ({ positions, onClick }) => {
     return { simplifiedPositions: simplified };
   }, [positions]);
 
-  const onMarkerClick = useCallback(
-    (event) => {
-      event.preventDefault();
-      const feature = event.features[0];
-
-      if (feature) {
-        if (onClick) {
-          onClick(feature.properties.id, feature.properties.index);
-        }
-
-        const maxSpeed = Math.max(...positions.map((pt) => pt.speed));
-        const minSpeed = Math.min(...positions.map((pt) => pt.speed));
-
-        map.getSource(id)?.setData({
-          type: 'FeatureCollection',
-          features: positions.map((p, index) => ({
-            type: 'Feature',
-            geometry: { type: 'Point', coordinates: [p.longitude, p.latitude] },
-            properties: {
-              index,
-              id: p.id,
-              rotation: p.course,
-              color: getSpeedColor(p.speed, minSpeed, maxSpeed),
-              border: p.isReturn ? '#000000' : 'transparent',
-            },
-          })),
-        });
-      }
-    },
-    [onClick, id, positions]
-  );
-
   useEffect(() => {
+    if (!positions.length) return;
+
     map.addSource(id, {
       type: 'geojson',
       data: { type: 'FeatureCollection', features: [] },
@@ -81,17 +51,23 @@ const MapRoutePoints = ({ positions, onClick }) => {
 
     map.on('mouseenter', id, onMouseEnter);
     map.on('mouseleave', id, onMouseLeave);
-    map.on('click', id, onMarkerClick);
+
+    // 🔹 Console on hover
+    map.on('mousemove', id, (e) => {
+      if (e.features?.length) {
+        const feature = e.features[0];
+        console.log('Hovered point:', feature.properties);
+      }
+    });
 
     return () => {
       map.off('mouseenter', id, onMouseEnter);
       map.off('mouseleave', id, onMouseLeave);
-      map.off('click', id, onMarkerClick);
-
+      map.off('mousemove', id, () => {});
       if (map.getLayer(id)) map.removeLayer(id);
       if (map.getSource(id)) map.removeSource(id);
     };
-  }, [onMarkerClick]);
+  }, [id, positions]);
 
   useEffect(() => {
     if (!positions.length) return;
@@ -111,30 +87,19 @@ const MapRoutePoints = ({ positions, onClick }) => {
     );
     map.addControl(control, 'bottom-left');
 
-    const showSimplifiedPoints = () => {
-      map.getSource(id)?.setData({
-        type: 'FeatureCollection',
-        features: simplifiedPositions.map((p, index) => ({
-          type: 'Feature',
-          geometry: { type: 'Point', coordinates: [p.longitude, p.latitude] },
-          properties: {
-            index,
-            id: p.id,
-            rotation: p.course,
-            color: getSpeedColor(p.speed, minSpeed, maxSpeed),
-            border: p.isReturn ? '#000000' : 'transparent',
-          },
-        })),
-      });
-    };
-
-    showSimplifiedPoints();
-
-    map.on('click', (e) => {
-      const features = map.queryRenderedFeatures(e.point, { layers: [id] });
-      if (!features.length) {
-        showSimplifiedPoints();
-      }
+    map.getSource(id)?.setData({
+      type: 'FeatureCollection',
+      features: simplifiedPositions.map((p, index) => ({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [p.longitude, p.latitude] },
+        properties: {
+          index,
+          id: p.id,
+          rotation: p.course,
+          color: getSpeedColor(p.speed, minSpeed, maxSpeed),
+          border: p.isReturn ? '#000000' : 'transparent',
+        },
+      })),
     });
 
     return () => {
