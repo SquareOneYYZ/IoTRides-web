@@ -11,6 +11,7 @@ import { maintenancesReducer as maintenances } from './maintenances';
 import { calendarsReducer as calendars } from './calendars';
 import { reportsReducer as reports } from './reports';
 import throttleMiddleware from './throttleMiddleware';
+import { livestreamReducer as livestream } from './livestream';
 
 const reducer = combineReducers({
   errors,
@@ -23,6 +24,7 @@ const reducer = combineReducers({
   maintenances,
   calendars,
   reports,
+  livestream,
 });
 
 export { errorsActions } from './errors';
@@ -35,8 +37,10 @@ export { driversActions } from './drivers';
 export { maintenancesActions } from './maintenances';
 export { calendarsActions } from './calendars';
 export { reportsActions } from './reports';
+export { livestreamActions } from './livestream';
 
 export default configureStore({
   reducer,
-  middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(throttleMiddleware),
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware().concat(throttleMiddleware),
 });

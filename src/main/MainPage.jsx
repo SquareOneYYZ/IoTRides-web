@@ -1,6 +1,4 @@
-import React, {
-  useState, useCallback, useEffect,
-} from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Paper } from '@mui/material';
 import { makeStyles } from '@mui/styles';
 import { useTheme } from '@mui/material/styles';
@@ -16,6 +14,9 @@ import useFilter from './useFilter';
 import MainToolbar from './MainToolbar';
 import MainMap from './MainMap';
 import { useAttributePreference } from '../common/util/preferences';
+import LiveStreamDialog from '../common/components/LiveStreamDialog';
+import { livestreamActions } from '../store/livestream';
+s;
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -74,7 +75,9 @@ const MainPage = () => {
   const selectedDeviceId = useSelector((state) => state.devices.selectedId);
   const positions = useSelector((state) => state.session.positions);
   const [filteredPositions, setFilteredPositions] = useState([]);
-  const selectedPosition = filteredPositions.find((position) => selectedDeviceId && position.deviceId === selectedDeviceId);
+  const selectedPosition = filteredPositions.find(
+    (position) => selectedDeviceId && position.deviceId === selectedDeviceId
+  );
 
   const [filteredDevices, setFilteredDevices] = useState([]);
 
@@ -88,7 +91,7 @@ const MainPage = () => {
 
   const [devicesOpen, setDevicesOpen] = useState(desktop);
   const [eventsOpen, setEventsOpen] = useState(false);
-
+  const { open, deviceId } = useSelector((state) => state.livestream);
   const onEventsClick = useCallback(() => setEventsOpen(true), [setEventsOpen]);
 
   useEffect(() => {
@@ -97,7 +100,15 @@ const MainPage = () => {
     }
   }, [desktop, mapOnSelect, selectedDeviceId]);
 
-  useFilter(keyword, filter, filterSort, filterMap, positions, setFilteredDevices, setFilteredPositions);
+  useFilter(
+    keyword,
+    filter,
+    filterSort,
+    filterMap,
+    positions,
+    setFilteredDevices,
+    setFilteredPositions
+  );
 
   return (
     <div className={classes.root}>
@@ -134,7 +145,11 @@ const MainPage = () => {
               />
             </div>
           )}
-          <Paper square className={classes.contentList} style={devicesOpen ? {} : { visibility: 'hidden' }}>
+          <Paper
+            square
+            className={classes.contentList}
+            style={devicesOpen ? {} : { visibility: 'hidden' }}
+          >
             <DeviceList devices={filteredDevices} />
           </Paper>
         </div>
@@ -151,6 +166,14 @@ const MainPage = () => {
           position={selectedPosition}
           onClose={() => dispatch(devicesActions.selectId(null))}
           desktopPadding={theme.dimensions.drawerWidthDesktop}
+        />
+      )}
+
+      {open && (
+        <LiveStreamDialog
+          open={open}
+          deviceId={deviceId}
+          onClose={() => dispatch(livestreamActions.closeLivestream())}
         />
       )}
     </div>
