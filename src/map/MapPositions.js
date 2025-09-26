@@ -50,7 +50,7 @@ const MapPositions = ({
       deviceId: position.deviceId,
       name: device.name,
       fixTime: formatTime(position.fixTime, 'seconds'),
-      tollName: device.attributes?.tollName || '',
+      tollName: 'Event Location',
       category: mapIconKey(device.category),
       color: showStatus
         ? position.attributes.color || getStatusColor(device.status)
