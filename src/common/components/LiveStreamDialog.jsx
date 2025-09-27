@@ -217,7 +217,9 @@ const LiveStreamCard = () => {
         <Card elevation={5} className={classes.card}>
           <div className={classes.header}>
             <Typography variant="body2" color="textSecondary">
-              Live Stream - {device?.name || `Device ${deviceId}`}
+              Live Stream -
+              {' '}
+              {device?.name || `Device ${deviceId}`}
             </Typography>
             <CardActions className={classes.actions}>
               <Tooltip title="Close Stream">

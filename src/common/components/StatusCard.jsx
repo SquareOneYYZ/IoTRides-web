@@ -250,7 +250,7 @@ const StatusCard = ({
                           <StatusRow
                             key={key}
                             name={positionAttributes[key]?.name || key}
-                            content={
+                            content={(
                               <PositionValue
                                 position={position}
                                 property={
@@ -260,7 +260,7 @@ const StatusCard = ({
                                   position.hasOwnProperty(key) ? null : key
                                 }
                               />
-                            }
+                            )}
                           />
                         ))}
                     </TableBody>
@@ -307,15 +307,15 @@ const StatusCard = ({
                       onClick={handleLiveStreamOpen}
                       disabled={disableActions}
                     >
-                      <LiveTvIcon />{' '}
+                      <LiveTvIcon />
+                      {' '}
                     </IconButton>
                   </Tooltip>
                 ) : (
                   <Tooltip title={t('commandTitle')}>
                     <IconButton
                       onClick={() =>
-                        navigate(`/settings/device/${deviceId}/command`)
-                      }
+                        navigate(`/settings/device/${deviceId}/command`)}
                       disabled={disableActions}
                     >
                       <PublishIcon />
