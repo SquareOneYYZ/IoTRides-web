@@ -34,7 +34,7 @@ const useStyles = makeStyles((theme) => ({
     gap: theme.spacing(1),
     padding: theme.spacing(1),
     backgroundColor: '#000',
-    minHeight: 0, // Important for proper grid sizing
+    minHeight: 0,
   },
   topBlock: {
     width: '100%',
@@ -45,7 +45,7 @@ const useStyles = makeStyles((theme) => ({
     justifyContent: 'center',
     color: '#fff',
     position: 'relative',
-    minHeight: 0, // Important for iframe sizing
+    minHeight: 0,
     overflow: 'hidden',
   },
   bottomRow: {
@@ -63,14 +63,14 @@ const useStyles = makeStyles((theme) => ({
     justifyContent: 'center',
     color: '#fff',
     position: 'relative',
-    minHeight: 0, // Important for iframe sizing
+    minHeight: 0,
     overflow: 'hidden',
   },
   videoContainer: {
     position: 'relative',
     width: '100%',
     height: '100%',
-    display: 'block', // Changed from flex to block
+    display: 'block',
     '&:hover $videoControls': {
       opacity: 1,
     },
@@ -159,7 +159,6 @@ const VideoBlock = ({ title, src, className }) => {
             </IconButton>
           </Tooltip>
         </div>
-        {/* Title overlay */}
         <div
           style={{
             position: 'absolute',
@@ -194,13 +193,9 @@ const LiveStreamCard = () => {
     dispatch(livestreamActions.closeLivestream());
   };
 
-  // YouTube embed URLs converted from your links
-  const frontCameraSrc =
-    'https://www.youtube.com/embed/m5BFMn56sos?si=jivn85wANj6EphDP&autoplay=1&mute=1';
-  const leftCameraSrc =
-    'https://www.youtube.com/embed/OX5bf1lN7LE?si=ASrLJgqFhhf0WtgB&autoplay=1&mute=1';
-  const rightCameraSrc =
-    'https://www.youtube.com/embed/kIqikl_0xAs?si=pn_hEzgO8l-Uzwzy&autoplay=1&mute=1';
+  const frontCameraSrc = 'Sample footage24fps.mp4';
+  const leftCameraSrc = 'Sample footage24fps.mp4';
+  const rightCameraSrc = 'Sample footage24fps.mp4';
 
   return (
     <div
@@ -217,9 +212,7 @@ const LiveStreamCard = () => {
         <Card elevation={5} className={classes.card}>
           <div className={classes.header}>
             <Typography variant="body2" color="textSecondary">
-              Live Stream -
-              {' '}
-              {device?.name || `Device ${deviceId}`}
+              Live Stream - {device?.name || `Device ${deviceId}`}
             </Typography>
             <CardActions className={classes.actions}>
               <Tooltip title="Close Stream">
