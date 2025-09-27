@@ -16,7 +16,6 @@ import MainMap from './MainMap';
 import { useAttributePreference } from '../common/util/preferences';
 import LiveStreamDialog from '../common/components/LiveStreamDialog';
 import { livestreamActions } from '../store/livestream';
-s;
 
 const useStyles = makeStyles((theme) => ({
   root: {
