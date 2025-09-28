@@ -638,5 +638,22 @@
 	"tollCost": "Toll Cost",
 	"tollRef": "Toll Reference",
 	"deviceLicenseNumber": "License Number",
-	"deviceVinNumber": "VIN Number"
+	"deviceVinNumber": "VIN Number",
+	"eventDeviceRegionCountryEnter": "Country entered",
+    "eventDeviceRegionCountryExit": "Country exited",
+    "notificationDeviceRegionCountryEnter": "Vehicle entered country",
+    "notificationDeviceRegionCountryExit": "Vehicle exited country",
+ 
+    "eventDeviceRegionStateEnter": "State entered",
+    "eventDeviceRegionStateExit": "State exited",
+    "notificationDeviceRegionStateEnter": "Vehicle entered state",
+    "notificationDeviceRegionStateExit": "Vehicle exited state",
+ 
+    "eventDeviceRegionCityEnter": "City entered",
+    "eventDeviceRegionCityExit": "City exited",
+    "notificationDeviceRegionCityEnter": "Vehicle entered city",
+    "notificationDeviceRegionCityExit": "Vehicle exited city",
+ 
+    "eventDeviceCustomToll": "Custom toll detected",
+    "notificationDeviceCustomToll": "Vehicle passed through custom toll"
 }
