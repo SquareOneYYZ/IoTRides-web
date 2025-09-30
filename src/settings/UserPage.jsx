@@ -17,12 +17,15 @@ import {
   InputAdornment,
   IconButton,
   OutlinedInput,
+  Box,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import CachedIcon from '@mui/icons-material/Cached';
 import CloseIcon from '@mui/icons-material/Close';
 import { useDispatch, useSelector } from 'react-redux';
+import QrCodeIcon from '@mui/icons-material/QrCode';
+import { QRCodeSVG } from 'qrcode.react';
 import EditItemView from './components/EditItemView';
 import EditAttributesAccordion from './components/EditAttributesAccordion';
 import { useTranslation } from '../common/components/LocalizationProvider';
@@ -72,7 +75,7 @@ const UserPage = () => {
   const [item, setItem] = useState(
     id === currentUser.id.toString() ? currentUser : null,
   );
-
+  const [showQrCode, setShowQrCode] = useState(false);
   const [deleteEmail, setDeleteEmail] = useState();
   const [deleteFailed, setDeleteFailed] = useState(false);
 
@@ -129,6 +132,15 @@ const UserPage = () => {
     && (item.id || item.password)
     && (admin || !totpForce || item.totpKey);
 
+  const generateTotpUri = () => {
+    if (!item.totpKey || !item.email) return '';
+
+    const label = encodeURIComponent(item.email);
+    const issuer = encodeURIComponent('IOT Rides Web');
+    const secret = item.totpKey;
+
+    return `otpauth://totp/${label}?secret=${secret}&issuer=${issuer}`;
+  };
   return (
     <EditItemView
       endpoint="users"
@@ -166,32 +178,84 @@ const UserPage = () => {
                 />
               )}
               {totpEnable && (
-                <FormControl>
-                  <InputLabel>{t('loginTotpKey')}</InputLabel>
-                  <OutlinedInput
-                    readOnly
-                    label={t('loginTotpKey')}
-                    value={item.totpKey || ''}
-                    endAdornment={(
-                      <InputAdornment position="end">
-                        <IconButton
-                          size="small"
-                          edge="end"
-                          onClick={handleGenerateTotp}
-                        >
-                          <CachedIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          edge="end"
-                          onClick={() => setItem({ ...item, totpKey: null })}
-                        >
-                          <CloseIcon fontSize="small" />
-                        </IconButton>
-                      </InputAdornment>
-                    )}
-                  />
-                </FormControl>
+                <Box>
+                  <FormControl fullWidth>
+                    <InputLabel>{t('loginTotpKey')}</InputLabel>
+                    <OutlinedInput
+                      readOnly
+                      label={t('loginTotpKey')}
+                      value={item.totpKey || ''}
+                      endAdornment={(
+                        <InputAdornment position="end">
+                          {/* QR Code Toggle Button - only show if totpKey exists */}
+                          {item.totpKey && (
+                            <IconButton
+                              size="small"
+                              edge="end"
+                              onClick={() => setShowQrCode(!showQrCode)}
+                              title="Toggle QR Code for Authenticator App"
+                              color={showQrCode ? 'primary' : 'default'}
+                            >
+                              <QrCodeIcon fontSize="small" />
+                            </IconButton>
+                          )}
+                          <IconButton
+                            size="small"
+                            edge="end"
+                            onClick={handleGenerateTotp}
+                            title="Generate New TOTP Key"
+                          >
+                            <CachedIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            edge="end"
+                            onClick={() => {
+                              setItem({ ...item, totpKey: null });
+                              setShowQrCode(false);
+                            }}
+                            title="Remove TOTP Key"
+                          >
+                            <CloseIcon fontSize="small" />
+                          </IconButton>
+                        </InputAdornment>
+                      )}
+                    />
+                  </FormControl>
+
+                  {item.totpKey && showQrCode && (
+                    <Box
+                      sx={{
+                        mt: 2,
+                        p: 2,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        borderRadius: 1,
+                        bgcolor: 'background.paper',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: 1.5,
+                      }}
+                    >
+                      <QRCodeSVG
+                        value={generateTotpUri()}
+                        size={150}
+                        level="M"
+                        includeMargin
+                        bgColor="#ffffff"
+                        fgColor="#000000"
+                      />
+                      <Typography
+                        variant="body2"
+                        color="textSecondary"
+                        textAlign="center"
+                      >
+                        Scan with your authenticator app
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
               )}
             </AccordionDetails>
           </Accordion>
