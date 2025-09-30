@@ -94,7 +94,9 @@ const MapRoutePoints = ({ positions, onClick }) => {
   }, [onMarkerClick]);
 
   useEffect(() => {
-    if (!positions.length) return;
+    if (!positions.length) {
+      return () => {};
+    }
 
     const maxSpeed = positions.reduce(
       (a, b) => Math.max(a, b.speed),
@@ -139,6 +141,7 @@ const MapRoutePoints = ({ positions, onClick }) => {
 
     return () => {
       map.removeControl(control);
+      map.off('click');
     };
   }, [positions, simplifiedPositions, speedUnit, t, id]);
 
