@@ -93,6 +93,9 @@ const ReplayPage = () => {
   const [expanded, setExpanded] = useState(true);
   const [playing, setPlaying] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [smoothPosition, setSmoothPosition] = useState(null);
+  const [animationProgress, setAnimationProgress] = useState(0);
+  const [speed, setSpeed] = useState(1);
 
   const deviceName = useSelector((state) => {
     if (selectedDeviceId) {
@@ -107,21 +110,59 @@ const ReplayPage = () => {
   useEffect(() => {
     if (playing && positions.length > 0) {
       timerRef.current = setInterval(() => {
-        setIndex((index) => index + 1);
-      }, 500);
+        setAnimationProgress((progress) => {
+          const newProgress = progress + 0.02 * speed;
+          if (newProgress >= 1) {
+            setIndex((prevIndex) => {
+              const nextIndex = prevIndex + 1;
+              if (nextIndex >= positions.length - 1) {
+                setPlaying(false);
+                return nextIndex;
+              }
+              return nextIndex;
+            });
+            return 0;
+          }
+
+          return newProgress;
+        });
+      }, 16);
     } else {
       clearInterval(timerRef.current);
     }
 
     return () => clearInterval(timerRef.current);
-  }, [playing, positions]);
+  }, [playing, positions, speed]);
 
   useEffect(() => {
-    if (index >= positions.length - 1) {
-      clearInterval(timerRef.current);
-      setPlaying(false);
+    if (positions.length > 0 && index < positions.length - 1) {
+      const currentPos = positions[index];
+      const nextPos = positions[index + 1];
+
+      if (currentPos && nextPos) {
+        const interpolatedPosition = {
+          ...currentPos,
+          latitude:
+            currentPos.latitude
+            + (nextPos.latitude - currentPos.latitude) * animationProgress,
+          longitude:
+            currentPos.longitude
+            + (nextPos.longitude - currentPos.longitude) * animationProgress,
+          // Interpolate other numeric fields if needed
+          speed:
+            currentPos.speed
+            + (nextPos.speed - currentPos.speed) * animationProgress,
+          course:
+            currentPos.course
+            + (nextPos.course - currentPos.course) * animationProgress,
+        };
+
+        setSmoothPosition(interpolatedPosition);
+      }
+    } else if (positions.length > 0 && index < positions.length) {
+      setSmoothPosition(positions[index]);
     }
-  }, [index, positions]);
+  }, [positions, index, animationProgress]);
 
   const onPointClick = useCallback(
     (_, index) => {
@@ -173,9 +214,9 @@ const ReplayPage = () => {
         <MapGeofence />
         <MapRoutePath positions={positions} />
         <MapRoutePoints positions={positions} onClick={onPointClick} />
-        {index < positions.length && (
+        {smoothPosition && (
           <MapPositions
-            positions={[positions[index]]}
+            positions={[smoothPosition]}
             onClick={onMarkerClick}
             titleField="fixTime"
           />
