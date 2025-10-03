@@ -10,34 +10,50 @@ import {
 } from '@mui/material';
 import makeStyles from '@mui/styles/makeStyles';
 import CloseIcon from '@mui/icons-material/Close';
-import { livestreamActions } from '../../store/livestream';
 import { Fullscreen, PlayArrow } from '@mui/icons-material';
 import PauseIcon from '@mui/icons-material/Pause';
+import { livestreamActions } from '../../store/livestream';
 
 const useStyles = makeStyles((theme) => ({
   card: {
     pointerEvents: 'auto',
-    width: '20vw',
-    height: '40vh',
+    width: '370px',
     display: 'flex',
     flexDirection: 'column',
+    position: 'relative',
+    zIndex: 1,
+    borderRadius: theme.spacing(0.5),
+    [theme.breakpoints.down('sm')]: {
+      width: '90vw',
+      maxWidth: '400px',
+    },
   },
   header: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: theme.spacing(0, 1.5),
-    cursor: 'cursor',
+    padding: theme.spacing(1, 1.5),
+    cursor: 'move',
+    backgroundColor: '#1e1e1e',
+    borderBottom: '1px solid #333',
+    minHeight: '40px',
+    [theme.breakpoints.down('sm')]: {
+      padding: theme.spacing(0.5, 1),
+    },
   },
   content: {
-    flex: 1,
     display: 'grid',
     gridTemplateColumns: '1fr 1fr',
     gridTemplateRows: '1fr 1fr',
-    gap: theme.spacing(1),
-    padding: theme.spacing(1),
+    gap: theme.spacing(0.5),
+    padding: theme.spacing(0.5),
     backgroundColor: '#000',
-    minHeight: 0,
+    aspectRatio: '16/9',
+    [theme.breakpoints.down('sm')]: {
+      aspectRatio: '16/9',
+      gap: theme.spacing(0.5),
+      padding: theme.spacing(0.5),
+    },
   },
   videoBlock: {
     width: '100%',
@@ -48,67 +64,29 @@ const useStyles = makeStyles((theme) => ({
     justifyContent: 'center',
     color: '#fff',
     position: 'relative',
-    minHeight: 0,
+    aspectRatio: '16/9',
     overflow: 'hidden',
-  },
-  streamBlock: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#111',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: '#fff',
-    position: 'relative',
-    minHeight: 0,
-    overflow: 'hidden',
-  },
-  videoContainer: {
-    position: 'relative',
-    width: '100%',
-    height: '100%',
-    display: 'block',
-    '&:hover $videoControls': {
-      opacity: 1,
+    borderRadius: theme.spacing(0.5),
+    [theme.breakpoints.down('sm')]: {
+      borderRadius: theme.spacing(0.25),
     },
-  },
-  video: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-    border: 'none',
-    borderRadius: 0,
-  },
-  videoControls: {
-    position: 'absolute',
-    top: theme.spacing(0.5),
-    right: theme.spacing(0.5),
-    opacity: 0,
-    transition: 'opacity 0.3s ease',
-    zIndex: 2,
-  },
-  fullscreenBtn: {
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    color: '#fff',
-    padding: theme.spacing(0.5),
-    '&:hover': {
-      backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    },
-  },
-  placeholder: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    height: '100%',
   },
   actions: {
     color: theme.palette.primary.contrastText,
     justifyContent: 'flex-end',
+    padding: 0,
+    margin: 0,
+  },
+  responsiveContainer: {
+    [theme.breakpoints.down('sm')]: {
+      left: '50% !important',
+      top: '20% !important',
+      bottom: 'auto !important',
+    },
   },
 }));
 
-const VideoBlock = ({ title, src, className }) => {
+const VideoBlock = ({ src, className }) => {
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -145,19 +123,18 @@ const VideoBlock = ({ title, src, className }) => {
         } else if (element.msRequestFullscreen) {
           await element.msRequestFullscreen();
         }
-      } else {
-        if (document.exitFullscreen) {
-          await document.exitFullscreen();
-        } else if (document.webkitExitFullscreen) {
-          await document.webkitExitFullscreen();
-        } else if (document.mozCancelFullScreen) {
-          await document.mozCancelFullScreen();
-        } else if (document.msExitFullscreen) {
-          await document.msExitFullscreen();
-        }
+      } else if (document.exitFullscreen) {
+        await document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) {
+        await document.webkitExitFullscreen();
+      } else if (document.mozCancelFullScreen) {
+        await document.mozCancelFullScreen();
+      } else if (document.msExitFullscreen) {
+        await document.msExitFullscreen();
       }
     } catch (err) {
-      console.error('Fullscreen error:', err);
+      // eslint-disable-next-line no-console
+      console.error(err);
     }
   };
 
@@ -200,7 +177,9 @@ const VideoBlock = ({ title, src, className }) => {
     >
       <div style={{ position: 'relative', width: '100%', height: '100%' }}>
         {!isStarted && (
-          <div
+          <button
+            type="button"
+            aria-label="Play Pause"
             onClick={handlePlayPause}
             style={{
               position: 'absolute',
@@ -214,6 +193,7 @@ const VideoBlock = ({ title, src, className }) => {
               backgroundColor: '#000000b1',
               cursor: 'pointer',
               zIndex: 5,
+              border: 'none',
             }}
           >
             <div
@@ -237,7 +217,7 @@ const VideoBlock = ({ title, src, className }) => {
                 <path d="M12 2a7 7 0 0 0-7 7c0 3.07 1.99 5.64 4.74 6.57l-.74 2.43h-2a1 1 0 0 0 0 2h12a1 1 0 1 0 0-2h-2l-.74-2.43A7 7 0 0 0 19 9a7 7 0 0 0-7-7zm0 2a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 12c.7 0 1.39.1 2.05.29l.58 1.71h-5.26l.58-1.71c.66-.19 1.35-.29 2.05-.29z" />
               </svg>
             </div>
-          </div>
+          </button>
         )}
 
         <video
@@ -256,7 +236,14 @@ const VideoBlock = ({ title, src, className }) => {
           }}
           onClick={handlePlayPause}
           controls={false}
-        />
+        >
+          <track
+            kind="captions"
+            src="captions.vtt"
+            srcLang="en"
+            label="English"
+          />
+        </video>
 
         {(isStarted || showControls) && (
           <div
@@ -280,6 +267,7 @@ const VideoBlock = ({ title, src, className }) => {
             onMouseEnter={() => setShowControls(true)}
           >
             <button
+              type="button"
               onClick={handlePlayPause}
               style={{
                 background: 'none',
@@ -299,12 +287,18 @@ const VideoBlock = ({ title, src, className }) => {
                 (e.currentTarget.style.transform = 'scale(1)')
               }
             >
-              {isPlaying ? <PauseIcon /> : <PlayArrow />}
+              {isPlaying ? (
+                <PauseIcon sx={{ fontSize: 25 }} />
+              ) : (
+                <PlayArrow sx={{ fontSize: 25 }} />
+              )}
             </button>
 
             <div style={{ flex: 1 }} />
 
             <button
+              type="button"
+              aria-label="Fullscreen"
               onClick={handleFullscreen}
               style={{
                 background: 'none',
@@ -354,15 +348,19 @@ const LiveStreamCard = () => {
   return (
     <div
       style={{
-        pointerEvents: 'none',
+        pointerEvents: 'auto',
         position: 'fixed',
         zIndex: 10,
         left: '82%',
-        bottom: '1.5rem',
+        bottom: '1.7rem',
         transform: 'translateX(-50%)',
       }}
+      className={classes.responsiveContainer}
     >
-      <Draggable handle={`.${classes.header}`}>
+      <Draggable
+        handle={`.${classes.header}`}
+        disabled={window.innerWidth <= 600}
+      >
         <Card elevation={5} className={classes.card}>
           <div className={classes.header}>
             <Typography variant="body2" color="textSecondary">
@@ -383,9 +381,9 @@ const LiveStreamCard = () => {
               { title: 'Left Camera', src: leftCameraSrc },
               { title: 'Right Camera', src: rightCameraSrc },
               { title: 'Rear Camera', src: rearCameraSrc },
-            ].map((video, index) => (
+            ].map((video) => (
               <VideoBlock
-                key={index}
+                key={video.title}
                 title={video.title}
                 src={video.src}
                 className={classes.videoBlock}
