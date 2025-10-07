@@ -142,7 +142,7 @@ const LiveStreamCard = () => {
                 title={video.title}
                 src={video.src}
                 className={classes.videoBlock}
-                navigateTo="/livestream"
+                showLaunch
               />
             ))}
           </div>

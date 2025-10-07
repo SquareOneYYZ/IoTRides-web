@@ -3,8 +3,10 @@ import { Fullscreen, PlayArrow } from '@mui/icons-material';
 import PauseIcon from '@mui/icons-material/Pause';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
+import LaunchIcon from '@mui/icons-material/Launch';
+import { Tooltip } from '@mui/material';
 
-const VideoBlock = ({ src, className, title, navigateTo }) => {
+const VideoBlock = ({ src, className, title, showLaunch }) => {
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -27,12 +29,6 @@ const VideoBlock = ({ src, className, title, navigateTo }) => {
   const handleFullscreen = async () => {
     const element = containerRef.current;
     if (!element) return;
-
-    // ✅ If a navigation path is provided, navigate there
-    if (navigateTo) {
-      navigate(navigateTo);
-      return;
-    }
 
     try {
       if (document.fullscreenElement) {
@@ -66,6 +62,10 @@ const VideoBlock = ({ src, className, title, navigateTo }) => {
     if (isPlaying && isStarted) setShowControls(false);
   };
 
+  const handleLaunch = () => {
+    navigate('/livestream');
+  };
+
   return (
     <div
       ref={containerRef}
@@ -81,9 +81,7 @@ const VideoBlock = ({ src, className, title, navigateTo }) => {
     >
       <div style={{ position: 'relative', width: '100%', height: '100%' }}>
         {!isStarted && (
-          <button
-            type="button"
-            aria-label="Play Video"
+          <div
             onClick={handlePlayPause}
             style={{
               position: 'absolute',
@@ -94,10 +92,9 @@ const VideoBlock = ({ src, className, title, navigateTo }) => {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              backgroundColor: '#000000b1',
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
               cursor: 'pointer',
               zIndex: 5,
-              border: 'none',
             }}
           >
             <div
@@ -110,9 +107,42 @@ const VideoBlock = ({ src, className, title, navigateTo }) => {
                 transition: 'all 0.3s ease',
               }}
             >
-              <PlayArrow sx={{ fontSize: 48, color: 'white', opacity: 0.85 }} />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="48"
+                height="48"
+                viewBox="0 0 24 24"
+                fill="white"
+                opacity="0.85"
+              >
+                <path d="M12 2a7 7 0 0 0-7 7c0 3.07 1.99 5.64 4.74 6.57l-.74 2.43h-2a1 1 0 0 0 0 2h12a1 1 0 1 0 0-2h-2l-.74-2.43A7 7 0 0 0 19 9a7 7 0 0 0-7-7zm0 2a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 12c.7 0 1.39.1 2.05.29l.58 1.71h-5.26l.58-1.71c.66-.19 1.35-.29 2.05-.29z" />
+              </svg>
             </div>
-          </button>
+          </div>
+        )}
+
+        {showLaunch && (
+          <Tooltip title="Open Livestream">
+            <LaunchIcon
+              onClick={handleLaunch}
+              aria-label="Open Livestream"
+              role="button"
+              tabIndex={0}
+              style={{
+                position: 'absolute',
+                top: '12px',
+                right: '12px',
+                color: 'white',
+                fontSize: '18px',
+                zIndex: 15,
+                cursor: 'pointer',
+                opacity: 0.85,
+                transition: 'opacity 0.2s ease',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.opacity = 1)}
+              onMouseLeave={(e) => (e.currentTarget.style.opacity = 0.85)}
+            />
+          </Tooltip>
         )}
 
         <video
@@ -162,7 +192,6 @@ const VideoBlock = ({ src, className, title, navigateTo }) => {
             }}
             onMouseEnter={() => setShowControls(true)}
           >
-            {/* ▶️ Play/Pause */}
             <button
               type="button"
               aria-label={isPlaying ? 'Pause' : 'Play'}
@@ -171,7 +200,7 @@ const VideoBlock = ({ src, className, title, navigateTo }) => {
                 background: 'none',
                 border: 'none',
                 cursor: 'pointer',
-                padding: '4px',
+                padding: '1px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -186,15 +215,18 @@ const VideoBlock = ({ src, className, title, navigateTo }) => {
               }
             >
               {isPlaying ? (
-                <PauseIcon sx={{ fontSize: 25 }} />
+                <Tooltip title="Pause">
+                  <PauseIcon sx={{ fontSize: 18 }} />
+                </Tooltip>
               ) : (
-                <PlayArrow sx={{ fontSize: 25 }} />
+                <Tooltip title="Play">
+                  <PlayArrow sx={{ fontSize: 18 }} />
+                </Tooltip>
               )}
             </button>
 
             <div style={{ flex: 1 }} />
 
-            {/* ⛶ Fullscreen */}
             <button
               type="button"
               aria-label="Fullscreen"
@@ -203,7 +235,7 @@ const VideoBlock = ({ src, className, title, navigateTo }) => {
                 background: 'none',
                 border: 'none',
                 cursor: 'pointer',
-                padding: '4px',
+                padding: '1px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -217,7 +249,9 @@ const VideoBlock = ({ src, className, title, navigateTo }) => {
                 (e.currentTarget.style.transform = 'scale(1)')
               }
             >
-              <Fullscreen />
+              <Tooltip title="Full screen">
+                <Fullscreen sx={{ fontSize: 18 }} />
+              </Tooltip>
             </button>
           </div>
         )}
@@ -230,13 +264,13 @@ VideoBlock.propTypes = {
   src: PropTypes.string.isRequired,
   className: PropTypes.string,
   title: PropTypes.string,
-  navigateTo: PropTypes.string, // ✅ new prop
+  showLaunch: PropTypes.bool,
 };
 
 VideoBlock.defaultProps = {
   className: '',
   title: '',
-  navigateTo: null,
+  showLaunch: false,
 };
 
 export default VideoBlock;
