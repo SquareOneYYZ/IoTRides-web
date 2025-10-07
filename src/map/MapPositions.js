@@ -42,7 +42,8 @@ const MapPositions = ({
         showDirection = position.course > 0;
         break;
       default:
-        showDirection = selectedPositionId === position.id && position.course > 0;
+        showDirection =
+          selectedPositionId === position.id && position.course > 0;
         break;
     }
     return {
@@ -50,7 +51,7 @@ const MapPositions = ({
       deviceId: position.deviceId,
       name: device.name,
       fixTime: formatTime(position.fixTime, 'seconds'),
-      tollName: device.attributes?.tollName || '',
+      tollName: 'Event Location',
       category: mapIconKey(device.category),
       color: showStatus
         ? position.attributes.color || getStatusColor(device.status)
@@ -69,7 +70,7 @@ const MapPositions = ({
         onClick(event.lngLat.lat, event.lngLat.lng);
       }
     },
-    [onClick],
+    [onClick]
   );
 
   const onMarkerClick = useCallback(
@@ -80,7 +81,7 @@ const MapPositions = ({
         onClick(feature.properties.id, feature.properties.deviceId);
       }
     },
-    [onClick],
+    [onClick]
   );
 
   const onClusterClick = useCatchCallback(
@@ -96,7 +97,7 @@ const MapPositions = ({
         zoom,
       });
     },
-    [clusters],
+    [clusters]
   );
 
   useEffect(() => {
@@ -210,9 +211,11 @@ const MapPositions = ({
         type: 'FeatureCollection',
         features: positions
           .filter((it) => devices.hasOwnProperty(it.deviceId))
-          .filter((it) => (source === id
-            ? it.deviceId !== selectedDeviceId
-            : it.deviceId === selectedDeviceId))
+          .filter((it) =>
+            source === id
+              ? it.deviceId !== selectedDeviceId
+              : it.deviceId === selectedDeviceId
+          )
           .map((position) => ({
             type: 'Feature',
             geometry: {
@@ -222,7 +225,7 @@ const MapPositions = ({
             properties: createFeature(
               devices,
               position,
-              selectedPosition && selectedPosition.id,
+              selectedPosition && selectedPosition.id
             ),
           })),
       });
