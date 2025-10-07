@@ -18,6 +18,7 @@ import OrganizationsPage from './settings/OrganizationsPage';
 import OrganizationPage from './settings/OrganizationPage';
 import PositionPage from './other/PositionPage';
 import NetworkPage from './other/NetworkPage';
+import LiveStreamingPage from './other/LiveStreamingPage';
 import EventReportPage from './reports/EventReportPage';
 import ReplayPage from './other/ReplayPage';
 import TripReportPage from './reports/TripReportPage';
@@ -123,6 +124,7 @@ const Navigation = () => {
         <Route path="network/:positionId" element={<NetworkPage />} />
         <Route path="event/:id" element={<EventPage />} />
         <Route path="replay" element={<ReplayPage />} />
+        <Route path="livestream" element={<LiveStreamingPage />} />
         <Route path="geofences" element={<GeofencesPage />} />
         <Route path="emulator" element={<EmulatorPage />} />
 
