@@ -74,12 +74,19 @@ const useStyles = makeStyles((theme) => ({
       gridTemplateRows: '1fr',
     },
     '&.layout-3': {
-      gridTemplateColumns: '1fr 1fr',
+      gridTemplateColumns: '2fr 1fr',
       gridTemplateRows: '1fr 1fr',
+      '& > *:nth-child(1)': {
+        gridRow: '1 / span 2',
+        gridColumn: '1 / 2',
+      },
+      '& > *:nth-child(2)': {
+        gridRow: '1 / 2',
+        gridColumn: '2 / 3',
+      },
       '& > *:nth-child(3)': {
-        gridColumn: '1 / -1',
-        justifySelf: 'center',
-        width: '50%',
+        gridRow: '2 / 3',
+        gridColumn: '2 / 3',
       },
     },
     '&.layout-4': {
@@ -87,14 +94,27 @@ const useStyles = makeStyles((theme) => ({
       gridTemplateRows: '1fr 1fr',
     },
     '&.layout-5': {
-      gridTemplateColumns: '2fr 1fr',
-      gridTemplateRows: '1fr 1fr 1fr',
+      gridTemplateColumns: '2fr 1fr 1fr',
+      gridTemplateRows: '1fr 1fr',
       '& > *:nth-child(1)': {
-        gridRow: '1 / span 3',
+        gridRow: '1 / span 2',
         gridColumn: '1 / 2',
       },
-      '& > *:nth-child(n+2)': {
+      '& > *:nth-child(2)': {
+        gridRow: '1 / 2',
         gridColumn: '2 / 3',
+      },
+      '& > *:nth-child(3)': {
+        gridRow: '1 / 2',
+        gridColumn: '3 / 4',
+      },
+      '& > *:nth-child(4)': {
+        gridRow: '2 / 3',
+        gridColumn: '2 / 3',
+      },
+      '& > *:nth-child(5)': {
+        gridRow: '2 / 3',
+        gridColumn: '3 / 4',
       },
     },
     '&.layout-6': {
@@ -103,6 +123,26 @@ const useStyles = makeStyles((theme) => ({
       '& > *:nth-child(1)': {
         gridRow: '1 / span 3',
         gridColumn: '1 / 2',
+      },
+      '& > *:nth-child(2)': {
+        gridRow: '1 / 2',
+        gridColumn: '2 / 4',
+      },
+      '& > *:nth-child(3)': {
+        gridRow: '2 / 3',
+        gridColumn: '2 / 3',
+      },
+      '& > *:nth-child(4)': {
+        gridRow: '2 / 3',
+        gridColumn: '3 / 4',
+      },
+      '& > *:nth-child(5)': {
+        gridRow: '3 / 4',
+        gridColumn: '2 / 3',
+      },
+      '& > *:nth-child(6)': {
+        gridRow: '3 / 4',
+        gridColumn: '3 / 4',
       },
     },
   },
@@ -118,6 +158,7 @@ const LiveStreamingPage = () => {
   const classes = useStyles();
   const navigate = useNavigate();
   const [currentLayout, setCurrentLayout] = useState(4);
+  const [focusedCameraIndex, setFocusedCameraIndex] = useState(0);
 
   const { open, deviceId } = useSelector((state) => state.livestream);
   const device = useSelector((state) => state.devices.items[deviceId]);
@@ -138,8 +179,28 @@ const LiveStreamingPage = () => {
   ];
 
   const totalSlots = Number(currentLayout);
-  const filledVideos = videoSources.slice(0, totalSlots);
+
+  // Swap the focused camera with the first position for layouts with large primary view
+  const reorderedVideos = [...videoSources];
+  if (focusedCameraIndex > 0 && focusedCameraIndex < reorderedVideos.length) {
+    [reorderedVideos[0], reorderedVideos[focusedCameraIndex]] = [
+      reorderedVideos[focusedCameraIndex],
+      reorderedVideos[0],
+    ];
+  }
+
+  const filledVideos = reorderedVideos.slice(0, totalSlots);
   const emptySlots = totalSlots - filledVideos.length;
+
+  // Handle camera focus click - only works on layouts 3, 5, 6
+  const handleCameraFocus = (originalIndex) => {
+    if ([3, 5, 6].includes(currentLayout)) {
+      setFocusedCameraIndex(originalIndex);
+    }
+  };
+
+  // Check if focus feature should be enabled
+  const isFocusEnabled = [3, 5, 6].includes(currentLayout);
 
   return (
     <div className={classes.root}>
@@ -207,14 +268,24 @@ const LiveStreamingPage = () => {
 
       <div className={classes.content}>
         <div className={`${classes.videoGrid} layout-${currentLayout}`}>
-          {filledVideos.map((video) => (
-            <VideoBlock
-              key={video.id}
-              src={video.src}
-              title={video.title}
-              className={classes.videoContainer}
-            />
-          ))}
+          {filledVideos.map((video) => {
+            // Find the original index in videoSources
+            const originalIndex = videoSources.findIndex(
+              (v) => v.id === video.id
+            );
+
+            return (
+              <VideoBlock
+                key={video.id}
+                src={video.src}
+                title={video.title}
+                className={classes.videoContainer}
+                showLaunch={false}
+                showFocusIcon={isFocusEnabled}
+                onFocus={() => handleCameraFocus(originalIndex)}
+              />
+            );
+          })}
 
           {Array.from({ length: emptySlots > 0 ? emptySlots : 0 }).map(
             (_, idx) => (

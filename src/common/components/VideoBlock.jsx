@@ -1,27 +1,49 @@
-import React, { useRef, useState } from 'react';
-import { Fullscreen, PlayArrow } from '@mui/icons-material';
+import React, { useRef, useState, useEffect } from 'react';
+import { Fullscreen, PlayArrow, ZoomOutMap } from '@mui/icons-material';
 import PauseIcon from '@mui/icons-material/Pause';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import LaunchIcon from '@mui/icons-material/Launch';
 import { Tooltip } from '@mui/material';
 
-const VideoBlock = ({ src, className, title, showLaunch }) => {
+const VideoBlock = ({
+  src,
+  className,
+  title,
+  showLaunch,
+  showFocusIcon,
+  onFocus,
+}) => {
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isStarted, setIsStarted] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [controlsTimeout, setControlsTimeout] = useState(null);
+  const [size, setSize] = useState({ width: 0, height: 0 });
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const observer = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        const { width, height } = entry.contentRect;
+        setSize({ width, height });
+      }
+    });
+    if (containerRef.current) observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  const controlScale = Math.max(0.6, Math.min(1, size.width / 600));
+  const iconSize = 30 * controlScale;
+  const paddingY = 20 * controlScale;
+  const paddingX = 14 * controlScale;
 
   const handlePlayPause = () => {
     if (!isStarted) setIsStarted(true);
-
     if (videoRef.current) {
       if (isPlaying) videoRef.current.pause();
       else videoRef.current.play();
-
       setIsPlaying(!isPlaying);
     }
   };
@@ -29,7 +51,6 @@ const VideoBlock = ({ src, className, title, showLaunch }) => {
   const handleFullscreen = async () => {
     const element = containerRef.current;
     if (!element) return;
-
     try {
       if (document.fullscreenElement) {
         await document.exitFullscreen();
@@ -49,11 +70,9 @@ const VideoBlock = ({ src, className, title, showLaunch }) => {
     if (isStarted) {
       setShowControls(true);
       if (controlsTimeout) clearTimeout(controlsTimeout);
-
       const timeout = setTimeout(() => {
         if (isPlaying) setShowControls(false);
       }, 2000);
-
       setControlsTimeout(timeout);
     }
   };
@@ -64,6 +83,11 @@ const VideoBlock = ({ src, className, title, showLaunch }) => {
 
   const handleLaunch = () => {
     navigate('/livestream');
+  };
+
+  const handleFocusClick = (e) => {
+    e.stopPropagation();
+    if (onFocus) onFocus();
   };
 
   return (
@@ -99,8 +123,8 @@ const VideoBlock = ({ src, className, title, showLaunch }) => {
           >
             <div
               style={{
-                width: '70px',
-                height: '70px',
+                width: `${70 * controlScale}px`,
+                height: `${70 * controlScale}px`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -109,8 +133,8 @@ const VideoBlock = ({ src, className, title, showLaunch }) => {
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                width="48"
-                height="48"
+                width={48 * controlScale}
+                height={48 * controlScale}
                 viewBox="0 0 24 24"
                 fill="white"
                 opacity="0.85"
@@ -130,10 +154,10 @@ const VideoBlock = ({ src, className, title, showLaunch }) => {
               tabIndex={0}
               style={{
                 position: 'absolute',
-                top: '12px',
-                right: '12px',
+                top: `${12 * controlScale}px`,
+                right: `${12 * controlScale}px`,
                 color: 'white',
-                fontSize: '18px',
+                fontSize: `${25 * controlScale}px`,
                 zIndex: 15,
                 cursor: 'pointer',
                 opacity: 0.85,
@@ -141,6 +165,39 @@ const VideoBlock = ({ src, className, title, showLaunch }) => {
               }}
               onMouseEnter={(e) => (e.currentTarget.style.opacity = 1)}
               onMouseLeave={(e) => (e.currentTarget.style.opacity = 0.85)}
+            />
+          </Tooltip>
+        )}
+
+        {!showLaunch && showFocusIcon && (
+          <Tooltip title="Focus this camera">
+            <ZoomOutMap
+              onClick={handleFocusClick}
+              aria-label="Focus camera"
+              role="button"
+              tabIndex={0}
+              style={{
+                position: 'absolute',
+                top: `${12 * controlScale}px`,
+                right: `${12 * controlScale}px`,
+                color: 'white',
+                fontSize: `${25 * controlScale}px`,
+                zIndex: 15,
+                cursor: 'pointer',
+                opacity: 0.85,
+                transition: 'all 0.2s ease',
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                borderRadius: '4px',
+                padding: '4px',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.opacity = 1;
+                e.currentTarget.style.transform = 'scale(1.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.opacity = 0.85;
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
             />
           </Tooltip>
         )}
@@ -177,14 +234,14 @@ const VideoBlock = ({ src, className, title, showLaunch }) => {
               position: 'absolute',
               bottom: 0,
               left: 0,
-              height: '10%',
+              height: `${10 * controlScale}%`,
               width: '100%',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               backgroundColor: 'rgba(0, 0, 0, 0.7)',
-              padding: '12px 16px',
-              gap: '12px',
+              padding: `${paddingY}px ${paddingX}px`,
+              gap: `${12 * controlScale}px`,
               opacity: showControls ? 1 : 0,
               transition: 'opacity 0.3s ease',
               pointerEvents: 'auto',
@@ -200,7 +257,7 @@ const VideoBlock = ({ src, className, title, showLaunch }) => {
                 background: 'none',
                 border: 'none',
                 cursor: 'pointer',
-                padding: '1px',
+                padding: `${1 * controlScale}px`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -216,11 +273,11 @@ const VideoBlock = ({ src, className, title, showLaunch }) => {
             >
               {isPlaying ? (
                 <Tooltip title="Pause">
-                  <PauseIcon sx={{ fontSize: 18 }} />
+                  <PauseIcon sx={{ fontSize: iconSize }} />
                 </Tooltip>
               ) : (
                 <Tooltip title="Play">
-                  <PlayArrow sx={{ fontSize: 18 }} />
+                  <PlayArrow sx={{ fontSize: iconSize }} />
                 </Tooltip>
               )}
             </button>
@@ -235,7 +292,7 @@ const VideoBlock = ({ src, className, title, showLaunch }) => {
                 background: 'none',
                 border: 'none',
                 cursor: 'pointer',
-                padding: '1px',
+                padding: `${1 * controlScale}px`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -250,7 +307,7 @@ const VideoBlock = ({ src, className, title, showLaunch }) => {
               }
             >
               <Tooltip title="Full screen">
-                <Fullscreen sx={{ fontSize: 18 }} />
+                <Fullscreen sx={{ fontSize: iconSize }} />
               </Tooltip>
             </button>
           </div>
@@ -265,12 +322,16 @@ VideoBlock.propTypes = {
   className: PropTypes.string,
   title: PropTypes.string,
   showLaunch: PropTypes.bool,
+  showFocusIcon: PropTypes.bool,
+  onFocus: PropTypes.func,
 };
 
 VideoBlock.defaultProps = {
   className: '',
   title: '',
   showLaunch: false,
+  showFocusIcon: false,
+  onFocus: null,
 };
 
 export default VideoBlock;
