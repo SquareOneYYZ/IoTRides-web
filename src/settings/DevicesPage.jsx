@@ -42,6 +42,11 @@ const DevicesPage = () => {
   const [searchKeyword, setSearchKeyword] = useState('');
   const [showAll, setShowAll] = usePersistedState('showAllDevices', false);
   const [loading, setLoading] = useState(false);
+  const [filters, setFilters] = useState({});
+  const [sortConfig, setSortConfig] = useState({
+    key: 'name',
+    direction: 'asc',
+  });
 
   useEffectAsync(async () => {
     setLoading(true);
@@ -65,8 +70,8 @@ const DevicesPage = () => {
       if (value) params.append(key, value);
     });
 
-    if (globalSearch) {
-      params.append('search', globalSearch);
+    if (searchKeyword) {
+      params.append('search', searchKeyword);
     }
 
     params.append('sortKey', sortConfig.key);
