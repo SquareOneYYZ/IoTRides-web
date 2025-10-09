@@ -55,6 +55,7 @@ import scheduleReport from './common/scheduleReport';
 import MapScale from '../map/MapScale';
 import SelectField from '../common/components/SelectField';
 import StatusCard from '../common/components/StatusCard';
+import MapMarkers from '../map/MapMarkers';
 
 const columnsArray = [
   ['eventTime', 'positionFixTime'],
@@ -64,13 +65,11 @@ const columnsArray = [
   ['attributes', 'commandData'],
   ['speedLimit', 'attributeSpeedLimit'],
 ];
-
 const filterEvents = (events, typesToExclude) => {
   const excludeSet = new Set(typesToExclude);
   const data = events.filter((event) => !excludeSet.has(event.type));
   return data;
 };
-
 const columnsMap = new Map(columnsArray);
 
 const EventReportPage = () => {
@@ -78,17 +77,13 @@ const EventReportPage = () => {
   const classes = useReportStyles();
   const t = useTranslation();
   const timerRef = useRef();
-
   const devices = useSelector((state) => state.devices.items);
   const geofences = useSelector((state) => state.geofences.items);
-
   const speedUnit = useAttributePreference('speedUnit');
   const distanceUnit = useAttributePreference('distanceUnit');
-
   const [allEventTypes, setAllEventTypes] = useState([
     ['allEvents', 'eventAll'],
   ]);
-
   const alarms = useTranslationKeys((it) => it.startsWith('alarm')).map(
     (it) => ({
       key: unprefixString('alarm', it),
@@ -125,6 +120,28 @@ const EventReportPage = () => {
     }
     return null;
   });
+
+  const createMarkers = () => {
+    const markers = [];
+
+    if (replayPositions.length > 0) {
+      markers.push({
+        latitude: replayPositions[0].latitude,
+        longitude: replayPositions[0].longitude,
+        image: 'start-success',
+      });
+    }
+
+    if (replayPositions.length > 1) {
+      markers.push({
+        latitude: replayPositions[replayPositions.length - 1].latitude,
+        longitude: replayPositions[replayPositions.length - 1].longitude,
+        image: 'finish-error',
+      });
+    }
+
+    return markers;
+  };
 
   useEffect(() => {
     if (replayPlaying && replayPositions.length > 0) {
@@ -435,6 +452,7 @@ const EventReportPage = () => {
               // titleField="fixTime"
             />
           )}
+          <MapMarkers markers={createMarkers()} />
         </MapView>
         <MapScale />
         <MapCamera positions={replayPositions} />
@@ -457,7 +475,7 @@ const EventReportPage = () => {
           <Paper elevation={3} square>
             <Toolbar>
               <Typography variant="h6" style={{ flexGrow: 1 }}>
-                {t('reportReplay')} - {deviceName}
+                {t('reportReplay')} -{deviceName}
               </Typography>
               <IconButton edge="end" onClick={handleReplayStop}>
                 <CloseIcon />
