@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { Box, Button, IconButton, Typography, Tooltip } from '@mui/material';
+import {
+  Box, Button, IconButton, Typography, Tooltip
+} from '@mui/material';
 import makeStyles from '@mui/styles/makeStyles';
 import { PlayArrow, Stop, LocationOn } from '@mui/icons-material';
 import CloseIcon from '@mui/icons-material/Close';
@@ -407,7 +409,9 @@ const LiveStreamingPage = () => {
               {device?.name || `Device ${deviceId}`}
             </Typography>
             <Typography variant="body2" sx={{ opacity: 0.8 }}>
-              {videoSources.length} cameras connected
+              {videoSources.length}
+              {' '}
+              cameras connected
             </Typography>
           </div>
         </div>
@@ -524,7 +528,7 @@ const LiveStreamingPage = () => {
                 src={video.src}
                 title={video.title}
                 showLaunch={false}
-                showFocusIcon={true}
+                showFocusIcon
                 onFocus={() => handleMobileCameraSwitch(index)}
               />
             ))}

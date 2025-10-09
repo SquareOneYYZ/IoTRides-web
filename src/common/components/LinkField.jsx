@@ -22,7 +22,7 @@ const LinkField = ({
   const [items, setItems] = useState([]);
   const [updated, setUpdated] = useState(false);
   const [linkedIds, setLinkedIds] = useState(
-    () => JSON.parse(localStorage.getItem(localStorageKey)) || [],
+    () => JSON.parse(localStorage.getItem(localStorageKey)) || []
   );
 
   useEffectAsync(async () => {
@@ -74,7 +74,7 @@ const LinkField = ({
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(createBody(added)),
-            }),
+            })
           );
         });
 
@@ -86,7 +86,7 @@ const LinkField = ({
               method: 'DELETE',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(createBody(removed)),
-            }),
+            })
           );
         });
 

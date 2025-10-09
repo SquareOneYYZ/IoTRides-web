@@ -212,10 +212,9 @@ const MapPositions = ({
         features: positions
           .filter((it) => devices.hasOwnProperty(it.deviceId))
           .filter((it) =>
-            source === id
+            (source === id
               ? it.deviceId !== selectedDeviceId
-              : it.deviceId === selectedDeviceId
-          )
+              : it.deviceId === selectedDeviceId))
           .map((position) => ({
             type: 'Feature',
             geometry: {

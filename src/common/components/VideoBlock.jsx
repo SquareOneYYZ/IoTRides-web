@@ -25,7 +25,7 @@ const VideoBlock = ({
 
   useEffect(() => {
     const observer = new ResizeObserver((entries) => {
-      for (let entry of entries) {
+      for (const entry of entries) {
         const { width, height } = entry.contentRect;
         setSize({ width, height });
       }
@@ -265,11 +265,9 @@ const VideoBlock = ({
                 transition: 'transform 0.2s ease',
               }}
               onMouseEnter={(e) =>
-                (e.currentTarget.style.transform = 'scale(1.1)')
-              }
+                (e.currentTarget.style.transform = 'scale(1.1)')}
               onMouseLeave={(e) =>
-                (e.currentTarget.style.transform = 'scale(1)')
-              }
+                (e.currentTarget.style.transform = 'scale(1)')}
             >
               {isPlaying ? (
                 <Tooltip title="Pause">
@@ -300,11 +298,9 @@ const VideoBlock = ({
                 transition: 'transform 0.2s ease',
               }}
               onMouseEnter={(e) =>
-                (e.currentTarget.style.transform = 'scale(1.1)')
-              }
+                (e.currentTarget.style.transform = 'scale(1.1)')}
               onMouseLeave={(e) =>
-                (e.currentTarget.style.transform = 'scale(1)')
-              }
+                (e.currentTarget.style.transform = 'scale(1)')}
             >
               <Tooltip title="Full screen">
                 <Fullscreen sx={{ fontSize: iconSize }} />
