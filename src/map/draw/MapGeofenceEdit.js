@@ -3,7 +3,7 @@ import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 import maplibregl from 'maplibre-gl';
 import MapboxDraw from '@mapbox/mapbox-gl-draw';
 import {
-  useCallback, useEffect, useMemo, useRef, useState
+  useCallback, useEffect, useMemo, useRef, useState,
 } from 'react';
 
 import { useDispatch, useSelector } from 'react-redux';
@@ -32,34 +32,33 @@ const MapGeofenceEdit = ({
   const t = useTranslation();
 
   const draw = useMemo(
-    () =>
-      new MapboxDraw({
-        displayControlsDefault: false,
-        controls: {
-          polygon: true,
-          line_string: true,
-          trash: true,
-        },
-        userProperties: true,
-        styles: [
-          ...drawTheme,
-          {
-            id: 'gl-draw-title',
-            type: 'symbol',
-            filter: ['all'],
-            layout: {
-              'text-field': '{user_name}',
-              'text-font': findFonts(map),
-              'text-size': 12,
-            },
-            paint: {
-              'text-halo-color': 'white',
-              'text-halo-width': 1,
-            },
+    () => new MapboxDraw({
+      displayControlsDefault: false,
+      controls: {
+        polygon: true,
+        line_string: true,
+        trash: true,
+      },
+      userProperties: true,
+      styles: [
+        ...drawTheme,
+        {
+          id: 'gl-draw-title',
+          type: 'symbol',
+          filter: ['all'],
+          layout: {
+            'text-field': '{user_name}',
+            'text-font': findFonts(map),
+            'text-size': 12,
           },
-        ],
-      }),
-    []
+          paint: {
+            'text-halo-color': 'white',
+            'text-halo-width': 1,
+          },
+        },
+      ],
+    }),
+    [],
   );
 
   const geofences = useSelector((state) => state.geofences.items);
@@ -104,7 +103,7 @@ const MapGeofenceEdit = ({
         dispatch(errorsActions.push(error.message));
       }
     },
-    [dispatch, geofences, refreshGeofences, onSaved, onEditStateChange]
+    [dispatch, geofences, refreshGeofences, onSaved, onEditStateChange],
   );
 
   const discardChanges = useCatchCallback(
@@ -119,7 +118,7 @@ const MapGeofenceEdit = ({
       pendingFeatureRef.current = null;
       if (onEditStateChange) onEditStateChange(false, null);
     },
-    [draw, theme, geofences, onEditStateChange]
+    [draw, theme, geofences, onEditStateChange],
   );
 
   const handleGeofenceUpdate = useCatchCallback(
@@ -128,9 +127,9 @@ const MapGeofenceEdit = ({
       const { id } = feature;
 
       if (
-        editedGeofenceId &&
-        editedGeofenceId !== id &&
-        unsavedChangesRef.current
+        editedGeofenceId
+        && editedGeofenceId !== id
+        && unsavedChangesRef.current
       ) {
         draw.delete(id);
         const originalGeofence = geofences[id];
@@ -155,16 +154,16 @@ const MapGeofenceEdit = ({
       theme,
       onUnsavedChange,
       onEditStateChange,
-    ]
+    ],
   );
 
   const focusSelectedGeofence = useCallback(
     (selectedId) => {
       if (!selectedId) return null;
       if (
-        editedGeofenceId &&
-        editedGeofenceId !== selectedId &&
-        unsavedChangesRef.current
+        editedGeofenceId
+        && editedGeofenceId !== selectedId
+        && unsavedChangesRef.current
       ) {
         return false;
       }
@@ -210,7 +209,7 @@ const MapGeofenceEdit = ({
       }
       return true;
     },
-    [editedGeofenceId, geofences, draw]
+    [editedGeofenceId, geofences, draw],
   );
 
   useEffect(() => {
@@ -241,8 +240,8 @@ const MapGeofenceEdit = ({
     window.geofenceEditor = {
       save: () => {
         if (
-          editedGeofenceId && unsavedChangesRef.current &&
-          pendingFeatureRef.current) {
+          editedGeofenceId && unsavedChangesRef.current
+          && pendingFeatureRef.current) {
           saveChanges(editedGeofenceId, pendingFeatureRef.current);
         }
       },
@@ -253,10 +252,9 @@ const MapGeofenceEdit = ({
       },
       hasUnsavedChanges: () => unsavedChangesRef.current,
       getEditedGeofenceId: () => editedGeofenceId,
-      canSelectGeofence: (id) =>
-        !editedGeofenceId ||
-        editedGeofenceId === id ||
-        !unsavedChangesRef.current,
+      canSelectGeofence: (id) => !editedGeofenceId
+        || editedGeofenceId === id
+        || !unsavedChangesRef.current,
       resetMapInteraction: () => {
         draw.changeMode('simple_select');
         if (map) {

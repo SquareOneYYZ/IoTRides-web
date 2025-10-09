@@ -41,6 +41,5 @@ export { livestreamActions } from './livestream';
 
 export default configureStore({
   reducer,
-  middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(throttleMiddleware),
+  middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(throttleMiddleware),
 });

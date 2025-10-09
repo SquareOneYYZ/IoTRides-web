@@ -25,10 +25,10 @@ const VideoBlock = ({
 
   useEffect(() => {
     const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
+      entries.forEach((entry) => {
         const { width, height } = entry.contentRect;
         setSize({ width, height });
-      }
+      });
     });
     if (containerRef.current) observer.observe(containerRef.current);
     return () => observer.disconnect();
@@ -106,7 +106,16 @@ const VideoBlock = ({
       <div style={{ position: 'relative', width: '100%', height: '100%' }}>
         {!isStarted && (
           <div
+            aria-label={title || 'Video player'}
+            role="button"
+            tabIndex={0}
             onClick={handlePlayPause}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handlePlayPause();
+              }
+            }}
             style={{
               position: 'absolute',
               top: 0,
@@ -264,10 +273,8 @@ const VideoBlock = ({
                 color: 'white',
                 transition: 'transform 0.2s ease',
               }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.transform = 'scale(1.1)')}
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.transform = 'scale(1)')}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.1)')}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
             >
               {isPlaying ? (
                 <Tooltip title="Pause">
@@ -297,10 +304,8 @@ const VideoBlock = ({
                 color: 'white',
                 transition: 'transform 0.2s ease',
               }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.transform = 'scale(1.1)')}
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.transform = 'scale(1)')}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.1)')}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
             >
               <Tooltip title="Full screen">
                 <Fullscreen sx={{ fontSize: iconSize }} />

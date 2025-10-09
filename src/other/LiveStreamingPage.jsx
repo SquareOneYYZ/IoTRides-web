@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
-  Box, Button, IconButton, Typography, Tooltip
+  Box, Button, IconButton, Typography, Tooltip,
 } from '@mui/material';
 import makeStyles from '@mui/styles/makeStyles';
 import { PlayArrow, Stop, LocationOn } from '@mui/icons-material';
@@ -384,16 +384,6 @@ const LiveStreamingPage = () => {
   const handleMobileCameraSwitch = (index) => {
     setFocusedCameraIndex(index);
   };
-
-  const scrollCarousel = (direction) => {
-    const carousel = document.getElementById('camera-carousel');
-    if (carousel) {
-      const scrollAmount = 120;
-      carousel.scrollLeft +=
-        direction === 'left' ? -scrollAmount : scrollAmount;
-    }
-  };
-
   const isFocusEnabled = [3, 5, 6].includes(currentLayout);
 
   return (
@@ -420,6 +410,7 @@ const LiveStreamingPage = () => {
           <div className={classes.layoutButtons}>
             {[1, 2, 3, 4, 5, 6].map((num) => (
               <button
+                type="button"
                 key={num}
                 className={`${classes.layoutBtn} ${
                   currentLayout === num ? 'active' : ''
@@ -485,7 +476,7 @@ const LiveStreamingPage = () => {
         <div className={`${classes.videoGrid} layout-${currentLayout}`}>
           {filledVideos.map((video) => {
             const originalIndex = videoSources.findIndex(
-              (v) => v.id === video.id
+              (v) => v.id === video.id,
             );
 
             return (
@@ -502,9 +493,10 @@ const LiveStreamingPage = () => {
           })}
 
           {Array.from({ length: emptySlots > 0 ? emptySlots : 0 }).map(
-            (_, idx) => (
-              <div key={`empty-${idx}`} className={classes.emptyBlock} />
-            )
+            (_, i) => {
+              const key = `empty-${i}-${currentLayout}-${Date.now()}`;
+              return <div key={key} className={classes.emptyBlock} />;
+            },
           )}
         </div>
 
@@ -512,12 +504,18 @@ const LiveStreamingPage = () => {
         <div className={classes.mobileView}>
           {/* Main Video View */}
           <div className={classes.mainVideoContainer}>
-            <VideoBlock
-              src={videoSources[focusedCameraIndex].src}
-              title={videoSources[focusedCameraIndex].title}
-              showLaunch={false}
-              showFocusIcon={false}
-            />
+            {videoSources.map((video) => (
+              <VideoBlock
+                key={video.id}
+                src={video.src}
+                title={video.title}
+                showLaunch={false}
+                showFocusIcon
+                onFocus={() => handleMobileCameraSwitch(
+                  videoSources.findIndex((v) => v.id === video.id),
+                )}
+              />
+            ))}
           </div>
 
           {/* Mobile 2x Grid Layout */}
