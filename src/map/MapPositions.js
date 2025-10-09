@@ -1,4 +1,6 @@
-import { useId, useCallback, useEffect } from 'react';
+import {
+  useId, useCallback, useEffect, useMemo, useRef,
+} from 'react';
 import { useSelector } from 'react-redux';
 import { useMediaQuery } from '@mui/material';
 import { useTheme } from '@mui/styles';
@@ -30,7 +32,6 @@ const MapPositions = ({
 
   const mapCluster = useAttributePreference('mapCluster', true);
   const directionType = useAttributePreference('mapDirection', 'selected');
-
   const createFeature = (devices, position, selectedPositionId) => {
     const device = devices[position.deviceId];
     let showDirection;
@@ -42,8 +43,7 @@ const MapPositions = ({
         showDirection = position.course > 0;
         break;
       default:
-        showDirection =
-          selectedPositionId === position.id && position.course > 0;
+        showDirection = selectedPositionId === position.id && position.course > 0;
         break;
     }
     return {
@@ -70,7 +70,7 @@ const MapPositions = ({
         onClick(event.lngLat.lat, event.lngLat.lng);
       }
     },
-    [onClick]
+    [onClick],
   );
 
   const onMarkerClick = useCallback(
@@ -81,7 +81,7 @@ const MapPositions = ({
         onClick(feature.properties.id, feature.properties.deviceId);
       }
     },
-    [onClick]
+    [onClick],
   );
 
   const onClusterClick = useCatchCallback(
@@ -97,8 +97,111 @@ const MapPositions = ({
         zoom,
       });
     },
-    [clusters]
+    [clusters],
   );
+
+  const { baseFeatures, selectedFeatures } = useMemo(() => {
+    const availableDevices = devices || {};
+    const base = [];
+    const selectedArr = [];
+    if (Array.isArray(positions) && positions.length) {
+      for (let i = 0; i < positions.length; i += 1) {
+        const position = positions[i];
+        if (!availableDevices.hasOwnProperty(position.deviceId));
+        const isSelectedDevice = position.deviceId === selectedDeviceId;
+        const feature = {
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: [position.longitude, position.latitude],
+          },
+          properties: createFeature(
+            availableDevices,
+            position,
+            selectedPosition && selectedPosition.id,
+          ),
+        };
+        if (isSelectedDevice) {
+          selectedArr.push(feature);
+        } else {
+          base.push(feature);
+        }
+      }
+    }
+    return {
+      baseFeatures: base,
+      selectedFeatures: selectedArr,
+    };
+  }, [
+    positions,
+    devices,
+    selectedDeviceId,
+    selectedPosition,
+    directionType,
+    showStatus,
+    titleField,
+    customIcon,
+  ]);
+
+  const lastUpdateRef = useRef(0);
+  const scheduledTimeoutRef = useRef(null);
+  const isUnmountedRef = useRef(false);
+
+  useEffect(() => {
+    isUnmountedRef.current = false;
+    return () => {
+      isUnmountedRef.current = true;
+      if (scheduledTimeoutRef.current) {
+        clearTimeout(scheduledTimeoutRef.current);
+        scheduledTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
+  const scheduleSetData = useCallback(() => {
+    const now = Date.now();
+    const minIntervalMs = 250;
+    const elapsed = now - lastUpdateRef.current;
+
+    const run = () => {
+      if (isUnmountedRef.current) return;
+      try {
+        const baseSource = map.getSource(id);
+        const selectedSource = map.getSource(selected);
+        if (baseSource) {
+          requestAnimationFrame(() => {
+            baseSource.setData({
+              type: 'FeatureCollection',
+              features: baseFeatures,
+            });
+          });
+        }
+        if (selectedSource) {
+          requestAnimationFrame(() => {
+            selectedSource.setData({
+              type: 'FeatureCollection',
+              features: selectedFeatures,
+            });
+          });
+        }
+      } catch (e) {
+        console.log(e);
+      } finally {
+        lastUpdateRef.current = Date.now();
+        scheduledTimeoutRef.current = null;
+      }
+    };
+
+    if (elapsed >= minIntervalMs) {
+      run();
+    } else if (!scheduledTimeoutRef.current) {
+      scheduledTimeoutRef.current = setTimeout(run, minIntervalMs - elapsed);
+    }
+  }, [id, selected, baseFeatures, selectedFeatures]);
+
+  useEffect(() => {
+    scheduleSetData();
+  }, [scheduleSetData]);
 
   useEffect(() => {
     map.addSource(id, {
@@ -204,41 +307,6 @@ const MapPositions = ({
       });
     };
   }, [mapCluster, clusters, onMarkerClick, onClusterClick]);
-
-  useEffect(() => {
-    [id, selected].forEach((source) => {
-      map.getSource(source)?.setData({
-        type: 'FeatureCollection',
-        features: positions
-          .filter((it) => devices.hasOwnProperty(it.deviceId))
-          .filter((it) =>
-            source === id
-              ? it.deviceId !== selectedDeviceId
-              : it.deviceId === selectedDeviceId
-          )
-          .map((position) => ({
-            type: 'Feature',
-            geometry: {
-              type: 'Point',
-              coordinates: [position.longitude, position.latitude],
-            },
-            properties: createFeature(
-              devices,
-              position,
-              selectedPosition && selectedPosition.id
-            ),
-          })),
-      });
-    });
-  }, [
-    mapCluster,
-    clusters,
-    onMarkerClick,
-    onClusterClick,
-    devices,
-    positions,
-    selectedPosition,
-  ]);
 
   return null;
 };
