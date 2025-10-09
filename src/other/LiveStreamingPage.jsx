@@ -3,13 +3,7 @@ import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { Box, Button, IconButton, Typography, Tooltip } from '@mui/material';
 import makeStyles from '@mui/styles/makeStyles';
-import {
-  PlayArrow,
-  Stop,
-  LocationOn,
-  ChevronLeft,
-  ChevronRight,
-} from '@mui/icons-material';
+import { PlayArrow, Stop, LocationOn } from '@mui/icons-material';
 import CloseIcon from '@mui/icons-material/Close';
 import VideoBlock from '../common/components/VideoBlock';
 
@@ -270,27 +264,14 @@ const useStyles = makeStyles((theme) => ({
     position: 'relative',
     minHeight: 0,
   },
-  cameraCarousel: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: theme.spacing(1),
-    padding: theme.spacing(1, 0),
-    backgroundColor: '#1e1e1e',
-    borderRadius: 8,
-  },
-  carouselScroll: {
-    display: 'flex',
-    gap: theme.spacing(1),
-    overflowX: 'auto',
-    scrollBehavior: 'smooth',
-    flex: 1,
-    padding: theme.spacing(0, 1),
-    '&::-webkit-scrollbar': {
-      height: 4,
-    },
-    '&::-webkit-scrollbar-thumb': {
-      backgroundColor: 'rgba(255,255,255,0.3)',
-      borderRadius: 2,
+  mobileVideoGrid: {
+    display: 'none', // Hidden by default on desktop
+    [theme.breakpoints.down('md')]: {
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr',
+      gap: theme.spacing(1),
+      height: '100%',
+      flex: 1,
     },
   },
   thumbnailContainer: {
@@ -348,7 +329,6 @@ const useStyles = makeStyles((theme) => ({
     padding: theme.spacing(0.5),
     color: '#fff',
   },
-
   emptyBlock: {
     backgroundColor: '#2a2a2a',
     borderRadius: 8,
@@ -498,7 +478,6 @@ const LiveStreamingPage = () => {
       </div>
 
       <div className={classes.content}>
-        {/* Desktop Grid Layout */}
         <div className={`${classes.videoGrid} layout-${currentLayout}`}>
           {filledVideos.map((video) => {
             const originalIndex = videoSources.findIndex(
@@ -537,44 +516,18 @@ const LiveStreamingPage = () => {
             />
           </div>
 
-          {/* Camera Carousel */}
-          <div className={classes.cameraCarousel}>
-            <IconButton
-              className={classes.carouselArrow}
-              onClick={() => scrollCarousel('left')}
-              size="small"
-            >
-              <ChevronLeft />
-            </IconButton>
-
-            <div className={classes.carouselScroll} id="camera-carousel">
-              {videoSources.map((video, index) => (
-                <div
-                  key={video.id}
-                  className={`${classes.thumbnailContainer} ${
-                    focusedCameraIndex === index ? 'active' : ''
-                  }`}
-                  onClick={() => handleMobileCameraSwitch(index)}
-                >
-                  <video
-                    className={classes.thumbnailVideo}
-                    src={video.src}
-                    muted
-                    loop
-                    playsInline
-                  />
-                  <div className={classes.thumbnailLabel}>{video.title}</div>
-                </div>
-              ))}
-            </div>
-
-            <IconButton
-              className={classes.carouselArrow}
-              onClick={() => scrollCarousel('right')}
-              size="small"
-            >
-              <ChevronRight />
-            </IconButton>
+          {/* Mobile 2x Grid Layout */}
+          <div className={classes.mobileVideoGrid}>
+            {videoSources.map((video, index) => (
+              <VideoBlock
+                key={video.id}
+                src={video.src}
+                title={video.title}
+                showLaunch={false}
+                showFocusIcon={true}
+                onFocus={() => handleMobileCameraSwitch(index)}
+              />
+            ))}
           </div>
         </div>
       </div>
