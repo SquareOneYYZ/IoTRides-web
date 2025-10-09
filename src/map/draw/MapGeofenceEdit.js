@@ -32,34 +32,33 @@ const MapGeofenceEdit = ({
   const t = useTranslation();
 
   const draw = useMemo(
-    () =>
-      new MapboxDraw({
-        displayControlsDefault: false,
-        controls: {
-          polygon: true,
-          line_string: true,
-          trash: true,
-        },
-        userProperties: true,
-        styles: [
-          ...drawTheme,
-          {
-            id: 'gl-draw-title',
-            type: 'symbol',
-            filter: ['all'],
-            layout: {
-              'text-field': '{user_name}',
-              'text-font': findFonts(map),
-              'text-size': 12,
-            },
-            paint: {
-              'text-halo-color': 'white',
-              'text-halo-width': 1,
-            },
+    () => new MapboxDraw({
+      displayControlsDefault: false,
+      controls: {
+        polygon: true,
+        line_string: true,
+        trash: true,
+      },
+      userProperties: true,
+      styles: [
+        ...drawTheme,
+        {
+          id: 'gl-draw-title',
+          type: 'symbol',
+          filter: ['all'],
+          layout: {
+            'text-field': '{user_name}',
+            'text-font': findFonts(map),
+            'text-size': 12,
           },
-        ],
-      }),
-    []
+          paint: {
+            'text-halo-color': 'white',
+            'text-halo-width': 1,
+          },
+        },
+      ],
+    }),
+    [],
   );
 
   const geofences = useSelector((state) => state.geofences.items);
@@ -104,7 +103,7 @@ const MapGeofenceEdit = ({
         dispatch(errorsActions.push(error.message));
       }
     },
-    [dispatch, geofences, refreshGeofences, onSaved, onEditStateChange]
+    [dispatch, geofences, refreshGeofences, onSaved, onEditStateChange],
   );
 
   const discardChanges = useCatchCallback(
@@ -119,7 +118,7 @@ const MapGeofenceEdit = ({
       pendingFeatureRef.current = null;
       if (onEditStateChange) onEditStateChange(false, null);
     },
-    [draw, theme, geofences, onEditStateChange]
+    [draw, theme, geofences, onEditStateChange],
   );
 
   const handleGeofenceUpdate = useCatchCallback(
@@ -128,9 +127,9 @@ const MapGeofenceEdit = ({
       const { id } = feature;
 
       if (
-        editedGeofenceId &&
-        editedGeofenceId !== id &&
-        unsavedChangesRef.current
+        editedGeofenceId
+        && editedGeofenceId !== id
+        && unsavedChangesRef.current
       ) {
         draw.delete(id);
         const originalGeofence = geofences[id];
@@ -155,53 +154,45 @@ const MapGeofenceEdit = ({
       theme,
       onUnsavedChange,
       onEditStateChange,
-    ]
+    ],
   );
 
   const focusSelectedGeofence = useCallback(
     (selectedId) => {
       if (!selectedId) return null;
       if (
-        editedGeofenceId &&
-        editedGeofenceId !== selectedId &&
-        unsavedChangesRef.current
+        editedGeofenceId
+        && editedGeofenceId !== selectedId
+        && unsavedChangesRef.current
       ) {
         return false;
       }
 
-      // Focus on the selected geofence
       const geofence = geofences[selectedId];
       if (geofence) {
-        // Change selection mode
         draw.changeMode('simple_select', { featureIds: [selectedId] });
 
-        // Get the feature from the draw instance
         const feature = draw.get(selectedId);
         if (feature && feature.geometry) {
           try {
-            // Calculate bounds for the feature
             const bounds = new maplibregl.LngLatBounds();
 
             if (feature.geometry.type === 'Polygon') {
-              // For polygons, use all coordinates
               feature.geometry.coordinates[0].forEach((coord) => {
                 bounds.extend(coord);
               });
             } else if (feature.geometry.type === 'LineString') {
-              // For line strings, use all coordinates
               feature.geometry.coordinates.forEach((coord) => {
                 bounds.extend(coord);
               });
             } else if (feature.geometry.type === 'Point') {
-              // For points, center on the point
               bounds.extend(feature.geometry.coordinates);
             }
 
-            // Fit the map to the bounds with some padding
             map.fitBounds(bounds, {
               padding: 50,
-              maxZoom: 16, // Don't zoom in too much
-              duration: 1000, // Smooth animation
+              maxZoom: 16,
+              duration: 1000,
             });
           } catch (error) {
             console.log('Error fitting bounds to geofence:', error);
@@ -210,7 +201,7 @@ const MapGeofenceEdit = ({
       }
       return true;
     },
-    [editedGeofenceId, geofences, draw]
+    [editedGeofenceId, geofences, draw],
   );
 
   useEffect(() => {
@@ -241,8 +232,10 @@ const MapGeofenceEdit = ({
     window.geofenceEditor = {
       save: () => {
         if (
-          editedGeofenceId && unsavedChangesRef.current &&
-          pendingFeatureRef.current) {
+          editedGeofenceId
+          && unsavedChangesRef.current
+          && pendingFeatureRef.current
+        ) {
           saveChanges(editedGeofenceId, pendingFeatureRef.current);
         }
       },
@@ -253,10 +246,9 @@ const MapGeofenceEdit = ({
       },
       hasUnsavedChanges: () => unsavedChangesRef.current,
       getEditedGeofenceId: () => editedGeofenceId,
-      canSelectGeofence: (id) =>
-        !editedGeofenceId ||
-        editedGeofenceId === id ||
-        !unsavedChangesRef.current,
+      canSelectGeofence: (id) => !editedGeofenceId
+        || editedGeofenceId === id
+        || !unsavedChangesRef.current,
       resetMapInteraction: () => {
         draw.changeMode('simple_select');
         if (map) {
@@ -317,7 +309,6 @@ const MapGeofenceEdit = ({
           method: 'DELETE',
         });
         if (response.ok) {
-          // If we're deleting the currently edited geofence, reset state
           if (feature.id === editedGeofenceId) {
             unsavedChangesRef.current = false;
             setEditedGeofenceId(null);
@@ -344,8 +335,8 @@ const MapGeofenceEdit = ({
   }, [geofences]);
 
   useEffect(() => {
-    if (selectedGeofenceId && focusSelectedGeofence(selectedGeofenceId)) {
-      // Successfully focused on selected geofence
+    if (selectedGeofenceId) {
+      focusSelectedGeofence(selectedGeofenceId);
     }
   }, [selectedGeofenceId, focusSelectedGeofence]);
 
