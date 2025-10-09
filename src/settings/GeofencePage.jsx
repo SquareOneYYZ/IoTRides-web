@@ -53,8 +53,7 @@ const GeofencePage = () => {
             <AccordionDetails className={classes.details}>
               <TextField
                 value={item.name || ''}
-                onChange={(event) =>
-                  setItem({ ...item, name: event.target.value })}
+                onChange={(event) => setItem({ ...item, name: event.target.value })}
                 label={t('sharedName')}
               />
             </AccordionDetails>
@@ -66,14 +65,12 @@ const GeofencePage = () => {
             <AccordionDetails className={classes.details}>
               <TextField
                 value={item.description || ''}
-                onChange={(event) =>
-                  setItem({ ...item, description: event.target.value })}
+                onChange={(event) => setItem({ ...item, description: event.target.value })}
                 label={t('sharedDescription')}
               />
               <SelectField
                 value={item.calendarId}
-                onChange={(event) =>
-                  setItem({ ...item, calendarId: Number(event.target.value) })}
+                onChange={(event) => setItem({ ...item, calendarId: Number(event.target.value) })}
                 endpoint="/api/calendars"
                 label={t('sharedCalendar')}
               />
@@ -81,14 +78,13 @@ const GeofencePage = () => {
                 control={(
                   <Checkbox
                     checked={item.attributes.hide}
-                    onChange={(e) =>
-                      setItem({
-                        ...item,
-                        attributes: {
-                          ...item.attributes,
-                          hide: e.target.checked,
-                        },
-                      })}
+                    onChange={(e) => setItem({
+                      ...item,
+                      attributes: {
+                        ...item.attributes,
+                        hide: e.target.checked,
+                      },
+                    })}
                   />
                 )}
                 label={t('sharedFilterMap')}

@@ -59,7 +59,20 @@ const DevicesPage = () => {
   }, [timestamp, showAll]);
 
   const handleExport = () => {
-    window.location.assign('/api/reports/devices/xlsx');
+    const params = new URLSearchParams();
+
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) params.append(key, value);
+    });
+
+    if (globalSearch) {
+      params.append('search', globalSearch);
+    }
+
+    params.append('sortKey', sortConfig.key);
+    params.append('sortDir', sortConfig.direction);
+
+    window.location.assign(`/api/reports/devices/xlsx?${params.toString()}`);
   };
 
   const actionConnections = {
