@@ -436,7 +436,6 @@ const EventReportPage = () => {
         <MapView>
           <MapGeofence />
           <MapRoutePath positions={replayPositions} />
-          <MapRoutePoints positions={replayPositions} onClick={onPointClick} />
           {eventPosition && (
             <MapPositions
               positions={[eventPosition]}
