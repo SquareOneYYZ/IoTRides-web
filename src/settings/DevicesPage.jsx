@@ -42,6 +42,11 @@ const DevicesPage = () => {
   const [searchKeyword, setSearchKeyword] = useState('');
   const [showAll, setShowAll] = usePersistedState('showAllDevices', false);
   const [loading, setLoading] = useState(false);
+  const [filters, setFilters] = useState({});
+  const [sortConfig, setSortConfig] = useState({
+    key: 'name',
+    direction: 'asc',
+  });
 
   useEffectAsync(async () => {
     setLoading(true);
@@ -59,7 +64,20 @@ const DevicesPage = () => {
   }, [timestamp, showAll]);
 
   const handleExport = () => {
-    window.location.assign('/api/reports/devices/xlsx');
+    const params = new URLSearchParams();
+
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) params.append(key, value);
+    });
+
+    if (searchKeyword) {
+      params.append('search', searchKeyword);
+    }
+
+    params.append('sortKey', sortConfig.key);
+    params.append('sortDir', sortConfig.direction);
+
+    window.location.assign(`/api/reports/devices/xlsx?${params.toString()}`);
   };
 
   const actionConnections = {
