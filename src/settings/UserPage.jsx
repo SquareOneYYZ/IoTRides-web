@@ -565,13 +565,15 @@ const UserPage = () => {
               </FormGroup>
             </AccordionDetails>
           </Accordion>
-          <EditAttributesAccordion
-            attribute={attribute}
-            attributes={item.attributes}
-            setAttributes={(attributes) => setItem({ ...item, attributes })}
-            definitions={{ ...commonUserAttributes, ...userAttributes }}
-            focusAttribute={attribute}
-          />
+          {admin && (
+            <EditAttributesAccordion
+              attribute={attribute}
+              attributes={item.attributes}
+              setAttributes={(attributes) => setItem({ ...item, attributes })}
+              definitions={{ ...commonUserAttributes, ...userAttributes }}
+              focusAttribute={attribute}
+            />
+          )}
           {registrationEnabled && item.id === currentUser.id && !manager && (
             <Accordion>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
