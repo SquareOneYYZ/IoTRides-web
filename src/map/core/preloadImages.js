@@ -56,7 +56,7 @@ export const mapIcons = {
   panelvan: vanSvg,
   cubetruck: truckSvg,
   shuttlebus: busSvg,
-  specialitybus: busSvg, // not showing in ma
+  specialitybus: busSvg,
 };
 
 export const mapIconKey = (category) => {
