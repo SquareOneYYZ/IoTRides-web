@@ -1,6 +1,4 @@
-import {
-  useId, useCallback, useEffect, useMemo, useRef,
-} from 'react';
+import { useId, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { useMediaQuery } from '@mui/material';
 import { useTheme } from '@mui/styles';
@@ -33,34 +31,6 @@ const MapPositions = ({
   const mapCluster = useAttributePreference('mapCluster', true);
   const directionType = useAttributePreference('mapDirection', 'selected');
 
-  const createFeature = (devices, position, selectedPositionId) => {
-    const device = devices[position.deviceId];
-    let showDirection;
-    switch (directionType) {
-      case 'none':
-        showDirection = false;
-        break;
-      case 'all':
-        showDirection = position.course > 0;
-        break;
-      default:
-        showDirection = selectedPositionId === position.id && position.course > 0;
-        break;
-    }
-    return {
-      id: position.id,
-      deviceId: position.deviceId,
-      name: device.name,
-      fixTime: formatTime(position.fixTime, 'seconds'),
-      tollName: 'Event Location',
-      category: mapIconKey(device.category),
-      color: showStatus
-        ? position.attributes.color || getStatusColor(device.status)
-        : 'neutral',
-      rotation: position.course,
-      direction: showDirection,
-    };
-  };
   const createFeature = useCallback(
     (devices, position, selectedPositionId) => {
       const device = devices[position.deviceId];
@@ -73,7 +43,8 @@ const MapPositions = ({
           showDirection = position.course > 0;
           break;
         default:
-          showDirection = selectedPositionId === position.id && position.course > 0;
+          showDirection =
+            selectedPositionId === position.id && position.course > 0;
           break;
       }
       return {
@@ -90,7 +61,7 @@ const MapPositions = ({
         direction: showDirection,
       };
     },
-    [directionType, showStatus],
+    [directionType, showStatus]
   );
 
   const onMouseEnter = useCallback(() => {
@@ -106,7 +77,7 @@ const MapPositions = ({
         onClick(event.lngLat.lat, event.lngLat.lng);
       }
     },
-    [onClick],
+    [onClick]
   );
 
   const onMarkerClick = useCallback(
@@ -117,7 +88,7 @@ const MapPositions = ({
         onClick(feature.properties.id, feature.properties.deviceId);
       }
     },
-    [onClick],
+    [onClick]
   );
 
   const onClusterClick = useCatchCallback(
@@ -133,7 +104,7 @@ const MapPositions = ({
         zoom,
       });
     },
-    [clusters, id],
+    [clusters, id]
   );
 
   const { baseFeatures, selectedFeatures } = useMemo(() => {
@@ -143,7 +114,7 @@ const MapPositions = ({
     if (Array.isArray(positions) && positions.length) {
       for (let i = 0; i < positions.length; i += 1) {
         const position = positions[i];
-        if (!availableDevices.hasOwnProperty(position.deviceId));
+        if (!availableDevices.hasOwnProperty(position.deviceId)) continue;
         const isSelectedDevice = position.deviceId === selectedDeviceId;
         const feature = {
           type: 'Feature',
@@ -154,7 +125,7 @@ const MapPositions = ({
           properties: createFeature(
             availableDevices,
             position,
-            selectedPosition && selectedPosition.id,
+            selectedPosition && selectedPosition.id
           ),
         };
         if (isSelectedDevice) {
@@ -316,7 +287,7 @@ const MapPositions = ({
       if (map.getLayer(clusters)) {
         map.removeLayer(clusters);
       }
-useEffect(() => {
+
       [id, selected].forEach((source) => {
         map.off('mouseenter', source, onMouseEnter);
         map.off('mouseleave', source, onMouseLeave);
@@ -345,8 +316,9 @@ useEffect(() => {
     selected,
     iconScale,
     titleField,
+    customIcon,
   ]);
-  }
+
   return null;
 };
 
