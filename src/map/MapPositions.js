@@ -32,46 +32,37 @@ const MapPositions = ({
 
   const mapCluster = useAttributePreference('mapCluster', true);
   const directionType = useAttributePreference('mapDirection', 'selected');
+  const createFeature = (devices, position, selectedPositionId) => {
+    const device = devices[position.deviceId];
+    let showDirection;
+    switch (directionType) {
+      case 'none':
+        showDirection = false;
+        break;
+      case 'all':
+        showDirection = position.course > 0;
+        break;
+      default:
+        showDirection = selectedPositionId === position.id && position.course > 0;
+        break;
+    }
+    return {
+      id: position.id,
+      deviceId: position.deviceId,
+      name: device.name,
+      fixTime: formatTime(position.fixTime, 'seconds'),
+      tollName: 'Event Location',
+      category: mapIconKey(device.category),
+      color: showStatus
+        ? position.attributes.color || getStatusColor(device.status)
+        : 'neutral',
+      rotation: position.course,
+      direction: showDirection,
+    };
+  };
 
-  const createFeature = useCallback(
-    (devices, position, selectedPositionId) => {
-      const device = devices[position.deviceId];
-      let showDirection;
-      switch (directionType) {
-        case 'none':
-          showDirection = false;
-          break;
-        case 'all':
-          showDirection = position.course > 0;
-          break;
-        default:
-          showDirection = selectedPositionId === position.id && position.course > 0;
-          break;
-      }
-      return {
-        id: position.id,
-        deviceId: position.deviceId,
-        name: device.name,
-        fixTime: formatTime(position.fixTime, 'seconds'),
-        tollName: 'Event Location',
-        category: mapIconKey(device.category),
-        color: showStatus
-          ? position.attributes.color || getStatusColor(device.status)
-          : 'neutral',
-        rotation: position.course,
-        direction: showDirection,
-      };
-    },
-    [directionType, showStatus],
-  );
-
-  const onMouseEnter = useCallback(() => {
-    map.getCanvas().style.cursor = 'pointer';
-  }, []);
-
-  const onMouseLeave = useCallback(() => {
-    map.getCanvas().style.cursor = '';
-  }, []);
+  const onMouseEnter = () => (map.getCanvas().style.cursor = 'pointer');
+  const onMouseLeave = () => (map.getCanvas().style.cursor = '');
 
   const onMapClick = useCallback(
     (event) => {
@@ -106,7 +97,7 @@ const MapPositions = ({
         zoom,
       });
     },
-    [clusters, id],
+    [clusters],
   );
 
   const { baseFeatures, selectedFeatures } = useMemo(() => {
@@ -141,7 +132,16 @@ const MapPositions = ({
       baseFeatures: base,
       selectedFeatures: selectedArr,
     };
-  }, [positions, devices, selectedDeviceId, selectedPosition, createFeature]);
+  }, [
+    positions,
+    devices,
+    selectedDeviceId,
+    selectedPosition,
+    directionType,
+    showStatus,
+    titleField,
+    customIcon,
+  ]);
 
   const lastUpdateRef = useRef(0);
   const scheduledTimeoutRef = useRef(null);
@@ -306,21 +306,39 @@ const MapPositions = ({
         }
       });
     };
+  }, [mapCluster, clusters, onMarkerClick, onClusterClick]);
+
+    [id, selected].forEach((source) => {
+      map.getSource(source)?.setData({
+        type: 'FeatureCollection',
+        features: positions
+          .filter((it) => devices.hasOwnProperty(it.deviceId))
+          .filter((it) => (source === id
+            ? it.deviceId !== selectedDeviceId
+            : it.deviceId === selectedDeviceId))
+          .map((position) => ({
+            type: 'Feature',
+            geometry: {
+              type: 'Point',
+              coordinates: [position.longitude, position.latitude],
+            },
+            properties: createFeature(
+              devices,
+              position,
+              selectedPosition && selectedPosition.id,
+            ),
+          })),
+      });
+    });
   }, [
     mapCluster,
     clusters,
     onMarkerClick,
     onClusterClick,
-    onMapClick,
-    onMouseEnter,
-    onMouseLeave,
-    id,
-    selected,
-    iconScale,
-    titleField,
+    devices,
+    positions,
+    selectedPosition,
   ]);
 
-  return null;
-};
 
 export default MapPositions;
