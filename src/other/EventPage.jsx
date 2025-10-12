@@ -29,7 +29,7 @@ import StatusCard from '../common/components/StatusCard';
 import { formatNotificationTitle, formatTime } from '../common/util/formatter';
 import MapScale from '../map/MapScale';
 import MapRoutePath from '../map/MapRoutePath';
-import MapRoutePoints from '../map/MapRoutePoints';
+import MapMarkers from '../map/MapMarkers';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -105,6 +105,35 @@ const EventPage = () => {
   const [eventPosition, setEventPosition] = useState(null);
   const [device, setDevice] = useState(null);
   const timerRef = useRef();
+  const createMarkers = () => {
+    const markers = [];
+
+    if (replayPositions.length > 0) {
+      markers.push({
+        latitude: replayPositions[0].latitude,
+        longitude: replayPositions[0].longitude,
+        image: 'start-success',
+      });
+    }
+
+    if (replayPositions.length > 1) {
+      markers.push({
+        latitude: replayPositions[replayPositions.length - 1].latitude,
+        longitude: replayPositions[replayPositions.length - 1].longitude,
+        image: 'finish-error',
+      });
+    }
+
+    if (eventPosition) {
+      markers.push({
+        latitude: eventPosition.latitude,
+        longitude: eventPosition.longitude,
+        image: 'event-error',
+      });
+    }
+
+    return markers;
+  };
 
   const formatType = (event) => formatNotificationTitle(t, {
     type: event.type,
@@ -240,7 +269,6 @@ const EventPage = () => {
         <MapView>
           <MapGeofence />
           <MapRoutePath positions={replayPositions} />
-          <MapRoutePoints positions={replayPositions} onClick={onPointClick} />
           {eventPosition && (
             <MapPositions
               positions={[eventPosition]}
@@ -255,6 +283,7 @@ const EventPage = () => {
               onClick={onMarkerClick}
             />
           )}
+          <MapMarkers markers={createMarkers()} />
         </MapView>
         <MapScale />
         <MapCamera positions={replayPositions} />
