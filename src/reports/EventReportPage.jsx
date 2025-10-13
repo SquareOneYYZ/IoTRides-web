@@ -1,6 +1,4 @@
-import React, {
-  useState, useEffect, useRef, useCallback,
-} from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FormControl,
@@ -90,7 +88,7 @@ const EventReportPage = () => {
     (it) => ({
       key: unprefixString('alarm', it),
       name: t(it),
-    }),
+    })
   );
 
   const [columns, setColumns] = usePersistedState('eventColumns', [
@@ -167,7 +165,7 @@ const EventReportPage = () => {
   useEffectAsync(async () => {
     if (selectedItem && !replayMode) {
       const response = await fetch(
-        `/api/positions?id=${selectedItem.positionId}`,
+        `/api/positions?id=${selectedItem.positionId}`
       );
       if (response.ok) {
         const positions = await response.json();
@@ -194,7 +192,7 @@ const EventReportPage = () => {
         'media',
       ];
       const typeFiltered = types.filter(
-        (item) => !FilteredTypes.includes(item.type),
+        (item) => !FilteredTypes.includes(item.type)
       );
       setAllEventTypes([
         ...allEventTypes,
@@ -215,7 +213,7 @@ const EventReportPage = () => {
       window.location.assign(`/api/reports/events/xlsx?${query.toString()}`);
     } else if (type === 'mail') {
       const response = await fetch(
-        `/api/reports/events/mail?${query.toString()}`,
+        `/api/reports/events/mail?${query.toString()}`
       );
       if (!response.ok) {
         throw Error(await response.text());
@@ -227,7 +225,7 @@ const EventReportPage = () => {
           `/api/reports/events?${query.toString()}`,
           {
             headers: { Accept: 'application/json' },
-          },
+          }
         );
         if (response.ok) {
           const data = await response.json();
@@ -253,7 +251,7 @@ const EventReportPage = () => {
     const eventTimestamp = new Date(eventTime).getTime();
     let closestIndex = 0;
     let minDifference = Math.abs(
-      new Date(positions[0].fixTime).getTime() - eventTimestamp,
+      new Date(positions[0].fixTime).getTime() - eventTimestamp
     );
 
     for (let i = 1; i < positions.length; i += 1) {
@@ -305,7 +303,7 @@ const EventReportPage = () => {
         const eventIndex = findClosestPositionIndex(positions, item.eventTime);
         setReplayIndex(eventIndex);
         const eventPositionResponse = await fetch(
-          `/api/positions?id=${item.positionId}`,
+          `/api/positions?id=${item.positionId}`
         );
         if (eventPositionResponse.ok) {
           const eventPositions = await eventPositionResponse.json();
@@ -338,7 +336,7 @@ const EventReportPage = () => {
     (positionId) => {
       setShowCard(!!positionId);
     },
-    [setShowCard],
+    [setShowCard]
   );
 
   const formatValue = (item, key) => {
@@ -401,7 +399,7 @@ const EventReportPage = () => {
               tollDetails += `Toll Distance: ${formatDistance(
                 item.attributes.tollDistance,
                 distanceUnit,
-                t,
+                t
               )}`;
             }
             return tollDetails;
@@ -438,6 +436,7 @@ const EventReportPage = () => {
         <MapView>
           <MapGeofence />
           <MapRoutePath positions={replayPositions} />
+          <MapRoutePoints positions={replayPositions} />
           {eventPosition && (
             <MapPositions
               positions={[eventPosition]}
@@ -476,10 +475,7 @@ const EventReportPage = () => {
           <Paper elevation={3} square>
             <Toolbar>
               <Typography variant="h6" style={{ flexGrow: 1 }}>
-                {t('reportReplay')}
-                {' '}
-                -
-                {deviceName}
+                {t('reportReplay')} -{deviceName}
               </Typography>
               <IconButton edge="end" onClick={handleReplayStop}>
                 <CloseIcon />
@@ -630,8 +626,8 @@ const EventReportPage = () => {
                   </Select>
                 </FormControl>
               </div>
-              {eventTypes[0] !== 'allEvents'
-                && eventTypes.includes('alarm') && (
+              {eventTypes[0] !== 'allEvents' &&
+                eventTypes.includes('alarm') && (
                   <div className={classes.filterItem}>
                     <SelectField
                       multiple
@@ -643,7 +639,7 @@ const EventReportPage = () => {
                       fullWidth
                     />
                   </div>
-              )}
+                )}
               <ColumnSelect
                 columns={columns}
                 setColumns={setColumns}
@@ -666,8 +662,8 @@ const EventReportPage = () => {
                 items.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell className={classes.columnAction} padding="none">
-                      {(item.positionId
-                        && (selectedItem === item ? (
+                      {(item.positionId &&
+                        (selectedItem === item ? (
                           <IconButton
                             size="small"
                             onClick={() => setSelectedItem(null)}
@@ -681,8 +677,8 @@ const EventReportPage = () => {
                           >
                             <LocationSearchingIcon fontSize="small" />
                           </IconButton>
-                        )))
-                        || ''}
+                        ))) ||
+                        ''}
                     </TableCell>
                     <TableCell className={classes.columnAction} padding="none">
                       {item.positionId && (
