@@ -1,4 +1,4 @@
-import { useId, useCallback, useEffect } from 'react';
+import { useId, useCallback, useEffect, useMemo } from 'react';
 import { map } from './core/MapView';
 import getSpeedColor from '../common/util/colors';
 import { findFonts } from './core/mapUtil';
@@ -6,36 +6,94 @@ import { SpeedLegendControl } from './legend/MapSpeedLegend';
 import { useTranslation } from '../common/components/LocalizationProvider';
 import { useAttributePreference } from '../common/util/preferences';
 
-const MapRoutePoints = ({ positions, onClick }) => {
+const MapRoutePoints = ({
+  positions,
+  onClick,
+  showOnHoverOnly = false,
+  onHover,
+  onLeave,
+  hoveredIndex,
+}) => {
   const id = useId();
   const t = useTranslation();
   const speedUnit = useAttributePreference('speedUnit');
 
-  const onMouseEnter = () => map.getCanvas().style.cursor = 'pointer';
-  const onMouseLeave = () => map.getCanvas().style.cursor = '';
+  const onMouseEnter = () => (map.getCanvas().style.cursor = 'pointer');
+  const onMouseLeave = () => (map.getCanvas().style.cursor = '');
 
-  const onMarkerClick = useCallback((event) => {
-    event.preventDefault();
-    const feature = event.features[0];
-    if (onClick) {
-      onClick(feature.properties.id, feature.properties.index);
+  const { simplifiedPositions } = useMemo(() => {
+    if (!positions.length) return { simplifiedPositions: [] };
+
+    const simplified = positions.filter(
+      (p, i) => i === 0 || i === positions.length - 1 || i % 4 === 0
+    );
+
+    return { simplifiedPositions: simplified };
+  }, [positions]);
+
+  const onMarkerClick = useCallback(
+    (event) => {
+      event.preventDefault();
+      const feature = event.features[0];
+
+      if (feature) {
+        if (onClick) {
+          onClick(feature.properties.id, feature.properties.index);
+        }
+
+        const maxSpeed = Math.max(...positions.map((pt) => pt.speed));
+        const minSpeed = Math.min(...positions.map((pt) => pt.speed));
+
+        map.getSource(id)?.setData({
+          type: 'FeatureCollection',
+          features: positions.map((p, index) => ({
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [p.longitude, p.latitude] },
+            properties: {
+              index,
+              id: p.id,
+              rotation: p.course,
+              color: getSpeedColor(p.speed, minSpeed, maxSpeed),
+              border: p.isReturn ? '#000000' : 'transparent',
+            },
+          })),
+        });
+      }
+    },
+    [onClick, id, positions]
+  );
+
+  const onMarkerHover = useCallback(
+    (event) => {
+      const feature = event.features[0];
+      if (feature && onHover) {
+        onHover(feature.properties.id, feature.properties.index);
+      }
+    },
+    [onHover]
+  );
+
+  const onMarkerLeave = useCallback(() => {
+    if (onLeave) {
+      onLeave();
     }
-  }, [onClick]);
+  }, [onLeave]);
 
   useEffect(() => {
     map.addSource(id, {
       type: 'geojson',
-      data: {
-        type: 'FeatureCollection',
-        features: [],
-      },
+      data: { type: 'FeatureCollection', features: [] },
     });
+
     map.addLayer({
       id,
       type: 'symbol',
       source: id,
       paint: {
         'text-color': ['get', 'color'],
+        'text-halo-color': ['get', 'border'],
+        'text-halo-width': 1.2,
+        'text-opacity': showOnHoverOnly ? ['get', 'opacity'] : 1,
       },
       layout: {
         'text-font': findFonts(map),
@@ -49,45 +107,86 @@ const MapRoutePoints = ({ positions, onClick }) => {
     map.on('mouseleave', id, onMouseLeave);
     map.on('click', id, onMarkerClick);
 
+    if (showOnHoverOnly) {
+      map.on('mousemove', id, onMarkerHover);
+      map.on('mouseleave', id, onMarkerLeave);
+    }
+
     return () => {
       map.off('mouseenter', id, onMouseEnter);
       map.off('mouseleave', id, onMouseLeave);
       map.off('click', id, onMarkerClick);
 
-      if (map.getLayer(id)) {
-        map.removeLayer(id);
+      if (showOnHoverOnly) {
+        map.off('mousemove', id, onMarkerHover);
+        map.off('mouseleave', id, onMarkerLeave);
       }
-      if (map.getSource(id)) {
-        map.removeSource(id);
-      }
+
+      if (map.getLayer(id)) map.removeLayer(id);
+      if (map.getSource(id)) map.removeSource(id);
     };
-  }, [onMarkerClick]);
+  }, [onMarkerClick, showOnHoverOnly, onMarkerHover, onMarkerLeave]);
 
   useEffect(() => {
-    const maxSpeed = positions.map((p) => p.speed).reduce((a, b) => Math.max(a, b), -Infinity);
-    const minSpeed = positions.map((p) => p.speed).reduce((a, b) => Math.min(a, b), Infinity);
+    if (!positions.length) {
+      return () => {};
+    }
 
-    const control = new SpeedLegendControl(positions, speedUnit, t, maxSpeed, minSpeed);
+    const maxSpeed = positions.reduce(
+      (a, b) => Math.max(a, b.speed),
+      -Infinity
+    );
+    const minSpeed = positions.reduce((a, b) => Math.min(a, b.speed), Infinity);
+
+    const control = new SpeedLegendControl(
+      positions,
+      speedUnit,
+      t,
+      maxSpeed,
+      minSpeed
+    );
     map.addControl(control, 'bottom-left');
 
-    map.getSource(id)?.setData({
-      type: 'FeatureCollection',
-      features: positions.map((position, index) => ({
-        type: 'Feature',
-        geometry: {
-          type: 'Point',
-          coordinates: [position.longitude, position.latitude],
-        },
-        properties: {
-          index,
-          id: position.id,
-          rotation: position.course,
-          color: getSpeedColor(position.speed, minSpeed, maxSpeed),
-        },
-      })),
+    const showSimplifiedPoints = () => {
+      map.getSource(id)?.setData({
+        type: 'FeatureCollection',
+        features: simplifiedPositions.map((p, index) => ({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [p.longitude, p.latitude] },
+          properties: {
+            index,
+            id: p.id,
+            rotation: p.course,
+            color: getSpeedColor(p.speed, minSpeed, maxSpeed),
+            border: p.isReturn ? '#000000' : 'transparent',
+            opacity: showOnHoverOnly ? (hoveredIndex === index ? 1 : 0) : 1,
+          },
+        })),
+      });
+    };
+
+    showSimplifiedPoints();
+
+    map.on('click', (e) => {
+      const features = map.queryRenderedFeatures(e.point, { layers: [id] });
+      if (!features.length) {
+        showSimplifiedPoints();
+      }
     });
-    return () => map.removeControl(control);
-  }, [onMarkerClick, positions]);
+
+    return () => {
+      map.removeControl(control);
+      map.off('click');
+    };
+  }, [
+    positions,
+    simplifiedPositions,
+    speedUnit,
+    t,
+    id,
+    showOnHoverOnly,
+    hoveredIndex,
+  ]);
 
   return null;
 };

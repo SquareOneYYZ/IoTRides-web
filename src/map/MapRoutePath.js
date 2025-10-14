@@ -1,11 +1,11 @@
 import { useTheme } from '@mui/styles';
-import { useId, useEffect } from 'react';
+import { useId, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { map } from './core/MapView';
 import getSpeedColor from '../common/util/colors';
 import { useAttributePreference } from '../common/util/preferences';
 
-const MapRoutePath = ({ positions }) => {
+const MapRoutePath = ({ positions, onHover, onLeave }) => {
   const id = useId();
 
   const theme = useTheme();
@@ -26,6 +26,47 @@ const MapRoutePath = ({ positions }) => {
 
   const mapLineWidth = useAttributePreference('mapLineWidth', 2);
   const mapLineOpacity = useAttributePreference('mapLineOpacity', 1);
+
+  const findNearestPosition = useCallback(
+    (lngLat) => {
+      if (!positions.length) return null;
+
+      let nearestIndex = 0;
+      let minDistance = Infinity;
+
+      positions.forEach((pos, index) => {
+        const dx = pos.longitude - lngLat.lng;
+        const dy = pos.latitude - lngLat.lat;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < minDistance) {
+          minDistance = distance;
+          nearestIndex = index;
+        }
+      });
+
+      return nearestIndex;
+    },
+    [positions]
+  );
+
+  const onPathHover = useCallback(
+    (event) => {
+      if (onHover) {
+        const nearestIndex = findNearestPosition(event.lngLat);
+        if (nearestIndex !== null) {
+          onHover(positions[nearestIndex].id, nearestIndex);
+        }
+      }
+    },
+    [onHover, findNearestPosition, positions]
+  );
+
+  const onPathLeave = useCallback(() => {
+    if (onLeave) {
+      onLeave();
+    }
+  }, [onLeave]);
 
   useEffect(() => {
     map.addSource(id, {
@@ -53,7 +94,23 @@ const MapRoutePath = ({ positions }) => {
       },
     });
 
+    if (onHover) {
+      map.on('mousemove', `${id}-line`, onPathHover);
+    }
+
+    if (onLeave) {
+      map.on('mouseleave', `${id}-line`, onPathLeave);
+    }
+
     return () => {
+      if (onHover) {
+        map.off('mousemove', `${id}-line`, onPathHover);
+      }
+
+      if (onLeave) {
+        map.off('mouseleave', `${id}-line`, onPathLeave);
+      }
+
       if (map.getLayer(`${id}-title`)) {
         map.removeLayer(`${id}-title`);
       }
@@ -64,25 +121,30 @@ const MapRoutePath = ({ positions }) => {
         map.removeSource(id);
       }
     };
-  }, []);
+  }, [onPathHover, onPathLeave, onHover, onLeave]);
 
   useEffect(() => {
-    const minSpeed = positions.map((p) => p.speed).reduce((a, b) => Math.min(a, b), Infinity);
-    const maxSpeed = positions.map((p) => p.speed).reduce((a, b) => Math.max(a, b), -Infinity);
+    const minSpeed = positions
+      .map((p) => p.speed)
+      .reduce((a, b) => Math.min(a, b), Infinity);
+    const maxSpeed = positions
+      .map((p) => p.speed)
+      .reduce((a, b) => Math.max(a, b), -Infinity);
     const features = [];
     for (let i = 0; i < positions.length - 1; i += 1) {
       features.push({
         type: 'Feature',
         geometry: {
           type: 'LineString',
-          coordinates: [[positions[i].longitude, positions[i].latitude], [positions[i + 1].longitude, positions[i + 1].latitude]],
+          coordinates: [
+            [positions[i].longitude, positions[i].latitude],
+            [positions[i + 1].longitude, positions[i + 1].latitude],
+          ],
         },
         properties: {
-          color: reportColor || getSpeedColor(
-            positions[i + 1].speed,
-            minSpeed,
-            maxSpeed,
-          ),
+          color:
+            reportColor ||
+            getSpeedColor(positions[i + 1].speed, minSpeed, maxSpeed),
           width: mapLineWidth,
           opacity: mapLineOpacity,
         },
@@ -92,7 +154,7 @@ const MapRoutePath = ({ positions }) => {
       type: 'FeatureCollection',
       features,
     });
-  }, [theme, positions, reportColor]);
+  }, [theme, positions, reportColor, mapLineWidth, mapLineOpacity, id]);
 
   return null;
 };

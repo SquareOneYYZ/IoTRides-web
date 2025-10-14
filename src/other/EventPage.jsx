@@ -1,5 +1,9 @@
 import React, {
-  useCallback, useState, useRef, useEffect,
+  useCallback,
+  useState,
+  useRef,
+  useEffect,
+  useMemo,
 } from 'react';
 import {
   Typography,
@@ -30,6 +34,10 @@ import { formatNotificationTitle, formatTime } from '../common/util/formatter';
 import MapScale from '../map/MapScale';
 import MapRoutePath from '../map/MapRoutePath';
 import MapMarkers from '../map/MapMarkers';
+import MapRoutePoints from '../map/MapRoutePoints';
+
+const REPLAY_INTERVAL = 500;
+const REPLAY_TIME_WINDOW = 60 * 60 * 1000;
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -60,21 +68,6 @@ const useStyles = makeStyles((theme) => ({
   title: {
     flexGrow: 1,
   },
-  slider: {
-    width: '100%',
-  },
-  controls: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  formControlLabel: {
-    height: '100%',
-    width: '100%',
-    paddingRight: theme.spacing(1),
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
   content: {
     display: 'flex',
     flexDirection: 'column',
@@ -88,14 +81,38 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
+const findClosestPositionIndex = (positions, eventTime) => {
+  if (!positions?.length) return 0;
+
+  const eventTimestamp = new Date(eventTime).getTime();
+  let closestIndex = 0;
+  let minDiff = Math.abs(
+    new Date(positions[0].fixTime).getTime() - eventTimestamp
+  );
+
+  for (let i = 1; i < positions.length; i++) {
+    const diff = Math.abs(
+      new Date(positions[i].fixTime).getTime() - eventTimestamp
+    );
+    if (diff < minDiff) {
+      minDiff = diff;
+      closestIndex = i;
+    }
+  }
+
+  return closestIndex;
+};
+
 const EventPage = () => {
   const classes = useStyles();
   const navigate = useNavigate();
   const t = useTranslation();
   const { id } = useParams();
+  const timerRef = useRef();
 
   const [event, setEvent] = useState();
   const [position, setPosition] = useState();
+  const [device, setDevice] = useState(null);
   const [showCard, setShowCard] = useState(false);
 
   const [replayMode, setReplayMode] = useState(false);
@@ -103,9 +120,9 @@ const EventPage = () => {
   const [replayIndex, setReplayIndex] = useState(0);
   const [replayPlaying, setReplayPlaying] = useState(false);
   const [eventPosition, setEventPosition] = useState(null);
-  const [device, setDevice] = useState(null);
-  const timerRef = useRef();
-  const createMarkers = () => {
+  const [hoveredIndex, setHoveredIndex] = useState(null);
+
+  const replayMarkers = useMemo(() => {
     const markers = [];
 
     if (replayPositions.length > 0) {
@@ -124,45 +141,51 @@ const EventPage = () => {
       });
     }
 
-    if (eventPosition) {
-      markers.push({
-        latitude: eventPosition.latitude,
-        longitude: eventPosition.longitude,
-        image: 'event-error',
-      });
-    }
-
     return markers;
-  };
+  }, [replayPositions]);
 
-  const formatType = (event) => formatNotificationTitle(t, {
-    type: event.type,
-    attributes: {
-      alarms: event.attributes.alarm,
-    },
-  });
+  const formatType = useCallback(
+    (event) =>
+      formatNotificationTitle(t, {
+        type: event.type,
+        attributes: {
+          alarms: event.attributes.alarm,
+        },
+      }),
+    [t]
+  );
 
   const onMarkerClick = useCallback((positionId) => {
     setShowCard(!!positionId);
   }, []);
 
+  const onPointClick = useCallback((_, index) => {
+    setReplayIndex(index);
+    setReplayPlaying(false);
+  }, []);
+
+  const onPointHover = useCallback((_, index) => {
+    setHoveredIndex(index);
+  }, []);
+
+  const onPointLeave = useCallback(() => {
+    setHoveredIndex(null);
+  }, []);
+
   useEffect(() => {
     if (replayPlaying && replayPositions.length > 0) {
       timerRef.current = setInterval(() => {
-        setReplayIndex((i) => i + 1);
-      }, 500);
-    } else {
-      clearInterval(timerRef.current);
+        setReplayIndex((i) => {
+          if (i >= replayPositions.length - 2) {
+            setReplayPlaying(false);
+            return i;
+          }
+          return i + 1;
+        });
+      }, REPLAY_INTERVAL);
     }
     return () => clearInterval(timerRef.current);
-  }, [replayPlaying, replayPositions]);
-
-  useEffect(() => {
-    if (replayIndex >= replayPositions.length - 1) {
-      clearInterval(timerRef.current);
-      setReplayPlaying(false);
-    }
-  }, [replayIndex, replayPositions]);
+  }, [replayPlaying, replayPositions.length]);
 
   useEffectAsync(async () => {
     if (id) {
@@ -176,13 +199,11 @@ const EventPage = () => {
   }, [id]);
 
   useEffectAsync(async () => {
-    if (event && event.positionId) {
+    if (event?.positionId) {
       const response = await fetch(`/api/positions?id=${event.positionId}`);
       if (response.ok) {
         const positions = await response.json();
-        if (positions.length > 0) {
-          setPosition(positions[0]);
-        }
+        setPosition(positions[0] || null);
       } else {
         throw Error(await response.text());
       }
@@ -190,7 +211,7 @@ const EventPage = () => {
   }, [event]);
 
   useEffectAsync(async () => {
-    if (event && event.deviceId) {
+    if (event?.deviceId) {
       const response = await fetch(`/api/devices/${event.deviceId}`);
       if (response.ok) {
         setDevice(await response.json());
@@ -198,69 +219,44 @@ const EventPage = () => {
     }
   }, [event]);
 
-  const findClosestPositionIndex = (positions, eventTime) => {
-    if (!positions || positions.length === 0) return 0;
-    const eventTimestamp = new Date(eventTime).getTime();
-    let closestIndex = 0;
-    let minDiff = Math.abs(
-      new Date(positions[0].fixTime).getTime() - eventTimestamp,
-    );
-    for (let i = 1; i < positions.length; i += 1) {
-      const diff = Math.abs(
-        new Date(positions[i].fixTime).getTime() - eventTimestamp,
-      );
-      if (diff < minDiff) {
-        minDiff = diff;
-        closestIndex = i;
-      }
-    }
-    return closestIndex;
-  };
-
   const handleReplayStart = useCatch(async () => {
     if (!event) return;
 
     setReplayMode(true);
 
     const eventTime = new Date(event.eventTime);
-    const fromTime = new Date(eventTime.getTime() - 60 * 60 * 1000);
-    const toTime = new Date(eventTime.getTime() + 60 * 60 * 1000);
-
     const query = new URLSearchParams({
       deviceId: event.deviceId,
-      from: fromTime.toISOString(),
-      to: toTime.toISOString(),
+      from: new Date(eventTime.getTime() - REPLAY_TIME_WINDOW).toISOString(),
+      to: new Date(eventTime.getTime() + REPLAY_TIME_WINDOW).toISOString(),
     });
 
-    const response = await fetch(`/api/positions?${query.toString()}`);
-    if (response.ok) {
-      const positions = await response.json();
+    const [positionsResponse, eventPosResponse] = await Promise.all([
+      fetch(`/api/positions?${query.toString()}`),
+      fetch(`/api/positions?id=${event.positionId}`),
+    ]);
+
+    if (positionsResponse.ok) {
+      const positions = await positionsResponse.json();
       setReplayPositions(positions);
+      setReplayIndex(findClosestPositionIndex(positions, event.eventTime));
 
-      const eventIndex = findClosestPositionIndex(positions, event.eventTime);
-      setReplayIndex(eventIndex);
-
-      const eventPosRes = await fetch(`/api/positions?id=${event.positionId}`);
-      if (eventPosRes.ok) {
-        const eventPositions = await eventPosRes.json();
-        if (eventPositions.length > 0) {
-          setEventPosition(eventPositions[0]);
-        }
+      if (eventPosResponse.ok) {
+        const eventPositions = await eventPosResponse.json();
+        setEventPosition(eventPositions[0] || null);
       }
     }
   });
 
-  const handleReplayStop = () => {
+  const handleReplayStop = useCallback(() => {
     setReplayMode(false);
     setReplayPositions([]);
     setReplayIndex(0);
     setReplayPlaying(false);
     setEventPosition(null);
+    setShowCard(false);
+    setHoveredIndex(null);
     clearInterval(timerRef.current);
-  };
-
-  const onPointClick = useCallback((_, index) => {
-    setReplayIndex(index);
   }, []);
 
   if (replayMode) {
@@ -268,7 +264,19 @@ const EventPage = () => {
       <div style={{ height: '100%' }}>
         <MapView>
           <MapGeofence />
-          <MapRoutePath positions={replayPositions} />
+          <MapRoutePath
+            positions={replayPositions}
+            onHover={onPointHover}
+            onLeave={onPointLeave}
+          />
+          <MapRoutePoints
+            positions={replayPositions}
+            onClick={onPointClick}
+            showOnHoverOnly
+            onHover={onPointHover}
+            onLeave={onPointLeave}
+            hoveredIndex={hoveredIndex}
+          />
           {eventPosition && (
             <MapPositions
               positions={[eventPosition]}
@@ -283,7 +291,7 @@ const EventPage = () => {
               onClick={onMarkerClick}
             />
           )}
-          <MapMarkers markers={createMarkers()} />
+          <MapMarkers markers={replayMarkers} />
         </MapView>
         <MapScale />
         <MapCamera positions={replayPositions} />
@@ -297,29 +305,26 @@ const EventPage = () => {
             left: 0,
             top: 0,
             margin: 12,
-            width: 400,
+            width: '94vw',
+            maxWidth: 400,
+            minWidth: 280,
+            boxSizing: 'border-box',
           }}
         >
           <Paper elevation={3} square>
             <Toolbar>
               <Typography variant="h6" style={{ flexGrow: 1 }}>
-                {t('reportReplay')}
-                {' '}
-                -
-                {device ? device.name : ''}
+                {t('reportReplay')} - {device?.name || ''}
               </Typography>
               <IconButton edge="end" onClick={handleReplayStop}>
                 <CloseIcon />
               </IconButton>
             </Toolbar>
           </Paper>
-          <Paper
-            className={classes.content}
-            style={{ display: 'flex', flexDirection: 'column', padding: 16 }}
-            square
-          >
-            <Typography variant="h6" style={{ flexGrow: 1 }} align="center">
-              {formatType(event)}
+
+          <Paper className={classes.content} square>
+            <Typography variant="h6" align="center">
+              {event && formatType(event)}
             </Typography>
 
             <Slider
@@ -329,7 +334,10 @@ const EventPage = () => {
               step={null}
               marks={replayPositions.map((_, index) => ({ value: index }))}
               value={replayIndex}
-              onChange={(_, newValue) => setReplayIndex(newValue)}
+              onChange={(_, newValue) => {
+                setReplayIndex(newValue);
+                setReplayPlaying(false);
+              }}
             />
 
             <div
@@ -353,7 +361,7 @@ const EventPage = () => {
             >
               <span>{`${replayIndex + 1}/${replayPositions.length}`}</span>
               <IconButton
-                onClick={() => setReplayIndex((i) => i - 1)}
+                onClick={() => setReplayIndex((i) => Math.max(0, i - 1))}
                 disabled={replayPlaying || replayIndex <= 0}
               >
                 <FastRewindIcon />
@@ -367,13 +375,18 @@ const EventPage = () => {
               </IconButton>
 
               <IconButton
-                onClick={() => setReplayIndex((i) => i + 1)}
+                onClick={() =>
+                  setReplayIndex((i) =>
+                    Math.min(replayPositions.length - 1, i + 1)
+                  )
+                }
                 disabled={
                   replayPlaying || replayIndex >= replayPositions.length - 1
                 }
               >
                 <FastForwardIcon />
               </IconButton>
+
               <span>
                 {replayIndex < replayPositions.length
                   ? formatTime(replayPositions[replayIndex].fixTime, 'seconds')
