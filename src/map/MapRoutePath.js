@@ -47,7 +47,7 @@ const MapRoutePath = ({ positions, onHover, onLeave }) => {
 
       return nearestIndex;
     },
-    [positions]
+    [positions],
   );
 
   const onPathHover = useCallback(
@@ -59,7 +59,7 @@ const MapRoutePath = ({ positions, onHover, onLeave }) => {
         }
       }
     },
-    [onHover, findNearestPosition, positions]
+    [onHover, findNearestPosition, positions],
   );
 
   const onPathLeave = useCallback(() => {
@@ -143,8 +143,8 @@ const MapRoutePath = ({ positions, onHover, onLeave }) => {
         },
         properties: {
           color:
-            reportColor ||
-            getSpeedColor(positions[i + 1].speed, minSpeed, maxSpeed),
+            reportColor
+            || getSpeedColor(positions[i + 1].speed, minSpeed, maxSpeed),
           width: mapLineWidth,
           opacity: mapLineOpacity,
         },

@@ -1,4 +1,6 @@
-import { useId, useCallback, useEffect, useMemo } from 'react';
+import {
+  useId, useCallback, useEffect, useMemo,
+} from 'react';
 import { map } from './core/MapView';
 import getSpeedColor from '../common/util/colors';
 import { findFonts } from './core/mapUtil';
@@ -25,7 +27,7 @@ const MapRoutePoints = ({
     if (!positions.length) return { simplifiedPositions: [] };
 
     const simplified = positions.filter(
-      (p, i) => i === 0 || i === positions.length - 1 || i % 4 === 0
+      (p, i) => i === 0 || i === positions.length - 1 || i % 4 === 0,
     );
 
     return { simplifiedPositions: simplified };
@@ -60,7 +62,7 @@ const MapRoutePoints = ({
         });
       }
     },
-    [onClick, id, positions]
+    [onClick, id, positions],
   );
 
   const onMarkerHover = useCallback(
@@ -70,7 +72,7 @@ const MapRoutePoints = ({
         onHover(feature.properties.id, feature.properties.index);
       }
     },
-    [onHover]
+    [onHover],
   );
 
   const onMarkerLeave = useCallback(() => {
@@ -134,7 +136,7 @@ const MapRoutePoints = ({
 
     const maxSpeed = positions.reduce(
       (a, b) => Math.max(a, b.speed),
-      -Infinity
+      -Infinity,
     );
     const minSpeed = positions.reduce((a, b) => Math.min(a, b.speed), Infinity);
 
@@ -143,7 +145,7 @@ const MapRoutePoints = ({
       speedUnit,
       t,
       maxSpeed,
-      minSpeed
+      minSpeed,
     );
     map.addControl(control, 'bottom-left');
 
@@ -159,7 +161,7 @@ const MapRoutePoints = ({
             rotation: p.course,
             color: getSpeedColor(p.speed, minSpeed, maxSpeed),
             border: p.isReturn ? '#000000' : 'transparent',
-            opacity: showOnHoverOnly ? (hoveredIndex === index ? 1 : 0) : 1,
+            opacity: showOnHoverOnly && hoveredIndex !== index ? 0 : 1,
           },
         })),
       });

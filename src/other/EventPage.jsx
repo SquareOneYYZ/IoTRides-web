@@ -87,12 +87,12 @@ const findClosestPositionIndex = (positions, eventTime) => {
   const eventTimestamp = new Date(eventTime).getTime();
   let closestIndex = 0;
   let minDiff = Math.abs(
-    new Date(positions[0].fixTime).getTime() - eventTimestamp
+    new Date(positions[0].fixTime).getTime() - eventTimestamp,
   );
 
-  for (let i = 1; i < positions.length; i++) {
+  for (let i = 1; i < positions.length; i += 1) {
     const diff = Math.abs(
-      new Date(positions[i].fixTime).getTime() - eventTimestamp
+      new Date(positions[i].fixTime).getTime() - eventTimestamp,
     );
     if (diff < minDiff) {
       minDiff = diff;
@@ -145,14 +145,13 @@ const EventPage = () => {
   }, [replayPositions]);
 
   const formatType = useCallback(
-    (event) =>
-      formatNotificationTitle(t, {
-        type: event.type,
-        attributes: {
-          alarms: event.attributes.alarm,
-        },
-      }),
-    [t]
+    (event) => formatNotificationTitle(t, {
+      type: event.type,
+      attributes: {
+        alarms: event.attributes.alarm,
+      },
+    }),
+    [t],
   );
 
   const onMarkerClick = useCallback((positionId) => {
@@ -314,7 +313,10 @@ const EventPage = () => {
           <Paper elevation={3} square>
             <Toolbar>
               <Typography variant="h6" style={{ flexGrow: 1 }}>
-                {t('reportReplay')} - {device?.name || ''}
+                {t('reportReplay')}
+                {' '}
+                -
+                {device?.name || ''}
               </Typography>
               <IconButton edge="end" onClick={handleReplayStop}>
                 <CloseIcon />
@@ -375,11 +377,7 @@ const EventPage = () => {
               </IconButton>
 
               <IconButton
-                onClick={() =>
-                  setReplayIndex((i) =>
-                    Math.min(replayPositions.length - 1, i + 1)
-                  )
-                }
+                onClick={() => setReplayIndex((i) => Math.min(replayPositions.length - 1, i + 1))}
                 disabled={
                   replayPlaying || replayIndex >= replayPositions.length - 1
                 }
