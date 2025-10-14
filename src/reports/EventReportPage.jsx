@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FormControl,
@@ -57,7 +63,7 @@ import SelectField from '../common/components/SelectField';
 import StatusCard from '../common/components/StatusCard';
 import MapMarkers from '../map/MapMarkers';
 
-const columnsArray = [
+const COLUMNS_ARRAY = [
   ['eventTime', 'positionFixTime'],
   ['type', 'sharedType'],
   ['geofenceId', 'sharedGeofence'],
@@ -65,30 +71,63 @@ const columnsArray = [
   ['attributes', 'commandData'],
   ['speedLimit', 'attributeSpeedLimit'],
 ];
+
+const COLUMNS_MAP = new Map(COLUMNS_ARRAY);
+const EXCLUDED_EVENT_TYPES = ['deviceOnline', 'deviceUnknown'];
+const FILTERED_NOTIFICATION_TYPES = [
+  'deviceFuelDrop',
+  'deviceFuelIncrease',
+  'textMessage',
+  'driverChanged',
+  'media',
+];
+const REPLAY_INTERVAL = 500;
+const REPLAY_TIME_WINDOW = 60 * 60 * 1000; // 1 hour in milliseconds
+
 const filterEvents = (events, typesToExclude) => {
   const excludeSet = new Set(typesToExclude);
-  const data = events.filter((event) => !excludeSet.has(event.type));
-  return data;
+  return events.filter((event) => !excludeSet.has(event.type));
 };
-const columnsMap = new Map(columnsArray);
+
+const findClosestPositionIndex = (positions, eventTime) => {
+  if (!positions?.length) return 0;
+
+  const eventTimestamp = new Date(eventTime).getTime();
+  let closestIndex = 0;
+  let minDifference = Math.abs(
+    new Date(positions[0].fixTime).getTime() - eventTimestamp,
+  );
+
+  for (let i = 1; i < positions.length; i += 1) {
+    const difference = Math.abs(
+      new Date(positions[i].fixTime).getTime() - eventTimestamp,
+    );
+
+    if (difference < minDifference) {
+      minDifference = difference;
+      closestIndex = i;
+    }
+  }
+
+  return closestIndex;
+};
 
 const EventReportPage = () => {
   const navigate = useNavigate();
   const classes = useReportStyles();
   const t = useTranslation();
   const timerRef = useRef();
+
   const devices = useSelector((state) => state.devices.items);
   const geofences = useSelector((state) => state.geofences.items);
   const speedUnit = useAttributePreference('speedUnit');
   const distanceUnit = useAttributePreference('distanceUnit');
-  const [allEventTypes, setAllEventTypes] = useState([
-    ['allEvents', 'eventAll'],
-  ]);
+
   const alarms = useTranslationKeys((it) => it.startsWith('alarm')).map(
     (it) => ({
       key: unprefixString('alarm', it),
       name: t(it),
-    })
+    }),
   );
 
   const [columns, setColumns] = usePersistedState('eventColumns', [
@@ -97,12 +136,17 @@ const EventReportPage = () => {
     'attributes',
     'speedLimit',
   ]);
+  const [allEventTypes, setAllEventTypes] = useState([
+    ['allEvents', 'eventAll'],
+  ]);
   const [eventTypes, setEventTypes] = useState(['allEvents']);
   const [alarmTypes, setAlarmTypes] = useState([]);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [position, setPosition] = useState(null);
+
+  // Replay state
   const [replayMode, setReplayMode] = useState(false);
   const [replayPositions, setReplayPositions] = useState([]);
   const [replayIndex, setReplayIndex] = useState(0);
@@ -110,20 +154,18 @@ const EventReportPage = () => {
   const [replayLoading, setReplayLoading] = useState(false);
   const [eventPosition, setEventPosition] = useState(null);
   const [showCard, setShowCard] = useState(false);
+  const [hoveredIndex, setHoveredIndex] = useState(null);
 
   const deviceName = useSelector((state) => {
     if (selectedItem?.deviceId) {
       const device = state.devices.items[selectedItem.deviceId];
-      if (device) {
-        return device.name;
-      }
+      return device?.name || null;
     }
     return null;
   });
 
-  const createMarkers = () => {
+  const replayMarkers = useMemo(() => {
     const markers = [];
-
     if (replayPositions.length > 0) {
       markers.push({
         latitude: replayPositions[0].latitude,
@@ -131,7 +173,6 @@ const EventReportPage = () => {
         image: 'start-success',
       });
     }
-
     if (replayPositions.length > 1) {
       markers.push({
         latitude: replayPositions[replayPositions.length - 1].latitude,
@@ -139,43 +180,36 @@ const EventReportPage = () => {
         image: 'finish-error',
       });
     }
-
     return markers;
-  };
+  }, [replayPositions]);
 
   useEffect(() => {
     if (replayPlaying && replayPositions.length > 0) {
       timerRef.current = setInterval(() => {
-        setReplayIndex((index) => index + 1);
-      }, 500);
-    } else {
-      clearInterval(timerRef.current);
+        setReplayIndex((index) => {
+          if (index >= replayPositions.length - 2) {
+            setReplayPlaying(false);
+            return index;
+          }
+          return index + 1;
+        });
+      }, REPLAY_INTERVAL);
     }
-
     return () => clearInterval(timerRef.current);
-  }, [replayPlaying, replayPositions]);
-
-  useEffect(() => {
-    if (replayIndex >= replayPositions.length - 1) {
-      clearInterval(timerRef.current);
-      setReplayPlaying(false);
-    }
-  }, [replayIndex, replayPositions]);
+  }, [replayPlaying, replayPositions.length]);
 
   useEffectAsync(async () => {
     if (selectedItem && !replayMode) {
       const response = await fetch(
-        `/api/positions?id=${selectedItem.positionId}`
+        `/api/positions?id=${selectedItem.positionId}`,
       );
       if (response.ok) {
         const positions = await response.json();
-        if (positions.length > 0) {
-          setPosition(positions[0]);
-        }
+        setPosition(positions[0] || null);
       } else {
         throw Error(await response.text());
       }
-    } else if (!selectedItem) {
+    } else {
       setPosition(null);
     }
   }, [selectedItem, replayMode]);
@@ -184,19 +218,12 @@ const EventReportPage = () => {
     const response = await fetch('/api/notifications/types');
     if (response.ok) {
       const types = await response.json();
-      const FilteredTypes = [
-        'deviceFuelDrop',
-        'deviceFuelIncrease',
-        'textMessage',
-        'driverChanged',
-        'media',
-      ];
-      const typeFiltered = types.filter(
-        (item) => !FilteredTypes.includes(item.type)
+      const filteredTypes = types.filter(
+        (item) => !FILTERED_NOTIFICATION_TYPES.includes(item.type),
       );
       setAllEventTypes([
-        ...allEventTypes,
-        ...typeFiltered.map((it) => [it.type, prefixString('event', it.type)]),
+        ['allEvents', 'eventAll'],
+        ...filteredTypes.map((it) => [it.type, prefixString('event', it.type)]),
       ]);
     } else {
       throw Error(await response.text());
@@ -206,14 +233,16 @@ const EventReportPage = () => {
   const handleSubmit = useCatch(async ({ deviceId, from, to, type }) => {
     const query = new URLSearchParams({ deviceId, from, to });
     eventTypes.forEach((it) => query.append('type', it));
+
     if (eventTypes[0] !== 'allEvents' && eventTypes.includes('alarm')) {
       alarmTypes.forEach((it) => query.append('alarm', it));
     }
+
     if (type === 'export') {
       window.location.assign(`/api/reports/events/xlsx?${query.toString()}`);
     } else if (type === 'mail') {
       const response = await fetch(
-        `/api/reports/events/mail?${query.toString()}`
+        `/api/reports/events/mail?${query.toString()}`,
       );
       if (!response.ok) {
         throw Error(await response.text());
@@ -225,17 +254,15 @@ const EventReportPage = () => {
           `/api/reports/events?${query.toString()}`,
           {
             headers: { Accept: 'application/json' },
-          }
+          },
         );
         if (response.ok) {
           const data = await response.json();
-          const typesToExclude = ['deviceOnline', 'deviceUnknown'];
-          const ModifiedData = data.map((item) => ({
+          const modifiedData = data.map((item) => ({
             ...item,
             speedLimit: item.attributes?.speedLimit || null,
           }));
-          const filteredEvents = filterEvents(ModifiedData, typesToExclude);
-          setItems(filteredEvents);
+          setItems(filterEvents(modifiedData, EXCLUDED_EVENT_TYPES));
         } else {
           throw Error(await response.text());
         }
@@ -244,28 +271,6 @@ const EventReportPage = () => {
       }
     }
   });
-
-  const findClosestPositionIndex = (positions, eventTime) => {
-    if (!positions || positions.length === 0) return 0;
-
-    const eventTimestamp = new Date(eventTime).getTime();
-    let closestIndex = 0;
-    let minDifference = Math.abs(
-      new Date(positions[0].fixTime).getTime() - eventTimestamp
-    );
-
-    for (let i = 1; i < positions.length; i += 1) {
-      const positionTimestamp = new Date(positions[i].fixTime).getTime();
-      const difference = Math.abs(positionTimestamp - eventTimestamp);
-
-      if (difference < minDifference) {
-        minDifference = difference;
-        closestIndex = i;
-      }
-    }
-
-    return closestIndex;
-  };
 
   const handleSchedule = useCatch(async (deviceIds, groupIds, report) => {
     report.type = 'events';
@@ -287,156 +292,170 @@ const EventReportPage = () => {
 
     try {
       const eventTime = new Date(item.eventTime);
-      const fromTime = new Date(eventTime.getTime() - 60 * 60 * 1000);
-      const toTime = new Date(eventTime.getTime() + 60 * 60 * 1000);
       const query = new URLSearchParams({
         deviceId: item.deviceId,
-        from: fromTime.toISOString(),
-        to: toTime.toISOString(),
+        from: new Date(eventTime.getTime() - REPLAY_TIME_WINDOW).toISOString(),
+        to: new Date(eventTime.getTime() + REPLAY_TIME_WINDOW).toISOString(),
       });
 
-      const response = await fetch(`/api/positions?${query.toString()}`);
-      if (response.ok) {
-        const positions = await response.json();
+      const [positionsResponse, eventPositionResponse] = await Promise.all([
+        fetch(`/api/positions?${query.toString()}`),
+        fetch(`/api/positions?id=${item.positionId}`),
+      ]);
 
-        setReplayPositions(positions);
-        const eventIndex = findClosestPositionIndex(positions, item.eventTime);
-        setReplayIndex(eventIndex);
-        const eventPositionResponse = await fetch(
-          `/api/positions?id=${item.positionId}`
-        );
-        if (eventPositionResponse.ok) {
-          const eventPositions = await eventPositionResponse.json();
-          if (eventPositions.length > 0) {
-            setEventPosition(eventPositions[0]);
-          }
-        }
+      if (!positionsResponse.ok) {
+        throw Error(await positionsResponse.text());
+      }
 
-        if (positions.length === 0) {
-          throw Error(t('sharedNoData'));
-        }
-      } else {
-        throw Error(await response.text());
+      const positions = await positionsResponse.json();
+      if (positions.length === 0) {
+        throw Error(t('sharedNoData'));
+      }
+
+      setReplayPositions(positions);
+      setReplayIndex(findClosestPositionIndex(positions, item.eventTime));
+
+      if (eventPositionResponse.ok) {
+        const eventPositions = await eventPositionResponse.json();
+        setEventPosition(eventPositions[0] || null);
       }
     } finally {
       setReplayLoading(false);
     }
   });
 
-  const handleReplayStop = () => {
+  const handleReplayStop = useCallback(() => {
     setReplayMode(false);
     setReplayPositions([]);
     setReplayIndex(0);
     setReplayPlaying(false);
     setEventPosition(null);
+    setShowCard(false);
     clearInterval(timerRef.current);
-  };
+  }, []);
 
-  const onMarkerClick = useCallback(
-    (positionId) => {
-      setShowCard(!!positionId);
-    },
-    [setShowCard]
-  );
-
-  const formatValue = (item, key) => {
-    const value = item[key];
-    switch (key) {
-      case 'eventTime':
-        return formatTime(value, 'seconds');
-
-      case 'type':
-        return t(prefixString('event', value));
-
-      case 'geofenceId':
-        if (value > 0) {
-          const geofence = geofences[value];
-          return geofence && geofence.name;
-        }
-        return null;
-
-      case 'maintenanceId':
-        return value > 0 ? value : null;
-
-      case 'speedLimit':
-        if (item.type === 'deviceOverspeed' && item.attributes?.speedLimit) {
-          return formatSpeed(item.attributes.speedLimit, speedUnit, t);
-        }
-        return null;
-
-      case 'attributes':
-        switch (item.type) {
-          case 'alarm':
-            return t(prefixString('alarm', item.attributes.alarm));
-
-          case 'deviceOverspeed':
-            return formatSpeed(item.attributes.speed, speedUnit, t);
-
-          case 'driverChanged':
-            return item.attributes.driverUniqueId;
-
-          case 'media':
-            return (
-              <Link
-                href={`/api/media/${devices[item.deviceId]?.uniqueId}/${
-                  item.attributes.file
-                }`}
-                target="_blank"
-              >
-                {item.attributes.file}
-              </Link>
-            );
-
-          case 'commandResult':
-            return item.attributes.result;
-
-          case 'deviceTollRouteExit': {
-            let tollDetails = '';
-            if ('tollName' in item.attributes) {
-              tollDetails += `Toll name: ${item.attributes.tollName} | `;
-            }
-            if ('tollDistance' in item.attributes) {
-              tollDetails += `Toll Distance: ${formatDistance(
-                item.attributes.tollDistance,
-                distanceUnit,
-                t
-              )}`;
-            }
-            return tollDetails;
-          }
-
-          case 'deviceTollRouteEnter': {
-            let tollDetails = '';
-            if ('tollName' in item.attributes) {
-              tollDetails += `Toll name: ${item.attributes.tollName} | `;
-            }
-            if ('tollRef' in item.attributes) {
-              tollDetails += `Toll Reference: ${item.attributes.tollRef} | `;
-            }
-            return tollDetails;
-          }
-
-          default:
-            return '';
-        }
-
-      default:
-        return value;
-    }
-  };
+  const onMarkerClick = useCallback((positionId) => {
+    setShowCard(!!positionId);
+  }, []);
 
   const onPointClick = useCallback((_, index) => {
     setReplayIndex(index);
     setReplayPlaying(false);
   }, []);
 
+  const onPointHover = useCallback((_, index) => {
+    setHoveredIndex(index);
+  }, []);
+
+  const onPointLeave = useCallback(() => {
+    setHoveredIndex(null);
+  }, []);
+
+  const formatValue = useCallback(
+    (item, key) => {
+      const value = item[key];
+
+      switch (key) {
+        case 'eventTime':
+          return formatTime(value, 'seconds');
+
+        case 'type':
+          return t(prefixString('event', value));
+
+        case 'geofenceId':
+          return value > 0 ? geofences[value]?.name : null;
+
+        case 'maintenanceId':
+          return value > 0 ? value : null;
+
+        case 'speedLimit':
+          return item.type === 'deviceOverspeed' && item.attributes?.speedLimit
+            ? formatSpeed(item.attributes.speedLimit, speedUnit, t)
+            : null;
+
+        case 'attributes':
+          switch (item.type) {
+            case 'alarm':
+              return t(prefixString('alarm', item.attributes.alarm));
+
+            case 'deviceOverspeed':
+              return formatSpeed(item.attributes.speed, speedUnit, t);
+
+            case 'driverChanged':
+              return item.attributes.driverUniqueId;
+
+            case 'media':
+              return (
+                <Link
+                  href={`/api/media/${devices[item.deviceId]?.uniqueId}/${
+                    item.attributes.file
+                  }`}
+                  target="_blank"
+                >
+                  {item.attributes.file}
+                </Link>
+              );
+
+            case 'commandResult':
+              return item.attributes.result;
+
+            case 'deviceTollRouteExit': {
+              const parts = [];
+              if (item.attributes.tollName) {
+                parts.push(`Toll name: ${item.attributes.tollName}`);
+              }
+              if (item.attributes.tollDistance) {
+                parts.push(
+                  `Toll Distance: ${formatDistance(
+                    item.attributes.tollDistance,
+                    distanceUnit,
+                    t,
+                  )}`,
+                );
+              }
+              return parts.join(' | ');
+            }
+
+            case 'deviceTollRouteEnter': {
+              const parts = [];
+              if (item.attributes.tollName) {
+                parts.push(`Toll name: ${item.attributes.tollName}`);
+              }
+              if (item.attributes.tollRef) {
+                parts.push(`Toll Reference: ${item.attributes.tollRef}`);
+              }
+              return parts.join(' | ');
+            }
+
+            default:
+              return '';
+          }
+
+        default:
+          return value;
+      }
+    },
+    [t, geofences, devices, speedUnit, distanceUnit],
+  );
+
   if (replayMode) {
     return (
       <div style={{ height: '100%' }}>
         <MapView>
           <MapGeofence />
-          <MapRoutePath positions={replayPositions} />
-          <MapRoutePoints positions={replayPositions} />
+          <MapRoutePath
+            positions={replayPositions}
+            onHover={onPointHover}
+            onLeave={onPointLeave}
+          />
+          <MapRoutePoints
+            positions={replayPositions}
+            onClick={onPointClick}
+            showOnHoverOnly
+            onHover={onPointHover}
+            onLeave={onPointLeave}
+            hoveredIndex={hoveredIndex}
+          />
           {eventPosition && (
             <MapPositions
               positions={[eventPosition]}
@@ -449,10 +468,9 @@ const EventReportPage = () => {
             <MapPositions
               positions={[replayPositions[replayIndex]]}
               onClick={onMarkerClick}
-              // titleField="fixTime"
             />
           )}
-          <MapMarkers markers={createMarkers()} />
+          <MapMarkers markers={replayMarkers} />
         </MapView>
         <MapScale />
         <MapCamera positions={replayPositions} />
@@ -475,7 +493,10 @@ const EventReportPage = () => {
           <Paper elevation={3} square>
             <Toolbar>
               <Typography variant="h6" style={{ flexGrow: 1 }}>
-                {t('reportReplay')} -{deviceName}
+                {t('reportReplay')}
+                {' '}
+                -
+                {deviceName}
               </Typography>
               <IconButton edge="end" onClick={handleReplayStop}>
                 <CloseIcon />
@@ -529,7 +550,7 @@ const EventReportPage = () => {
             >
               <span>{`${replayIndex + 1}/${replayPositions.length}`}</span>
               <IconButton
-                onClick={() => setReplayIndex((i) => i - 1)}
+                onClick={() => setReplayIndex((i) => Math.max(0, i - 1))}
                 disabled={replayPlaying || replayIndex <= 0}
               >
                 <FastRewindIcon />
@@ -543,7 +564,7 @@ const EventReportPage = () => {
               </IconButton>
 
               <IconButton
-                onClick={() => setReplayIndex((i) => i + 1)}
+                onClick={() => setReplayIndex((i) => Math.min(replayPositions.length - 1, i + 1))}
                 disabled={
                   replayPlaying || replayIndex >= replayPositions.length - 1
                 }
@@ -626,8 +647,8 @@ const EventReportPage = () => {
                   </Select>
                 </FormControl>
               </div>
-              {eventTypes[0] !== 'allEvents' &&
-                eventTypes.includes('alarm') && (
+              {eventTypes[0] !== 'allEvents'
+                && eventTypes.includes('alarm') && (
                   <div className={classes.filterItem}>
                     <SelectField
                       multiple
@@ -639,11 +660,11 @@ const EventReportPage = () => {
                       fullWidth
                     />
                   </div>
-                )}
+              )}
               <ColumnSelect
                 columns={columns}
                 setColumns={setColumns}
-                columnsArray={columnsArray}
+                columnsArray={COLUMNS_ARRAY}
               />
             </ReportFilter>
           </div>
@@ -653,7 +674,7 @@ const EventReportPage = () => {
                 <TableCell className={classes.columnAction} />
                 <TableCell className={classes.columnAction} />
                 {columns.map((key) => (
-                  <TableCell key={key}>{t(columnsMap.get(key))}</TableCell>
+                  <TableCell key={key}>{t(COLUMNS_MAP.get(key))}</TableCell>
                 ))}
               </TableRow>
             </TableHead>
@@ -662,23 +683,18 @@ const EventReportPage = () => {
                 items.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell className={classes.columnAction} padding="none">
-                      {(item.positionId &&
-                        (selectedItem === item ? (
-                          <IconButton
-                            size="small"
-                            onClick={() => setSelectedItem(null)}
-                          >
+                      {item.positionId && (
+                        <IconButton
+                          size="small"
+                          onClick={() => setSelectedItem(selectedItem === item ? null : item)}
+                        >
+                          {selectedItem === item ? (
                             <GpsFixedIcon fontSize="small" />
-                          </IconButton>
-                        ) : (
-                          <IconButton
-                            size="small"
-                            onClick={() => setSelectedItem(item)}
-                          >
+                          ) : (
                             <LocationSearchingIcon fontSize="small" />
-                          </IconButton>
-                        ))) ||
-                        ''}
+                          )}
+                        </IconButton>
+                      )}
                     </TableCell>
                     <TableCell className={classes.columnAction} padding="none">
                       {item.positionId && (

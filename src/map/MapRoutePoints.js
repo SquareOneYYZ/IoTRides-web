@@ -8,7 +8,14 @@ import { SpeedLegendControl } from './legend/MapSpeedLegend';
 import { useTranslation } from '../common/components/LocalizationProvider';
 import { useAttributePreference } from '../common/util/preferences';
 
-const MapRoutePoints = ({ positions, onClick }) => {
+const MapRoutePoints = ({
+  positions,
+  onClick,
+  showOnHoverOnly = false,
+  onHover,
+  onLeave,
+  hoveredIndex,
+}) => {
   const id = useId();
   const t = useTranslation();
   const speedUnit = useAttributePreference('speedUnit');
@@ -58,6 +65,22 @@ const MapRoutePoints = ({ positions, onClick }) => {
     [onClick, id, positions],
   );
 
+  const onMarkerHover = useCallback(
+    (event) => {
+      const feature = event.features[0];
+      if (feature && onHover) {
+        onHover(feature.properties.id, feature.properties.index);
+      }
+    },
+    [onHover],
+  );
+
+  const onMarkerLeave = useCallback(() => {
+    if (onLeave) {
+      onLeave();
+    }
+  }, [onLeave]);
+
   useEffect(() => {
     map.addSource(id, {
       type: 'geojson',
@@ -72,6 +95,7 @@ const MapRoutePoints = ({ positions, onClick }) => {
         'text-color': ['get', 'color'],
         'text-halo-color': ['get', 'border'],
         'text-halo-width': 1.2,
+        'text-opacity': showOnHoverOnly ? ['get', 'opacity'] : 1,
       },
       layout: {
         'text-font': findFonts(map),
@@ -85,15 +109,25 @@ const MapRoutePoints = ({ positions, onClick }) => {
     map.on('mouseleave', id, onMouseLeave);
     map.on('click', id, onMarkerClick);
 
+    if (showOnHoverOnly) {
+      map.on('mousemove', id, onMarkerHover);
+      map.on('mouseleave', id, onMarkerLeave);
+    }
+
     return () => {
       map.off('mouseenter', id, onMouseEnter);
       map.off('mouseleave', id, onMouseLeave);
       map.off('click', id, onMarkerClick);
 
+      if (showOnHoverOnly) {
+        map.off('mousemove', id, onMarkerHover);
+        map.off('mouseleave', id, onMarkerLeave);
+      }
+
       if (map.getLayer(id)) map.removeLayer(id);
       if (map.getSource(id)) map.removeSource(id);
     };
-  }, [onMarkerClick]);
+  }, [onMarkerClick, showOnHoverOnly, onMarkerHover, onMarkerLeave]);
 
   useEffect(() => {
     if (!positions.length) {
@@ -127,6 +161,7 @@ const MapRoutePoints = ({ positions, onClick }) => {
             rotation: p.course,
             color: getSpeedColor(p.speed, minSpeed, maxSpeed),
             border: p.isReturn ? '#000000' : 'transparent',
+            opacity: showOnHoverOnly && hoveredIndex !== index ? 0 : 1,
           },
         })),
       });
@@ -145,7 +180,15 @@ const MapRoutePoints = ({ positions, onClick }) => {
       map.removeControl(control);
       map.off('click');
     };
-  }, [positions, simplifiedPositions, speedUnit, t, id]);
+  }, [
+    positions,
+    simplifiedPositions,
+    speedUnit,
+    t,
+    id,
+    showOnHoverOnly,
+    hoveredIndex,
+  ]);
 
   return null;
 };
