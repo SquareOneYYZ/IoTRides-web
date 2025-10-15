@@ -3,7 +3,6 @@ import jsxA11y from 'eslint-plugin-jsx-a11y';
 import importPlugin from 'eslint-plugin-import';
 import globals from 'globals';
 
-// Helper function to clean globals
 const cleanGlobals = (globalsObj) => {
   const cleaned = {};
   for (const [key, value] of Object.entries(globalsObj)) {
@@ -17,8 +16,25 @@ const cleanGlobals = (globalsObj) => {
 
 export default [
   {
+    files: ['legacy/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 2021,
+      sourceType: 'module',
+      globals: {
+        ...cleanGlobals(globals.browser),
+        ...cleanGlobals(globals.node),
+      },
+    },
+    rules: {
+      'no-console': 'warn',
+      'comma-dangle': ['error', 'never'],
+      'operator-linebreak': 'off',
+      'function-paren-newline': 'off',
+    },
+  },
+  {
     files: ['**/*.{js,jsx}'],
-    ignores: ['node_modules/**', 'dist/**'],
+    ignores: ['node_modules/**', 'dist/**', 'legacy/**'],
     languageOptions: {
       ecmaVersion: 2021,
       sourceType: 'module',
@@ -42,7 +58,7 @@ export default [
       'no-console': 'warn',
       'comma-dangle': ['error', 'always-multiline'],
       'operator-linebreak': ['error', 'before'],
-      'function-paren-newline': ['error', 'multiline-arguments'],
+      'function-paren-newline': ['error', 'consistent'],
       'arrow-body-style': ['error', 'as-needed'],
       'import/no-duplicates': 'error',
     },

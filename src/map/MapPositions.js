@@ -208,7 +208,20 @@ const MapPositions = ({
         }
       });
     };
-  }, [mapCluster, clusters, onMarkerClick, onClusterClick]);
+  }, [
+    mapCluster,
+    clusters,
+    onMarkerClick,
+    onClusterClick,
+    id,
+    selected,
+    customIcon,
+    iconScale,
+    titleField,
+    onMouseEnter,
+    onMouseLeave,
+    onMapClick,
+  ]);
 
   useEffect(() => {
     [id, selected].forEach((source) => {
@@ -236,13 +249,13 @@ const MapPositions = ({
       });
     });
   }, [
-    mapCluster,
-    clusters,
-    onMarkerClick,
-    onClusterClick,
+    id,
+    selected,
     devices,
     positions,
     selectedPosition,
+    selectedDeviceId,
+    createFeature,
   ]);
 
   return null;
