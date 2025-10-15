@@ -16,25 +16,30 @@ const cleanGlobals = (globalsObj) => {
 
 export default [
   {
+    ignores: ['node_modules/**', 'dist/**', 'build/**', '*.min.js'],
+  },
+  {
     files: ['legacy/**/*.js'],
     languageOptions: {
-      ecmaVersion: 2021,
-      sourceType: 'module',
+      ecmaVersion: 2015,
+      sourceType: 'script',
       globals: {
         ...cleanGlobals(globals.browser),
-        ...cleanGlobals(globals.node),
+        Ext: 'readonly',
+        Traccar: 'readonly',
       },
     },
     rules: {
-      'no-console': 'warn',
+      'no-console': 'off',
       'comma-dangle': ['error', 'never'],
       'operator-linebreak': 'off',
       'function-paren-newline': 'off',
+      'arrow-body-style': 'off',
+      'import/no-duplicates': 'off',
     },
   },
   {
-    files: ['**/*.{js,jsx}'],
-    ignores: ['node_modules/**', 'dist/**', 'legacy/**'],
+    files: ['src/**/*.{js,jsx}', '*.{js,jsx}'],
     languageOptions: {
       ecmaVersion: 2021,
       sourceType: 'module',
