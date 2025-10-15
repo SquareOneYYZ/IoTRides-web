@@ -116,6 +116,7 @@ const MapPositions = ({
       clusterMaxZoom: 14,
       clusterRadius: 50,
     });
+
     map.addSource(selected, {
       type: 'geojson',
       data: {
@@ -123,6 +124,7 @@ const MapPositions = ({
         features: [],
       },
     });
+
     [id, selected].forEach((source) => {
       map.addLayer({
         id: source,
@@ -145,6 +147,7 @@ const MapPositions = ({
           'text-halo-width': 1,
         },
       });
+
       map.addLayer({
         id: `direction-${source}`,
         type: 'symbol',
@@ -163,6 +166,7 @@ const MapPositions = ({
       map.on('mouseleave', source, onMouseLeave);
       map.on('click', source, onMarkerClick);
     });
+
     map.addLayer({
       id: clusters,
       type: 'symbol',
@@ -243,6 +247,7 @@ const MapPositions = ({
     devices,
     positions,
     selectedPosition,
+    selectedDeviceId,
   ]);
 
   return null;
