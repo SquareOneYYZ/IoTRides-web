@@ -1,6 +1,4 @@
-import React, {
-  useEffect, useRef, useState, useCallback,
-} from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useDispatch } from 'react-redux';
 import makeStyles from '@mui/styles/makeStyles';
 import { FixedSizeList } from 'react-window';
@@ -26,7 +24,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 30;
 
 const DeviceList = ({ devices }) => {
   const classes = useStyles();
@@ -113,7 +111,7 @@ const DeviceList = ({ devices }) => {
         loadMoreDevices();
       }
     },
-    [loading, hasMore, displayedDevices.length, loadMoreDevices],
+    [loading, hasMore, displayedDevices.length, loadMoreDevices]
   );
 
   return (
