@@ -22,18 +22,18 @@ Ext.define('Traccar.model.ComputedAttribute', {
 
     fields: [{
         name: 'id',
-        type: 'int',
+        type: 'int'
     }, {
         name: 'description',
-        type: 'string',
+        type: 'string'
     }, {
         name: 'type',
-        type: 'string',
+        type: 'string'
     }, {
         name: 'attribute',
-        type: 'string',
+        type: 'string'
     }, {
         name: 'expression',
-        type: 'string',
-    }],
+        type: 'string'
+    }]
 });

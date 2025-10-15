@@ -22,15 +22,15 @@ Ext.define('Traccar.store.TimeUnits', {
     data: [{
         key: 's',
         name: Strings.sharedSecondAbbreviation,
-        factor: 1,
+        factor: 1
     }, {
         key: 'm',
         name: Strings.sharedMinuteAbbreviation,
-        factor: 60,
+        factor: 60
     }, {
         key: 'h',
         name: Strings.sharedHourAbbreviation,
-        factor: 3600,
+        factor: 3600
     }],
 
     convertValue: function (value, unit, back) {
@@ -40,5 +40,5 @@ Ext.define('Traccar.store.TimeUnits', {
         }
         model = this.findRecord('key', unit);
         return back ? value * model.get('factor') : value / model.get('factor');
-    },
+    }
 });

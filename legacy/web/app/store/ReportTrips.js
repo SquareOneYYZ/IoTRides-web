@@ -25,12 +25,12 @@ Ext.define('Traccar.store.ReportTrips', {
         url: 'api/reports/trips',
         timeout: Traccar.Style.reportTimeout,
         headers: {
-            'Accept': 'application/json',
+            'Accept': 'application/json'
         },
         listeners: {
             exception: function (proxy, exception) {
                 Traccar.app.showError(exception);
-            },
-        },
-    },
+            }
+        }
+    }
 });

@@ -26,7 +26,7 @@ Ext.define('Traccar.view.MainMobile', {
         'Traccar.view.State',
         'Traccar.view.Report',
         'Traccar.view.Events',
-        'Traccar.view.map.Map',
+        'Traccar.view.map.Map'
     ],
 
     layout: 'card',
@@ -37,7 +37,7 @@ Ext.define('Traccar.view.MainMobile', {
         defaults: {
             header: false,
             collapsible: true,
-            split: true,
+            split: true
         },
 
         items: [{
@@ -49,12 +49,12 @@ Ext.define('Traccar.view.MainMobile', {
             collapseMode: 'mini',
             titleCollapse: true,
             floatable: false,
-            stateId: 'mobile-state-grid',
+            stateId: 'mobile-state-grid'
         }, {
             region: 'center',
             xtype: 'mapView',
             collapsible: false,
-            flex: 2,
+            flex: 2
         }, {
             region: 'south',
             xtype: 'devicesView',
@@ -63,11 +63,11 @@ Ext.define('Traccar.view.MainMobile', {
             collapsed: true,
             titleCollapse: true,
             floatable: false,
-            stateId: 'mobile-devices-grid',
-        }],
+            stateId: 'mobile-devices-grid'
+        }]
     }, {
-        xtype: 'reportView',
+        xtype: 'reportView'
     }, {
-        xtype: 'eventsView',
-    }],
+        xtype: 'eventsView'
+    }]
 });

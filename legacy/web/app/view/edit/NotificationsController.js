@@ -22,10 +22,10 @@ Ext.define('Traccar.view.edit.NotificationsController', {
 
     requires: [
         'Traccar.view.dialog.Notification',
-        'Traccar.model.Notification',
+        'Traccar.model.Notification'
     ],
 
     objectModel: 'Traccar.model.Notification',
     objectDialog: 'Traccar.view.dialog.Notification',
-    removeTitle: Strings.sharedNotification,
+    removeTitle: Strings.sharedNotification
 });

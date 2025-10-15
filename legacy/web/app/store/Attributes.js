@@ -20,6 +20,6 @@ Ext.define('Traccar.store.Attributes', {
     model: 'Traccar.model.Attribute',
 
     sorters: [{
-        property: 'priority',
-    }],
+        property: 'priority'
+    }]
 });

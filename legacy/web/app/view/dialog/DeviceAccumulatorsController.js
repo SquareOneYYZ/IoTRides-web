@@ -22,7 +22,7 @@ Ext.define('Traccar.view.dialog.DeviceAccumulatorsController', {
 
     onSetClick: function () {
         var totalDistance, hours, data = {
-            deviceId: this.getView().deviceId,
+            deviceId: this.getView().deviceId
         };
         totalDistance = this.lookupReference('totalDistance');
         if (!isNaN(totalDistance.getRawValue())) {
@@ -41,8 +41,8 @@ Ext.define('Traccar.view.dialog.DeviceAccumulatorsController', {
                 if (!success) {
                     Traccar.app.showError(response);
                 }
-            },
+            }
         });
         this.closeView();
-    },
+    }
 });

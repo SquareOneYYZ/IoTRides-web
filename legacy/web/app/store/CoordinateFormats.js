@@ -21,13 +21,13 @@ Ext.define('Traccar.store.CoordinateFormats', {
 
     data: [{
         key: 'dd',
-        name: Strings.sharedDecimalDegrees,
+        name: Strings.sharedDecimalDegrees
     }, {
         key: 'ddm',
-        name: Strings.sharedDegreesDecimalMinutes,
+        name: Strings.sharedDegreesDecimalMinutes
     }, {
         key: 'dms',
-        name: Strings.sharedDegreesMinutesSeconds,
+        name: Strings.sharedDegreesMinutesSeconds
     }],
 
     formatValue: function (key, value, unit) {
@@ -52,5 +52,5 @@ Ext.define('Traccar.store.CoordinateFormats', {
             default:
                 return value.toFixed(Traccar.Style.coordinatePrecision) + '°';
         }
-    },
+    }
 });

@@ -25,10 +25,10 @@ Ext.define('Traccar.store.Languages', {
             if (Locale.languages.hasOwnProperty(code)) {
                 data.push({
                     code: code,
-                    name: Locale.languages[code].name,
+                    name: Locale.languages[code].name
                 });
             }
         }
         return data;
-    })(),
+    })()
 });

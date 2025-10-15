@@ -3,6 +3,7 @@ import jsxA11y from 'eslint-plugin-jsx-a11y';
 import importPlugin from 'eslint-plugin-import';
 import globals from 'globals';
 
+// Helper function to clean globals
 const cleanGlobals = (globalsObj) => {
   const cleaned = {};
   for (const [key, value] of Object.entries(globalsObj)) {
@@ -15,9 +16,11 @@ const cleanGlobals = (globalsObj) => {
 };
 
 export default [
+  // Ignore build artifacts and dependencies
   {
     ignores: ['node_modules/**', 'dist/**', 'build/**', '*.min.js'],
   },
+  // Configuration for legacy files (ExtJS style - ignore most rules)
   {
     files: ['legacy/**/*.js'],
     languageOptions: {
@@ -31,13 +34,14 @@ export default [
     },
     rules: {
       'no-console': 'off',
-      'comma-dangle': ['error', 'never'],
+      'comma-dangle': 'off',
       'operator-linebreak': 'off',
       'function-paren-newline': 'off',
       'arrow-body-style': 'off',
       'import/no-duplicates': 'off',
     },
   },
+  // Configuration for modern React files
   {
     files: ['src/**/*.{js,jsx}', '*.{js,jsx}'],
     languageOptions: {

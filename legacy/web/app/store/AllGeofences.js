@@ -23,7 +23,7 @@ Ext.define('Traccar.store.AllGeofences', {
         type: 'rest',
         url: 'api/geofences',
         extraParams: {
-            all: true,
-        },
-    },
+            all: true
+        }
+    }
 });

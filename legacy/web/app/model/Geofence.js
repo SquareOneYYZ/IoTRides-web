@@ -21,20 +21,20 @@ Ext.define('Traccar.model.Geofence', {
 
     fields: [{
         name: 'id',
-        type: 'int',
+        type: 'int'
     }, {
         name: 'name',
-        type: 'string',
+        type: 'string'
     }, {
         name: 'description',
-        type: 'string',
+        type: 'string'
     }, {
         name: 'area',
-        type: 'string',
+        type: 'string'
     }, {
         name: 'calendarId',
-        type: 'int',
+        type: 'int'
     }, {
-        name: 'attributes',
-    }],
+        name: 'attributes'
+    }]
 });

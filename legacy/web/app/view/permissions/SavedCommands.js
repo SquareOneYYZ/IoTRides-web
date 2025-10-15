@@ -26,7 +26,7 @@ Ext.define('Traccar.view.permissions.SavedCommands', {
             dataIndex: 'description',
             flex: 1,
             minWidth: Traccar.Style.columnWidthNormal,
-            filter: 'string',
+            filter: 'string'
         }, {
             text: Strings.sharedType,
             dataIndex: 'type',
@@ -36,15 +36,15 @@ Ext.define('Traccar.view.permissions.SavedCommands', {
                 type: 'list',
                 idField: 'type',
                 labelField: 'name',
-                store: 'AllCommandTypes',
+                store: 'AllCommandTypes'
             },
-            renderer: Traccar.AttributeFormatter.getFormatter('commandType'),
+            renderer: Traccar.AttributeFormatter.getFormatter('commandType')
         }, {
             text: Strings.commandSendSms,
             dataIndex: 'textChannel',
             flex: 1,
             minWidth: Traccar.Style.columnWidthNormal,
-            filter: 'boolean',
-        }],
-    },
+            filter: 'boolean'
+        }]
+    }
 });

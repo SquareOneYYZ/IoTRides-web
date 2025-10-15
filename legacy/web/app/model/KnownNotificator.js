@@ -21,12 +21,12 @@ Ext.define('Traccar.model.KnownNotificator', {
 
     fields: [{
         name: 'type',
-        type: 'string',
+        type: 'string'
     }, {
         name: 'name',
         convert: function (v, rec) {
             return Traccar.app.getNotificatorString(rec.get('type'));
         },
-        depends: ['type'],
-    }],
+        depends: ['type']
+    }]
 });

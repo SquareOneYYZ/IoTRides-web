@@ -20,14 +20,14 @@ Ext.define('Traccar.model.Attribute', {
 
     fields: [{
         name: 'priority',
-        type: 'int',
+        type: 'int'
     }, {
         name: 'name',
-        type: 'string',
+        type: 'string'
     }, {
-        name: 'value',
+        name: 'value'
     }, {
         name: 'attribute',
-        type: 'string',
-    }],
+        type: 'string'
+    }]
 });

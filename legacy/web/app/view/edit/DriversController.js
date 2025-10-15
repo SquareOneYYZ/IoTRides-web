@@ -22,10 +22,10 @@ Ext.define('Traccar.view.edit.DriversController', {
 
     requires: [
         'Traccar.view.dialog.Driver',
-        'Traccar.model.Driver',
+        'Traccar.model.Driver'
     ],
 
     objectModel: 'Traccar.model.Driver',
     objectDialog: 'Traccar.view.dialog.Driver',
-    removeTitle: Strings.sharedDriver,
+    removeTitle: Strings.sharedDriver
 });

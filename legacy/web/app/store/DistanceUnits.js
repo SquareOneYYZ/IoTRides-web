@@ -22,15 +22,15 @@ Ext.define('Traccar.store.DistanceUnits', {
     data: [{
         key: 'km',
         name: Strings.sharedKm,
-        factor: 0.001,
+        factor: 0.001
     }, {
         key: 'mi',
         name: Strings.sharedMi,
-        factor: 0.000621371,
+        factor: 0.000621371
     }, {
         key: 'nmi',
         name: Strings.sharedNmi,
-        factor: 0.000539957,
+        factor: 0.000539957
     }],
 
     convertValue: function (value, unit, back) {
@@ -49,5 +49,5 @@ Ext.define('Traccar.store.DistanceUnits', {
         }
         model = this.findRecord('key', unit);
         return (convert ? this.convertValue(value, unit) : value).toFixed(2) + ' ' + model.get('name');
-    },
+    }
 });

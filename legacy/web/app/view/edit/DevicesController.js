@@ -28,7 +28,7 @@ Ext.define('Traccar.view.edit.DevicesController', {
         'Traccar.view.permissions.SavedCommands',
         'Traccar.view.BaseWindow',
         'Traccar.model.Device',
-        'Traccar.model.Command',
+        'Traccar.model.Command'
     ],
 
     config: {
@@ -36,22 +36,22 @@ Ext.define('Traccar.view.edit.DevicesController', {
             controller: {
                 '*': {
                     selectreport: 'deselectDevice',
-                    selectevent: 'deselectDevice',
+                    selectevent: 'deselectDevice'
                 },
                 'root': {
-                    selectdevice: 'selectDevice',
+                    selectdevice: 'selectDevice'
                 },
                 'map': {
                     selectdevice: 'selectDevice',
-                    deselectfeature: 'deselectFeature',
-                },
+                    deselectfeature: 'deselectFeature'
+                }
             },
             store: {
                 '#Devices': {
-                    update: 'onUpdateDevice',
-                },
-            },
-        },
+                    update: 'onUpdateDevice'
+                }
+            }
+        }
     },
 
     objectModel: 'Traccar.model.Device',
@@ -83,11 +83,11 @@ Ext.define('Traccar.view.edit.DevicesController', {
         if (!Traccar.app.getPreference('limitCommands', false)) {
             commandsStore.add({
                 id: 0,
-                description: Strings.sharedNew,
+                description: Strings.sharedNew
             });
         }
         commandsStore.load({
-            addRecords: true,
+            addRecords: true
         });
 
         typesStore = dialog.lookupReference('commandType').getStore();
@@ -135,5 +135,5 @@ Ext.define('Traccar.view.edit.DevicesController', {
 
     deselectFeature: function () {
         this.getView().getSelectionModel().deselectAll();
-    },
+    }
 });

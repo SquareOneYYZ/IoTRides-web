@@ -21,7 +21,7 @@ Ext.define('Traccar.view.dialog.Notification', {
 
     requires: [
         'Traccar.view.ClearableComboBox',
-        'Traccar.view.dialog.NotificationController',
+        'Traccar.view.dialog.NotificationController'
     ],
 
     controller: 'notification',
@@ -43,14 +43,14 @@ Ext.define('Traccar.view.dialog.Notification', {
                 editable: false,
                 allowBlank: false,
                 listeners: {
-                    change: 'onTypeChange',
-                },
+                    change: 'onTypeChange'
+                }
             }, {
                 xtype: 'checkboxfield',
                 inputValue: true,
                 uncheckedValue: false,
                 name: 'always',
-                fieldLabel: Strings.notificationAlways,
+                fieldLabel: Strings.notificationAlways
             }, {
                 xtype: 'tagfield',
                 reference: 'alarmsField',
@@ -63,8 +63,8 @@ Ext.define('Traccar.view.dialog.Notification', {
                 hidden: true,
                 listeners: {
                     beforerender: 'onAlarmsLoad',
-                    change: 'onAlarmsChange',
-                },
+                    change: 'onAlarmsChange'
+                }
             }, {
                 xtype: 'tagfield',
                 fieldLabel: Strings.notificationNotificators,
@@ -73,8 +73,8 @@ Ext.define('Traccar.view.dialog.Notification', {
                 store: 'AllNotificators',
                 valueField: 'type',
                 displayField: 'name',
-                queryMode: 'local',
-            }],
+                queryMode: 'local'
+            }]
         }, {
             xtype: 'fieldset',
             title: Strings.sharedExtra,
@@ -88,8 +88,8 @@ Ext.define('Traccar.view.dialog.Notification', {
                 queryMode: 'local',
                 displayField: 'name',
                 valueField: 'id',
-                fieldLabel: Strings.sharedCalendar,
-            }],
-        }],
-    },
+                fieldLabel: Strings.sharedCalendar
+            }]
+        }]
+    }
 });

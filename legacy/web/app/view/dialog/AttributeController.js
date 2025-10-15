@@ -33,7 +33,7 @@ Ext.define('Traccar.view.dialog.AttributeController', {
                 failure: function (batch) {
                     store.rejectChanges();
                     Traccar.app.showError(batch.exceptions[0].getError().response);
-                },
+                }
             });
         } else {
             record.save();
@@ -49,7 +49,7 @@ Ext.define('Traccar.view.dialog.AttributeController', {
         name: 'value',
         reference: 'valueField',
         allowBlank: false,
-        fieldLabel: Strings.stateValue,
+        fieldLabel: Strings.stateValue
     },
 
     onNameChange: function (combobox, newValue) {
@@ -122,5 +122,5 @@ Ext.define('Traccar.view.dialog.AttributeController', {
                 valueField.setValue();
             }
         }
-    },
+    }
 });

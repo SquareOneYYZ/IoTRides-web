@@ -22,29 +22,29 @@ Ext.define('Traccar.view.edit.Calendars', {
 
     requires: [
         'Traccar.view.edit.CalendarsController',
-        'Traccar.view.edit.Toolbar',
+        'Traccar.view.edit.Toolbar'
     ],
 
     controller: 'calendars',
     store: 'Calendars',
 
     tbar: {
-        xtype: 'editToolbar',
+        xtype: 'editToolbar'
     },
 
     listeners: {
-        selectionchange: 'onSelectionChange',
+        selectionchange: 'onSelectionChange'
     },
 
     columns: {
         defaults: {
             flex: 1,
-            minWidth: Traccar.Style.columnWidthNormal,
+            minWidth: Traccar.Style.columnWidthNormal
         },
         items: [{
             text: Strings.sharedName,
             dataIndex: 'name',
-            filter: 'string',
-        }],
-    },
+            filter: 'string'
+        }]
+    }
 });

@@ -25,7 +25,7 @@ Ext.define('Traccar.view.ClearableComboBox', {
             cls: 'iconCls: x-fa fa-times',
             handler: function (button) {
                 button.clearValue();
-            },
-        },
-    },
+            }
+        }
+    }
 });

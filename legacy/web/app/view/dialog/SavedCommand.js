@@ -20,7 +20,7 @@ Ext.define('Traccar.view.dialog.SavedCommand', {
 
     requires: [
         'Traccar.view.dialog.SavedCommandController',
-        'Traccar.view.UnescapedTextField',
+        'Traccar.view.UnescapedTextField'
     ],
 
     controller: 'savedCommand',
@@ -29,7 +29,7 @@ Ext.define('Traccar.view.dialog.SavedCommand', {
     items: [{
         xtype: 'form',
         listeners: {
-            validitychange: 'onValidityChange',
+            validitychange: 'onValidityChange'
         },
         items: [{
             xtype: 'fieldset',
@@ -37,13 +37,13 @@ Ext.define('Traccar.view.dialog.SavedCommand', {
             items: [{
                 xtype: 'unescapedTextField',
                 name: 'description',
-                fieldLabel: Strings.sharedDescription,
+                fieldLabel: Strings.sharedDescription
             }, {
                 xtype: 'checkboxfield',
                 name: 'textChannel',
                 inputValue: true,
                 uncheckedValue: false,
-                fieldLabel: Strings.commandSendSms,
+                fieldLabel: Strings.commandSendSms
             }, {
                 xtype: 'combobox',
                 name: 'type',
@@ -56,13 +56,13 @@ Ext.define('Traccar.view.dialog.SavedCommand', {
                 editable: false,
                 allowBlank: false,
                 listeners: {
-                    change: 'onTypeChange',
-                },
+                    change: 'onTypeChange'
+                }
             }, {
                 xtype: 'fieldcontainer',
-                reference: 'parameters',
-            }],
-        }],
+                reference: 'parameters'
+            }]
+        }]
     }],
 
     buttons: [{
@@ -72,12 +72,12 @@ Ext.define('Traccar.view.dialog.SavedCommand', {
         tooltipType: 'title',
         minWidth: 0,
         disabled: true,
-        handler: 'onSaveClick',
+        handler: 'onSaveClick'
     }, {
         glyph: 'xf00d@FontAwesome',
         tooltip: Strings.sharedCancel,
         tooltipType: 'title',
         minWidth: 0,
-        handler: 'closeView',
-    }],
+        handler: 'closeView'
+    }]
 });

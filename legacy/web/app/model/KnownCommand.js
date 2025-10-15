@@ -21,14 +21,14 @@ Ext.define('Traccar.model.KnownCommand', {
 
     fields: [{
         name: 'type',
-        type: 'string',
+        type: 'string'
     }, {
         name: 'name',
         convert: function (v, rec) {
             return Traccar.AttributeFormatter.getFormatter('commandType')(rec.get('type'));
         },
-        depends: ['type'],
+        depends: ['type']
     }, {
-        name: 'parameters',
-    }],
+        name: 'parameters'
+    }]
 });

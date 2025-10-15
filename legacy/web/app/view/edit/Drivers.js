@@ -22,33 +22,33 @@ Ext.define('Traccar.view.edit.Drivers', {
 
     requires: [
         'Traccar.view.edit.DriversController',
-        'Traccar.view.edit.Toolbar',
+        'Traccar.view.edit.Toolbar'
     ],
 
     controller: 'drivers',
     store: 'Drivers',
 
     tbar: {
-        xtype: 'editToolbar',
+        xtype: 'editToolbar'
     },
 
     listeners: {
-        selectionchange: 'onSelectionChange',
+        selectionchange: 'onSelectionChange'
     },
 
     columns: {
         defaults: {
             flex: 1,
-            minWidth: Traccar.Style.columnWidthNormal,
+            minWidth: Traccar.Style.columnWidthNormal
         },
         items: [{
             text: Strings.sharedName,
             dataIndex: 'name',
-            filter: 'string',
+            filter: 'string'
         }, {
             text: Strings.deviceIdentifier,
             dataIndex: 'uniqueId',
-            filter: 'string',
-        }],
-    },
+            filter: 'string'
+        }]
+    }
 });

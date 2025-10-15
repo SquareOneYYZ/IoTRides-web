@@ -303,5 +303,5 @@ Ext.define('Traccar.AttributeFormatter', {
         } else {
             return value;
         }
-    },
+    }
 });

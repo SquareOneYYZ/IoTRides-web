@@ -21,20 +21,20 @@ Ext.define('Traccar.model.Command', {
 
     fields: [{
         name: 'id',
-        type: 'int',
+        type: 'int'
     }, {
         name: 'description',
-        type: 'string',
+        type: 'string'
     }, {
         name: 'deviceId',
-        type: 'int',
+        type: 'int'
     }, {
         name: 'type',
-        type: 'string',
+        type: 'string'
     }, {
         name: 'textChannel',
-        type: 'boolean',
+        type: 'boolean'
     }, {
-        name: 'attributes',
-    }],
+        name: 'attributes'
+    }]
 });

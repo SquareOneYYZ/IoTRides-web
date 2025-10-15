@@ -22,15 +22,15 @@ Ext.define('Traccar.store.SpeedUnits', {
     data: [{
         key: 'kn',
         name: Strings.sharedKn,
-        factor: 1,
+        factor: 1
     }, {
         key: 'kmh',
         name: Strings.sharedKmh,
-        factor: 1.852,
+        factor: 1.852
     }, {
         key: 'mph',
         name: Strings.sharedMph,
-        factor: 1.15078,
+        factor: 1.15078
     }],
 
     convertValue: function (value, unit, back) {
@@ -49,5 +49,5 @@ Ext.define('Traccar.store.SpeedUnits', {
         }
         model = this.findRecord('key', unit);
         return (convert ? this.convertValue(value, unit) : value).toFixed(1) + ' ' + model.get('name');
-    },
+    }
 });

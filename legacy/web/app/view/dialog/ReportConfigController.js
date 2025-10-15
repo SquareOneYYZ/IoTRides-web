@@ -22,7 +22,7 @@ Ext.define('Traccar.view.dialog.ReportConfigController', {
 
     requires: [
         'Traccar.store.ReportEventTypes',
-        'Traccar.store.AllNotifications',
+        'Traccar.store.AllNotifications'
     ],
 
     onSaveClick: function (button) {
@@ -95,5 +95,5 @@ Ext.define('Traccar.view.dialog.ReportConfigController', {
             this.lookupReference('toDateField').setValue(to);
             this.lookupReference('toTimeField').setValue(to);
         }
-    },
+    }
 });

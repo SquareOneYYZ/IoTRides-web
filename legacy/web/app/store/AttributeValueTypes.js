@@ -22,12 +22,12 @@ Ext.define('Traccar.store.AttributeValueTypes', {
 
     data: [{
         id: 'string',
-        name: Strings.sharedTypeString,
+        name: Strings.sharedTypeString
     }, {
         id: 'number',
-        name: Strings.sharedTypeNumber,
+        name: Strings.sharedTypeNumber
     }, {
         id: 'boolean',
-        name: Strings.sharedTypeBoolean,
-    }],
+        name: Strings.sharedTypeBoolean
+    }]
 });

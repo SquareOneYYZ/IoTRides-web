@@ -23,7 +23,7 @@ Ext.define('Traccar.controller.Root', {
         'Traccar.view.dialog.Login',
         'Traccar.view.Main',
         'Traccar.view.MainMobile',
-        'Traccar.model.Position',
+        'Traccar.model.Position'
     ],
 
     init: function () {
@@ -38,12 +38,12 @@ Ext.define('Traccar.controller.Root', {
                 name: 'attribute.' + attribute.get('key'),
                 attributeKey: attribute.get('key'),
                 calculate: this.calculateAttribute,
-                persist: false,
+                persist: false
             }]);
             if (attribute.get('valueType') === 'number') {
                 chartTypesStore.add({
                     key: 'attribute.' + attribute.get('key'),
-                    name: attribute.get('name'),
+                    name: attribute.get('name')
                 });
                 maintenanceTypesStore.add(attribute);
             }
@@ -62,7 +62,7 @@ Ext.define('Traccar.controller.Root', {
         Ext.Ajax.request({
             scope: this,
             url: 'api/server',
-            callback: this.onServerReturn,
+            callback: this.onServerReturn
         });
     },
 
@@ -76,7 +76,7 @@ Ext.define('Traccar.controller.Root', {
             buttons: Ext.Msg.OK,
             closable: false,
             modal: false,
-            maxWidth: maxWidth,
+            maxWidth: maxWidth
         }).alignTo(Ext.getBody(), 't-t', [0, Traccar.Style.normalPadding]);
     },
 
@@ -97,7 +97,7 @@ Ext.define('Traccar.controller.Root', {
                 url: 'api/session',
                 method: 'GET',
                 params: parameters,
-                callback: this.onSessionReturn,
+                callback: this.onSessionReturn
             });
         } else {
             Traccar.app.showError(response);
@@ -114,8 +114,8 @@ Ext.define('Traccar.controller.Root', {
             this.login = Ext.create('widget.login', {
                 listeners: {
                     scope: this,
-                    login: this.onLogin,
-                },
+                    login: this.onLogin
+                }
             });
             this.login.show();
 
@@ -130,7 +130,7 @@ Ext.define('Traccar.controller.Root', {
                             url: 'api/password/update',
                             params: {
                                 token: passwordReset,
-                                password: text,
+                                password: text
                             },
                             callback: function (options, success, response) {
                                 if (success) {
@@ -139,7 +139,7 @@ Ext.define('Traccar.controller.Root', {
                                 } else {
                                     Traccar.app.showError(response.responseText);
                                 }
-                            },
+                            }
                         });
                     }
                 }, this);
@@ -177,11 +177,11 @@ Ext.define('Traccar.controller.Root', {
                 if (success) {
                     store.add({
                         type: Traccar.store.ReportEventTypes.allEvents,
-                        name: Strings.eventAll,
+                        name: Strings.eventAll
                     });
                     store.loadData(records, true);
                 }
-            },
+            }
         });
         Ext.getStore('AllNotificators').load();
         Ext.getStore('Notifications').load();
@@ -196,7 +196,7 @@ Ext.define('Traccar.controller.Root', {
             scope: this,
             callback: function () {
                 this.asyncUpdate(true);
-            },
+            }
         });
         updateView = Ext.get('update');
         if (updateView) {
@@ -256,17 +256,17 @@ Ext.define('Traccar.controller.Root', {
                     if (response.status === 401) {
                         window.location.reload();
                     }
-                },
+                }
             });
 
             Ext.Ajax.request({
                 url: 'api/positions',
                 headers: {
-                    Accept: 'application/json',
+                    Accept: 'application/json'
                 },
                 success: function (response) {
                     self.updatePositions(Ext.decode(response.responseText));
-                },
+                }
             });
 
             setTimeout(function () {
@@ -298,9 +298,9 @@ Ext.define('Traccar.controller.Root', {
             if (entity) {
                 entity.set({
                     status: array[i].status,
-                    lastUpdate: array[i].lastUpdate,
+                    lastUpdate: array[i].lastUpdate
                 }, {
-                    dirty: false,
+                    dirty: false
                 });
             }
         }
@@ -359,5 +359,5 @@ Ext.define('Traccar.controller.Root', {
         if (lat === 0 && lon === 0 && zoom === 0) {
             this.fireEvent('zoomtoalldevices');
         }
-    },
+    }
 });

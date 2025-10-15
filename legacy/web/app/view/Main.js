@@ -25,7 +25,7 @@ Ext.define('Traccar.view.Main', {
         'Traccar.view.State',
         'Traccar.view.Report',
         'Traccar.view.Events',
-        'Traccar.view.map.Map',
+        'Traccar.view.map.Map'
     ],
 
     controller: 'mainController',
@@ -35,7 +35,7 @@ Ext.define('Traccar.view.Main', {
     defaults: {
         header: false,
         collapsible: true,
-        split: true,
+        split: true
     },
 
     items: [{
@@ -50,16 +50,16 @@ Ext.define('Traccar.view.Main', {
 
         defaults: {
             split: true,
-            flex: 1,
+            flex: 1
         },
 
         items: [{
             region: 'center',
-            xtype: 'devicesView',
+            xtype: 'devicesView'
         }, {
             region: 'south',
-            xtype: 'stateView',
-        }],
+            xtype: 'stateView'
+        }]
     }, {
         region: 'south',
         xtype: 'reportView',
@@ -67,11 +67,11 @@ Ext.define('Traccar.view.Main', {
         height: Traccar.Style.reportHeight,
         collapsed: true,
         titleCollapse: true,
-        floatable: false,
+        floatable: false
     }, {
         region: 'center',
         xtype: 'mapView',
-        collapsible: false,
+        collapsible: false
     }, {
         region: 'east',
         xtype: 'eventsView',
@@ -79,6 +79,6 @@ Ext.define('Traccar.view.Main', {
         width: Traccar.Style.deviceWidth,
         collapsed: true,
         titleCollapse: true,
-        floatable: false,
-    }],
+        floatable: false
+    }]
 });

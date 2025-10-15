@@ -24,6 +24,6 @@ Ext.define('Traccar.view.dialog.DeviceController', {
         if (Traccar.app.getUser().get('administrator')) {
             this.lookupReference('disabledField').setHidden(false);
         }
-    },
+    }
 
 });

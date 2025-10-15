@@ -21,7 +21,7 @@ Ext.define('Traccar.view.dialog.ReportConfig', {
 
     requires: [
         'Traccar.view.dialog.ReportConfigController',
-        'Traccar.view.CustomTimeField',
+        'Traccar.view.CustomTimeField'
     ],
 
     controller: 'reportConfig',
@@ -35,7 +35,7 @@ Ext.define('Traccar.view.dialog.ReportConfig', {
         store: 'Devices',
         valueField: 'id',
         displayField: 'name',
-        queryMode: 'local',
+        queryMode: 'local'
     }, {
         fieldLabel: Strings.reportGroup,
         xtype: 'tagfield',
@@ -44,7 +44,7 @@ Ext.define('Traccar.view.dialog.ReportConfig', {
         store: 'Groups',
         valueField: 'id',
         displayField: 'name',
-        queryMode: 'local',
+        queryMode: 'local'
     }, {
         fieldLabel: Strings.reportEventTypes,
         xtype: 'tagfield',
@@ -54,7 +54,7 @@ Ext.define('Traccar.view.dialog.ReportConfig', {
         hidden: true,
         valueField: 'type',
         displayField: 'name',
-        queryMode: 'local',
+        queryMode: 'local'
     }, {
         fieldLabel: Strings.reportChartType,
         xtype: 'combobox',
@@ -64,14 +64,14 @@ Ext.define('Traccar.view.dialog.ReportConfig', {
         value: 'speed',
         valueField: 'key',
         displayField: 'name',
-        queryMode: 'local',
+        queryMode: 'local'
     }, {
         fieldLabel: Strings.reportShowMarkers,
         xtype: 'checkbox',
         reference: 'showMarkersField',
         inputValue: true,
         uncheckedValue: false,
-        value: false,
+        value: false
     }, {
         fieldLabel: Strings.reportPeriod,
         reference: 'periodField',
@@ -82,8 +82,8 @@ Ext.define('Traccar.view.dialog.ReportConfig', {
         displayField: 'name',
         queryMode: 'local',
         listeners: {
-            change: 'onPeriodChange',
-        },
+            change: 'onPeriodChange'
+        }
     }, {
         xtype: 'fieldcontainer',
         layout: 'vbox',
@@ -95,12 +95,12 @@ Ext.define('Traccar.view.dialog.ReportConfig', {
             reference: 'fromDateField',
             startDay: Traccar.Style.weekStartDay,
             format: Traccar.Style.dateFormat,
-            value: new Date(new Date().getTime() - 30 * 60 * 1000),
+            value: new Date(new Date().getTime() - 30 * 60 * 1000)
         }, {
             xtype: 'customTimeField',
             reference: 'fromTimeField',
-            value: new Date(new Date().getTime() - 30 * 60 * 1000),
-        }],
+            value: new Date(new Date().getTime() - 30 * 60 * 1000)
+        }]
     }, {
         xtype: 'fieldcontainer',
         layout: 'vbox',
@@ -112,12 +112,12 @@ Ext.define('Traccar.view.dialog.ReportConfig', {
             reference: 'toDateField',
             startDay: Traccar.Style.weekStartDay,
             format: Traccar.Style.dateFormat,
-            value: new Date(),
+            value: new Date()
         }, {
             xtype: 'customTimeField',
             reference: 'toTimeField',
-            value: new Date(),
-        }],
+            value: new Date()
+        }]
     }],
 
     buttons: [{
@@ -125,12 +125,12 @@ Ext.define('Traccar.view.dialog.ReportConfig', {
         tooltip: Strings.sharedSave,
         tooltipType: 'title',
         minWidth: 0,
-        handler: 'onSaveClick',
+        handler: 'onSaveClick'
     }, {
         glyph: 'xf00d@FontAwesome',
         tooltip: Strings.sharedCancel,
         tooltipType: 'title',
         minWidth: 0,
-        handler: 'closeView',
-    }],
+        handler: 'closeView'
+    }]
 });

@@ -20,7 +20,7 @@ Ext.define('Traccar.view.dialog.Group', {
 
     requires: [
         'Traccar.view.ClearableComboBox',
-        'Traccar.view.UnescapedTextField',
+        'Traccar.view.UnescapedTextField'
     ],
 
     title: Strings.groupDialog,
@@ -34,8 +34,8 @@ Ext.define('Traccar.view.dialog.Group', {
                 xtype: 'unescapedTextField',
                 name: 'name',
                 fieldLabel: Strings.sharedName,
-                allowBlank: false,
-            }],
+                allowBlank: false
+            }]
         }, {
             xtype: 'fieldset',
             title: Strings.sharedExtra,
@@ -48,8 +48,8 @@ Ext.define('Traccar.view.dialog.Group', {
                 store: 'Groups',
                 queryMode: 'local',
                 displayField: 'name',
-                valueField: 'id',
-            }],
-        }],
-    },
+                valueField: 'id'
+            }]
+        }]
+    }
 });

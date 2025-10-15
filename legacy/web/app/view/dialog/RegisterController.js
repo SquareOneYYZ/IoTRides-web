@@ -27,7 +27,7 @@ Ext.define('Traccar.view.dialog.RegisterController', {
                 method: 'POST',
                 url: 'api/users',
                 jsonData: form.getValues(),
-                callback: this.onCreateReturn,
+                callback: this.onCreateReturn
             });
         }
     },
@@ -39,6 +39,6 @@ Ext.define('Traccar.view.dialog.RegisterController', {
         } else {
             Traccar.app.showError(response);
         }
-    },
+    }
 
 });

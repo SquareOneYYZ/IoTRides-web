@@ -22,5 +22,5 @@ Ext.define('Traccar.view.CustomTimeField', {
     constructor: function (config) {
         config.format = Traccar.Style.timeFormat24;
         this.callParent(arguments);
-    },
+    }
 });

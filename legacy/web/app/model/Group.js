@@ -21,14 +21,14 @@ Ext.define('Traccar.model.Group', {
 
     fields: [{
         name: 'id',
-        type: 'int',
+        type: 'int'
     }, {
         name: 'name',
-        type: 'string',
+        type: 'string'
     }, {
         name: 'groupId',
-        type: 'int',
+        type: 'int'
     }, {
-        name: 'attributes',
-    }],
+        name: 'attributes'
+    }]
 });

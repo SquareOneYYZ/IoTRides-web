@@ -23,7 +23,7 @@ Ext.define('Traccar.store.AllDevices', {
         type: 'rest',
         url: 'api/devices',
         extraParams: {
-            all: true,
-        },
-    },
+            all: true
+        }
+    }
 });

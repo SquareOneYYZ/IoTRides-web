@@ -22,40 +22,40 @@ Ext.define('Traccar.model.ReportSummary', {
 
     fields: [{
         name: 'deviceId',
-        type: 'int',
+        type: 'int'
     }, {
         name: 'deviceName',
-        type: 'string',
+        type: 'string'
     }, {
         name: 'startTime',
         type: 'date',
-        dateFormat: 'c',
+        dateFormat: 'c'
     }, {
         name: 'maxSpeed',
         type: 'float',
-        convert: Traccar.AttributeFormatter.getConverter('speed'),
+        convert: Traccar.AttributeFormatter.getConverter('speed')
     }, {
         name: 'averageSpeed',
         type: 'float',
-        convert: Traccar.AttributeFormatter.getConverter('speed'),
+        convert: Traccar.AttributeFormatter.getConverter('speed')
     }, {
         name: 'distance',
         type: 'float',
-        convert: Traccar.AttributeFormatter.getConverter('distance'),
+        convert: Traccar.AttributeFormatter.getConverter('distance')
     }, {
         name: 'startOdometer',
         type: 'float',
-        convert: Traccar.AttributeFormatter.getConverter('distance'),
+        convert: Traccar.AttributeFormatter.getConverter('distance')
     }, {
         name: 'endOdometer',
         type: 'float',
-        convert: Traccar.AttributeFormatter.getConverter('distance'),
+        convert: Traccar.AttributeFormatter.getConverter('distance')
     }, {
         name: 'engineHours',
-        type: 'int',
+        type: 'int'
     }, {
         name: 'spentFuel',
         type: 'float',
-        convert: Traccar.AttributeFormatter.getConverter('spentFuel'),
-    }],
+        convert: Traccar.AttributeFormatter.getConverter('spentFuel')
+    }]
 });

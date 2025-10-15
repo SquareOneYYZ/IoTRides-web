@@ -20,7 +20,7 @@ Ext.define('Traccar.view.SettingsMenu', {
     xtype: 'settingsMenu',
 
     requires: [
-        'Traccar.view.SettingsMenuController',
+        'Traccar.view.SettingsMenuController'
     ],
 
     glyph: 'xf013@FontAwesome',
@@ -35,77 +35,77 @@ Ext.define('Traccar.view.SettingsMenu', {
             text: Strings.settingsUser,
             glyph: 'xf007@FontAwesome',
             handler: 'onUserClick',
-            reference: 'settingsUserButton',
+            reference: 'settingsUserButton'
         }, {
             hidden: true,
             text: Strings.settingsGroups,
             glyph: 'xf247@FontAwesome',
             handler: 'onGroupsClick',
-            reference: 'settingsGroupsButton',
+            reference: 'settingsGroupsButton'
         }, {
             hidden: true,
             text: Strings.sharedDrivers,
             glyph: 'xf084@FontAwesome',
             handler: 'onDriversClick',
-            reference: 'settingsDriversButton',
+            reference: 'settingsDriversButton'
         }, {
             hidden: true,
             text: Strings.sharedGeofences,
             glyph: 'xf21d@FontAwesome',
             handler: 'onGeofencesClick',
-            reference: 'settingsGeofencesButton',
+            reference: 'settingsGeofencesButton'
         }, {
             hidden: true,
             text: Strings.settingsServer,
             glyph: 'xf233@FontAwesome',
             handler: 'onServerClick',
-            reference: 'settingsServerButton',
+            reference: 'settingsServerButton'
         }, {
             hidden: true,
             text: Strings.settingsUsers,
             glyph: 'xf0c0@FontAwesome',
             handler: 'onUsersClick',
-            reference: 'settingsUsersButton',
+            reference: 'settingsUsersButton'
         }, {
             hidden: true,
             text: Strings.sharedNotifications,
             glyph: 'xf003@FontAwesome',
             handler: 'onNotificationsClick',
-            reference: 'settingsNotificationsButton',
+            reference: 'settingsNotificationsButton'
         }, {
             hidden: true,
             text: Strings.sharedComputedAttributes,
             glyph: 'xf0ae@FontAwesome',
             handler: 'onComputedAttributesClick',
-            reference: 'settingsComputedAttributesButton',
+            reference: 'settingsComputedAttributesButton'
         }, {
             hidden: true,
             text: Strings.statisticsTitle,
             glyph: 'xf080@FontAwesome',
             handler: 'onStatisticsClick',
-            reference: 'settingsStatisticsButton',
+            reference: 'settingsStatisticsButton'
         }, {
             hidden: true,
             text: Strings.sharedCalendars,
             glyph: 'xf073@FontAwesome',
             handler: 'onCalendarsClick',
-            reference: 'settingsCalendarsButton',
+            reference: 'settingsCalendarsButton'
         }, {
             hidden: true,
             text: Strings.sharedSavedCommands,
             glyph: 'xf093@FontAwesome',
             handler: 'onCommandsClick',
-            reference: 'settingsCommandsButton',
+            reference: 'settingsCommandsButton'
         }, {
             hidden: true,
             text: Strings.sharedMaintenance,
             glyph: 'xf0ad@FontAwesome',
             handler: 'onMaintenancesClick',
-            reference: 'settingsMaintenancesButton',
+            reference: 'settingsMaintenancesButton'
         }, {
             text: Strings.loginLogout,
             glyph: 'xf08b@FontAwesome',
-            handler: 'onLogoutClick',
-        }],
-    },
+            handler: 'onLogoutClick'
+        }]
+    }
 });

@@ -22,31 +22,31 @@ Ext.define('Traccar.store.DeviceAttributes', {
     data: [{
         key: 'web.reportColor',
         name: Strings.attributeWebReportColor,
-        valueType: 'color',
+        valueType: 'color'
     }, {
         key: 'devicePassword',
         name: Strings.attributeDevicePassword,
-        valueType: 'string',
+        valueType: 'string'
     }, {
         key: 'processing.copyAttributes',
         name: Strings.attributeProcessingCopyAttributes,
-        valueType: 'string',
+        valueType: 'string'
     }, {
         key: 'decoder.timezone',
         name: Strings.sharedTimezone,
         valueType: 'string',
-        dataType: 'timezone',
+        dataType: 'timezone'
     }, {
         key: 'deviceInactivityStart',
         name: Strings.attributeDeviceInactivityStart,
         valueType: 'number',
         allowDecimals: false,
-        minValue: 1,
+        minValue: 1
     }, {
         key: 'deviceInactivityPeriod',
         name: Strings.attributeDeviceInactivityPeriod,
         valueType: 'number',
         allowDecimals: false,
-        minValue: 1,
-    }],
+        minValue: 1
+    }]
 });

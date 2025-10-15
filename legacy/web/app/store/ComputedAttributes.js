@@ -24,7 +24,7 @@ Ext.define('Traccar.store.ComputedAttributes', {
         type: 'rest',
         url: 'api/attributes/computed',
         writer: {
-            writeAllFields: true,
-        },
-    },
+            writeAllFields: true
+        }
+    }
 });

@@ -22,12 +22,12 @@ Ext.define('Traccar.store.ReportChartTypes', {
 
     data: [{
         key: 'speed',
-        name: Strings.positionSpeed,
+        name: Strings.positionSpeed
     }, {
         key: 'accuracy',
-        name: Strings.positionAccuracy,
+        name: Strings.positionAccuracy
     }, {
         key: 'altitude',
-        name: Strings.positionAltitude,
-    }],
+        name: Strings.positionAltitude
+    }]
 });

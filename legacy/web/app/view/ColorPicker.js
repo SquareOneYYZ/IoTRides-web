@@ -20,7 +20,7 @@ Ext.define('Traccar.view.ColorPicker', {
     xtype: 'customcolorpicker',
 
     config: {
-        value: '#008000',
+        value: '#008000'
     },
 
     editable: false,
@@ -32,12 +32,12 @@ Ext.define('Traccar.view.ColorPicker', {
             select: function (selColor) {
                 this.picker.setValue('#' + selColor);
                 this.picker.collapse();
-            },
+            }
         });
     },
 
     setValue: function (color) {
         this.callParent([color]);
         this.setFieldStyle('background-color:' + color);
-    },
+    }
 });

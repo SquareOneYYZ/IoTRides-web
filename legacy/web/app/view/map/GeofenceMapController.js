@@ -20,17 +20,17 @@ Ext.define('Traccar.view.map.GeofenceMapController', {
     alias: 'controller.geofenceMap',
 
     requires: [
-        'Traccar.GeofenceConverter',
+        'Traccar.GeofenceConverter'
     ],
 
     config: {
         listen: {
             controller: {
                 '*': {
-                    mapstate: 'setMapState',
-                },
-            },
-        },
+                    mapstate: 'setMapState'
+                }
+            }
+        }
     },
 
     onFileChange: function (fileField) {
@@ -81,5 +81,5 @@ Ext.define('Traccar.view.map.GeofenceMapController', {
     setMapState: function (lat, lon, zoom) {
         this.getView().getMapView().setCenter(ol.proj.fromLonLat([lon, lat]));
         this.getView().getMapView().setZoom(zoom);
-    },
+    }
 });

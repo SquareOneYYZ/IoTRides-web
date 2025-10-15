@@ -22,7 +22,7 @@ Ext.define('Traccar.view.dialog.Attribute', {
         'Traccar.view.dialog.AttributeController',
         'Traccar.view.ColorPicker',
         'Traccar.view.CustomNumberField',
-        'Traccar.view.UnescapedTextField',
+        'Traccar.view.UnescapedTextField'
     ],
 
     controller: 'attribute',
@@ -31,21 +31,21 @@ Ext.define('Traccar.view.dialog.Attribute', {
     items: {
         xtype: 'form',
         listeners: {
-            validitychange: 'onValidityChange',
+            validitychange: 'onValidityChange'
         },
         items: [{
             xtype: 'unescapedTextField',
             reference: 'nameTextField',
             name: 'name',
             allowBlank: false,
-            fieldLabel: Strings.sharedName,
+            fieldLabel: Strings.sharedName
         }, {
             xtype: 'textfield',
             name: 'value',
             reference: 'valueField',
             allowBlank: false,
-            fieldLabel: Strings.stateValue,
-        }],
+            fieldLabel: Strings.stateValue
+        }]
     },
 
     buttons: [{
@@ -54,12 +54,12 @@ Ext.define('Traccar.view.dialog.Attribute', {
         tooltip: Strings.sharedSave,
         tooltipType: 'title',
         minWidth: 0,
-        handler: 'onSaveClick',
+        handler: 'onSaveClick'
     }, {
         glyph: 'xf00d@FontAwesome',
         tooltip: Strings.sharedCancel,
         tooltipType: 'title',
         minWidth: 0,
-        handler: 'closeView',
-    }],
+        handler: 'closeView'
+    }]
 });

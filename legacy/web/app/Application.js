@@ -22,7 +22,7 @@ Ext.define('Traccar.Application', {
     requires: [
         'Traccar.Style',
         'Traccar.AttributeFormatter',
-        'Traccar.view.TouchFix62',
+        'Traccar.view.TouchFix62'
     ],
 
     models: [
@@ -44,7 +44,7 @@ Ext.define('Traccar.Application', {
         'Driver',
         'KnownCommand',
         'KnownNotification',
-        'Maintenance',
+        'Maintenance'
     ],
 
     stores: [
@@ -111,11 +111,11 @@ Ext.define('Traccar.Application', {
         'AllMaintenances',
         'MaintenanceTypes',
         'HoursUnits',
-        'AllNotificators',
+        'AllNotificators'
     ],
 
     controllers: [
-        'Root',
+        'Root'
     ],
 
     isMobile: function () {
@@ -165,7 +165,7 @@ Ext.define('Traccar.Application', {
 
     setUser: function (data) {
         var reader = Ext.create('Ext.data.reader.Json', {
-            model: 'Traccar.model.User',
+            model: 'Traccar.model.User'
         });
         this.user = reader.readRecords(data).getRecords()[0];
     },
@@ -176,7 +176,7 @@ Ext.define('Traccar.Application', {
 
     setServer: function (data) {
         var reader = Ext.create('Ext.data.reader.Json', {
-            model: 'Traccar.model.Server',
+            model: 'Traccar.model.Server'
         });
         this.server = reader.readRecords(data).getRecords()[0];
     },
@@ -240,7 +240,7 @@ Ext.define('Traccar.Application', {
             html: message,
             title: title,
             width: Traccar.Style.toastWidth,
-            align: 'br',
+            align: 'br'
         });
-    },
+    }
 });

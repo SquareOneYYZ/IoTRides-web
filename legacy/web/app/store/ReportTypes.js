@@ -21,24 +21,24 @@ Ext.define('Traccar.store.ReportTypes', {
 
     data: [{
         key: 'route',
-        name: Strings.reportRoute,
+        name: Strings.reportRoute
     }, {
         key: 'events',
-        name: Strings.reportEvents,
+        name: Strings.reportEvents
     }, {
         key: 'trips',
-        name: Strings.reportTrips,
+        name: Strings.reportTrips
     }, {
         key: 'stops',
-        name: Strings.reportStops,
+        name: Strings.reportStops
     }, {
         key: 'summary',
-        name: Strings.reportSummary,
+        name: Strings.reportSummary
     }, {
         key: 'daily',
-        name: Strings.reportDaily,
+        name: Strings.reportDaily
     }, {
         key: 'chart',
-        name: Strings.reportChart,
-    }],
+        name: Strings.reportChart
+    }]
 });

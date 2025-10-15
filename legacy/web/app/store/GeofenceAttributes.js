@@ -23,16 +23,16 @@ Ext.define('Traccar.store.GeofenceAttributes', {
     data: [{
         key: 'color',
         name: Strings.attributeColor,
-        valueType: 'color',
+        valueType: 'color'
     }, {
         key: 'speedLimit',
         name: Strings.attributeSpeedLimit,
         valueType: 'number',
-        dataType: 'speed',
+        dataType: 'speed'
     }, {
         key: 'polylineDistance',
         name: Strings.attributePolylineDistance,
         valueType: 'number',
-        dataType: 'distance',
-    }],
+        dataType: 'distance'
+    }]
 });

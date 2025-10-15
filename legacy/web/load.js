@@ -90,7 +90,7 @@
         'uz': { name: 'Oʻzbekcha', code: 'en' },
         'vi': { name: 'Tiếng Việt', code: 'en' },
         'zh': { name: '中文', code: 'zh_CN' },
-        'zh_TW': { name: '中文 (Taiwan)', code: 'zh_TW' },
+        'zh_TW': { name: '中文 (Taiwan)', code: 'zh_TW' }
     };
 
     languageDefault = 'en';
@@ -122,7 +122,7 @@
 
         if (debugMode) {
             Ext.Loader.setConfig({
-                disableCaching: false,
+                disableCaching: false
             });
         }
 
@@ -141,12 +141,12 @@
                                 }
                             }
                             addScriptFile(debugMode ? 'app.js' : 'app.min.js');
-                        },
+                        }
                     });
                 } else {
                     addScriptFile(debugMode ? 'app.js' : 'app.min.js');
                 }
-            },
+            }
         });
 
     });

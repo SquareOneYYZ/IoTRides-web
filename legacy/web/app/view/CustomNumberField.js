@@ -66,8 +66,8 @@ Ext.define('Traccar.view.CustomNumberField', {
                                 listeners: {
                                     select: function () {
                                         this.numberField.step = this.getStore().convertValue(1, this.getValue(), true);
-                                    },
-                                },
+                                    }
+                                }
                             });
                         }
                     };
@@ -105,5 +105,5 @@ Ext.define('Traccar.view.CustomNumberField', {
             }
         }
         this.callParent(arguments);
-    },
+    }
 });

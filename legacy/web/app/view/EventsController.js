@@ -25,18 +25,18 @@ Ext.define('Traccar.view.EventsController', {
             controller: {
                 '*': {
                     selectdevice: 'deselectEvent',
-                    selectreport: 'deselectEvent',
+                    selectreport: 'deselectEvent'
                 },
                 'map': {
-                    deselectfeature: 'deselectFeature',
-                },
+                    deselectfeature: 'deselectFeature'
+                }
             },
             store: {
                 '#Events': {
-                    add: 'onAddEvent',
-                },
-            },
-        },
+                    add: 'onAddEvent'
+                }
+            }
+        }
     },
 
     init: function () {
@@ -106,7 +106,7 @@ Ext.define('Traccar.view.EventsController', {
                 } else {
                     Ext.getStore('EventPositions').load({
                         params: {
-                            id: positionId,
+                            id: positionId
                         },
                         scope: this,
                         addRecords: true,
@@ -114,7 +114,7 @@ Ext.define('Traccar.view.EventsController', {
                             if (success && records.length > 0) {
                                 this.fireEvent('selectevent', records[0]);
                             }
-                        },
+                        }
                     });
                 }
             } else {
@@ -122,5 +122,5 @@ Ext.define('Traccar.view.EventsController', {
             }
         }
         this.lookupReference('removeEventButton').setDisabled(!event);
-    },
+    }
 });

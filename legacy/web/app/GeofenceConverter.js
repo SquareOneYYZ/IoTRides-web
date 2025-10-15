@@ -96,5 +96,5 @@ Ext.define('Traccar.GeofenceConverter', {
             result = result.substring(0, result.length - 2) + ')';
         }
         return result;
-    },
+    }
 });

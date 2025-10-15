@@ -21,7 +21,7 @@ Ext.define('Traccar.view.Events', {
     xtype: 'eventsView',
 
     requires: [
-        'Traccar.view.EventsController',
+        'Traccar.view.EventsController'
     ],
 
     controller: 'events',
@@ -45,27 +45,27 @@ Ext.define('Traccar.view.Events', {
             stateEvents: ['toggle'],
             enableToggle: true,
             stateful: {
-                pressed: true,
-            },
+                pressed: true
+            }
         },
         items: [{
             xtype: 'tbtext',
             html: Strings.reportEvents,
-            baseCls: 'x-panel-header-title-default',
+            baseCls: 'x-panel-header-title-default'
         }, {
-            xtype: 'tbfill',
+            xtype: 'tbfill'
         }, {
             glyph: 'xf063@FontAwesome',
             pressed: true,
             toggleHandler: 'onScrollToLastClick',
             stateId: 'events-scroll-to-last-button',
             tooltip: Strings.eventsScrollToLast,
-            reference: 'scrollToLastButton',
+            reference: 'scrollToLastButton'
         }, {
             id: 'soundButton',
             glyph: 'xf0a2@FontAwesome',
             tooltip: Strings.sharedSound,
-            stateId: 'sound-button',
+            stateId: 'sound-button'
         }, {
             glyph: 'xf014@FontAwesome',
             tooltip: Strings.sharedRemove,
@@ -73,13 +73,13 @@ Ext.define('Traccar.view.Events', {
             reference: 'removeEventButton',
             disabled: true,
             stateful: false,
-            enableToggle: false,
+            enableToggle: false
         }, {
             glyph: 'xf1f8@FontAwesome',
             tooltip: Strings.reportClear,
             handler: 'onClearClick',
             stateful: false,
-            enableToggle: false,
+            enableToggle: false
         }, {
             glyph: 'xf00d@FontAwesome',
             tooltip: Strings.sharedHide,
@@ -87,31 +87,31 @@ Ext.define('Traccar.view.Events', {
             reference: 'hideEventsButton',
             hidden: true,
             stateful: false,
-            enableToggle: false,
-        }],
+            enableToggle: false
+        }]
     },
 
     listeners: {
-        selectionchange: 'onSelectionChange',
+        selectionchange: 'onSelectionChange'
     },
 
     columns: {
         defaults: {
             flex: 1,
-            minWidth: Traccar.Style.columnWidthNormal,
+            minWidth: Traccar.Style.columnWidthNormal
         },
         items: [{
             text: Strings.sharedDevice,
             dataIndex: 'deviceId',
-            renderer: Traccar.AttributeFormatter.getFormatter('deviceId'),
+            renderer: Traccar.AttributeFormatter.getFormatter('deviceId')
         }, {
             flex: 2,
             text: Strings.positionEvent,
-            dataIndex: 'text',
+            dataIndex: 'text'
         }, {
             text: Strings.positionFixTime,
             dataIndex: 'eventTime',
-            renderer: Traccar.AttributeFormatter.getFormatter('eventTime'),
-        }],
-    },
+            renderer: Traccar.AttributeFormatter.getFormatter('eventTime')
+        }]
+    }
 });

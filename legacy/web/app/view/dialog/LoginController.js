@@ -20,7 +20,7 @@ Ext.define('Traccar.view.dialog.LoginController', {
     alias: 'controller.login',
 
     requires: [
-        'Traccar.view.dialog.Register',
+        'Traccar.view.dialog.Register'
     ],
 
     init: function () {
@@ -52,7 +52,7 @@ Ext.define('Traccar.view.dialog.LoginController', {
                             Traccar.app.showError(response.responseText);
                         }
                     }
-                },
+                }
             });
         }
     },
@@ -66,7 +66,7 @@ Ext.define('Traccar.view.dialog.LoginController', {
             url: 'api/session',
             callback: function () {
                 window.location.reload();
-            },
+            }
         });
     },
 
@@ -116,7 +116,7 @@ Ext.define('Traccar.view.dialog.LoginController', {
                     method: 'POST',
                     url: 'api/password/reset',
                     params: {
-                        email: text,
+                        email: text
                     },
                     callback: function (options, success, response) {
                         if (success) {
@@ -124,9 +124,9 @@ Ext.define('Traccar.view.dialog.LoginController', {
                         } else {
                             Traccar.app.showError(response.responseText);
                         }
-                    },
+                    }
                 });
             }
         });
-    },
+    }
 });

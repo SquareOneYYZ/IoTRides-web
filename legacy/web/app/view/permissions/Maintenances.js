@@ -26,7 +26,7 @@ Ext.define('Traccar.view.permissions.Maintenances', {
             dataIndex: 'name',
             flex: 1,
             minWidth: Traccar.Style.columnWidthNormal,
-            filter: 'string',
+            filter: 'string'
         }, {
             text: Strings.sharedType,
             dataIndex: 'type',
@@ -36,12 +36,12 @@ Ext.define('Traccar.view.permissions.Maintenances', {
                 type: 'list',
                 idField: 'key',
                 labelField: 'name',
-                store: 'MaintenanceTypes',
+                store: 'MaintenanceTypes'
             },
             renderer: function (value) {
                 var attribute = Ext.getStore('MaintenanceTypes').getById(value);
                 return attribute && attribute.get('name') || value;
-            },
+            }
         }, {
             text: Strings.maintenanceStart,
             dataIndex: 'start',
@@ -49,7 +49,7 @@ Ext.define('Traccar.view.permissions.Maintenances', {
             minWidth: Traccar.Style.columnWidthNormal,
             renderer: function (value, metaData, record) {
                 return Traccar.AttributeFormatter.renderAttribute(value, Ext.getStore('MaintenanceTypes').getById(record.get('type')));
-            },
+            }
         }, {
             text: Strings.maintenancePeriod,
             dataIndex: 'period',
@@ -57,7 +57,7 @@ Ext.define('Traccar.view.permissions.Maintenances', {
             minWidth: Traccar.Style.columnWidthNormal,
             renderer: function (value, metaData, record) {
                 return Traccar.AttributeFormatter.renderAttribute(value, Ext.getStore('MaintenanceTypes').getById(record.get('type')));
-            },
-        }],
-    },
+            }
+        }]
+    }
 });

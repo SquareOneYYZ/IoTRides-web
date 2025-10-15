@@ -34,12 +34,12 @@ Ext.define('Traccar.view.dialog.SelectDeviceController', {
                 } else {
                     Traccar.app.showError(response);
                 }
-            },
+            }
         });
         button.up('window').close();
     },
 
     onDeviceChange: function (combobox, newValue) {
         this.lookupReference('saveButton').setDisabled(newValue === null);
-    },
+    }
 });

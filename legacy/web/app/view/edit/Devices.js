@@ -23,7 +23,7 @@ Ext.define('Traccar.view.edit.Devices', {
         'Traccar.AttributeFormatter',
         'Traccar.view.edit.DevicesController',
         'Traccar.view.ArrayListFilter',
-        'Traccar.view.DeviceMenu',
+        'Traccar.view.DeviceMenu'
     ],
 
     controller: 'devices',
@@ -38,44 +38,44 @@ Ext.define('Traccar.view.edit.Devices', {
         defaults: {
             xtype: 'button',
             disabled: true,
-            tooltipType: 'title',
+            tooltipType: 'title'
         },
         items: [{
             xtype: 'tbtext',
             html: Strings.deviceTitle,
-            baseCls: 'x-panel-header-title-default',
+            baseCls: 'x-panel-header-title-default'
         }, {
             xtype: 'tbfill',
-            disabled: false,
+            disabled: false
         }, {
             handler: 'onAddClick',
             reference: 'toolbarAddButton',
             glyph: 'xf067@FontAwesome',
-            tooltip: Strings.sharedAdd,
+            tooltip: Strings.sharedAdd
         }, {
             handler: 'onEditClick',
             reference: 'toolbarEditButton',
             glyph: 'xf040@FontAwesome',
-            tooltip: Strings.sharedEdit,
+            tooltip: Strings.sharedEdit
         }, {
             handler: 'onRemoveClick',
             reference: 'toolbarRemoveButton',
             glyph: 'xf00d@FontAwesome',
-            tooltip: Strings.sharedRemove,
+            tooltip: Strings.sharedRemove
         }, {
             handler: 'onCommandClick',
             reference: 'deviceCommandButton',
             glyph: 'xf093@FontAwesome',
-            tooltip: Strings.deviceCommand,
+            tooltip: Strings.deviceCommand
         }, {
             xtype: 'deviceMenu',
             reference: 'toolbarDeviceMenu',
-            enableToggle: false,
-        }],
+            enableToggle: false
+        }]
     },
 
     listeners: {
-        selectionchange: 'onSelectionChange',
+        selectionchange: 'onSelectionChange'
     },
 
     viewConfig: {
@@ -89,35 +89,35 @@ Ext.define('Traccar.view.edit.Devices', {
                 result += Ext.getStore('DeviceStatuses').getById(status).get('color');
             }
             return result;
-        },
+        }
     },
 
     columns: {
         defaults: {
             flex: 1,
-            minWidth: Traccar.Style.columnWidthNormal,
+            minWidth: Traccar.Style.columnWidthNormal
         },
         items: [{
             text: Strings.sharedName,
             dataIndex: 'name',
-            filter: 'string',
+            filter: 'string'
         }, {
             text: Strings.deviceIdentifier,
             dataIndex: 'uniqueId',
             hidden: true,
-            filter: 'string',
+            filter: 'string'
         }, {
             text: Strings.sharedPhone,
             dataIndex: 'phone',
-            hidden: true,
+            hidden: true
         }, {
             text: Strings.deviceModel,
             dataIndex: 'model',
-            hidden: true,
+            hidden: true
         }, {
             text: Strings.deviceContact,
             dataIndex: 'contact',
-            hidden: true,
+            hidden: true
         }, {
             text: Strings.groupDialog,
             dataIndex: 'groupId',
@@ -125,22 +125,22 @@ Ext.define('Traccar.view.edit.Devices', {
             filter: {
                 type: 'list',
                 labelField: 'name',
-                store: 'Groups',
+                store: 'Groups'
             },
-            renderer: Traccar.AttributeFormatter.getFormatter('groupId'),
+            renderer: Traccar.AttributeFormatter.getFormatter('groupId')
         }, {
             text: Strings.sharedDisabled,
             dataIndex: 'disabled',
             renderer: Traccar.AttributeFormatter.getFormatter('disabled'),
             hidden: true,
-            filter: 'boolean',
+            filter: 'boolean'
         }, {
             text: Strings.deviceStatus,
             dataIndex: 'status',
             filter: {
                 type: 'list',
                 labelField: 'name',
-                store: 'DeviceStatuses',
+                store: 'DeviceStatuses'
             },
             renderer: function (value) {
                 var status;
@@ -151,11 +151,11 @@ Ext.define('Traccar.view.edit.Devices', {
                     }
                 }
                 return null;
-            },
+            }
         }, {
             text: Strings.deviceLastUpdate,
             dataIndex: 'lastUpdate',
-            renderer: Traccar.AttributeFormatter.getFormatter('lastUpdate'),
-        }],
-    },
+            renderer: Traccar.AttributeFormatter.getFormatter('lastUpdate')
+        }]
+    }
 });

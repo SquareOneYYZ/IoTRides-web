@@ -21,7 +21,7 @@ Ext.define('Traccar.view.dialog.BaseEditController', {
 
     requires: [
         'Traccar.view.BaseWindow',
-        'Traccar.view.edit.Attributes',
+        'Traccar.view.edit.Attributes'
     ],
 
     onSaveClick: function (button) {
@@ -38,7 +38,7 @@ Ext.define('Traccar.view.dialog.BaseEditController', {
                 failure: function (batch) {
                     store.rejectChanges();
                     Traccar.app.showError(batch.exceptions[0].getError().response);
-                },
+                }
             });
         } else {
             record.save();
@@ -54,8 +54,8 @@ Ext.define('Traccar.view.dialog.BaseEditController', {
             title: Strings.sharedAttributes,
             items: {
                 xtype: 'attributesView',
-                record: record,
-            },
+                record: record
+            }
         }).show();
-    },
+    }
 });

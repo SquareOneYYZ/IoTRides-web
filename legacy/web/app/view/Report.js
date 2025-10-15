@@ -21,7 +21,7 @@ Ext.define('Traccar.view.Report', {
 
     requires: [
         'Traccar.view.ReportController',
-        'Traccar.view.GridPanel',
+        'Traccar.view.GridPanel'
     ],
 
     controller: 'report',
@@ -31,14 +31,14 @@ Ext.define('Traccar.view.Report', {
     tools: [{
         type: 'close',
         tooltip: Strings.sharedHide,
-        handler: 'hideReports',
+        handler: 'hideReports'
     }],
 
     tbar: {
         scrollable: true,
         items: [{
             xtype: 'tbtext',
-            html: Strings.sharedType,
+            html: Strings.sharedType
         }, {
             xtype: 'combobox',
             reference: 'reportTypeField',
@@ -47,30 +47,30 @@ Ext.define('Traccar.view.Report', {
             valueField: 'key',
             editable: false,
             listeners: {
-                change: 'onTypeChange',
-            },
+                change: 'onTypeChange'
+            }
         }, '-', {
             text: Strings.reportConfigure,
-            handler: 'onConfigureClick',
+            handler: 'onConfigureClick'
         }, '-', {
             text: Strings.reportShow,
             reference: 'showButton',
             disabled: true,
-            handler: 'onReportClick',
+            handler: 'onReportClick'
         }, {
             text: Strings.reportExport,
             reference: 'exportButton',
             disabled: true,
-            handler: 'onReportClick',
+            handler: 'onReportClick'
         }, {
             text: Strings.reportEmail,
             reference: 'emailButton',
             disabled: true,
-            handler: 'onReportClick',
+            handler: 'onReportClick'
         }, {
             text: Strings.reportClear,
-            handler: 'onClearClick',
-        }],
+            handler: 'onClearClick'
+        }]
     },
 
     layout: 'card',
@@ -79,37 +79,37 @@ Ext.define('Traccar.view.Report', {
         xtype: 'customGridPanel',
         itemId: 'grid',
         listeners: {
-            selectionchange: 'onSelectionChange',
+            selectionchange: 'onSelectionChange'
         },
         columns: {
             defaults: {
                 flex: 1,
-                minWidth: Traccar.Style.columnWidthNormal,
+                minWidth: Traccar.Style.columnWidthNormal
             },
             items: [
-            ],
+            ]
         },
-        style: Traccar.Style.reportGridStyle,
+        style: Traccar.Style.reportGridStyle
     }, {
         xtype: 'cartesian',
         itemId: 'chart',
         plugins: {
             ptype: 'chartitemevents',
-            moveEvents: true,
+            moveEvents: true
         },
         store: 'ReportRoute',
         axes: [{
             title: Strings.reportChart,
             type: 'numeric',
-            position: 'left',
+            position: 'left'
         }, {
             type: 'time',
             position: 'bottom',
-            fields: ['fixTime'],
+            fields: ['fixTime']
         }],
         listeners: {
-            itemclick: 'onChartMarkerClick',
+            itemclick: 'onChartMarkerClick'
         },
-        insetPadding: Traccar.Style.chartPadding,
-    }],
+        insetPadding: Traccar.Style.chartPadding
+    }]
 });

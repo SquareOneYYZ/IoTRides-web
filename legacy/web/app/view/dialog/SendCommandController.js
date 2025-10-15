@@ -21,7 +21,7 @@ Ext.define('Traccar.view.dialog.SendCommandController', {
     alias: 'controller.sendCommand',
 
     requires: [
-        'Traccar.view.permissions.SavedCommands',
+        'Traccar.view.permissions.SavedCommands'
     ],
 
     onSendClick: function (button) {
@@ -33,7 +33,7 @@ Ext.define('Traccar.view.dialog.SendCommandController', {
             scope: this,
             url: 'api/commands/send',
             jsonData: record.getData(),
-            callback: this.onSendResult,
+            callback: this.onSendResult
         });
     },
 
@@ -74,5 +74,5 @@ Ext.define('Traccar.view.dialog.SendCommandController', {
     closeView: function () {
         this.lookupReference('commandsComboBox').getStore().removeAll();
         this.callParent(arguments);
-    },
+    }
 });

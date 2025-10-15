@@ -21,70 +21,70 @@ Ext.define('Traccar.model.User', {
 
     fields: [{
         name: 'id',
-        type: 'int',
+        type: 'int'
     }, {
         name: 'name',
-        type: 'string',
+        type: 'string'
     }, {
         name: 'login',
-        type: 'string',
+        type: 'string'
     }, {
         name: 'email',
-        type: 'string',
+        type: 'string'
     }, {
         name: 'password',
-        type: 'string',
+        type: 'string'
     }, {
         name: 'phone',
-        type: 'string',
+        type: 'string'
     }, {
         name: 'readonly',
-        type: 'boolean',
+        type: 'boolean'
     }, {
         name: 'administrator',
-        type: 'boolean',
+        type: 'boolean'
     }, {
         name: 'map',
-        type: 'string',
+        type: 'string'
     }, {
         name: 'latitude',
-        type: 'float',
+        type: 'float'
     }, {
         name: 'longitude',
-        type: 'float',
+        type: 'float'
     }, {
         name: 'zoom',
-        type: 'int',
+        type: 'int'
     }, {
         name: 'coordinateFormat',
-        type: 'string',
+        type: 'string'
     }, {
         name: 'disabled',
-        type: 'boolean',
+        type: 'boolean'
     }, {
         name: 'expirationTime',
         type: 'date',
-        dateFormat: 'c',
+        dateFormat: 'c'
     }, {
         name: 'deviceLimit',
-        type: 'int',
+        type: 'int'
     }, {
         name: 'userLimit',
-        type: 'int',
+        type: 'int'
     }, {
         name: 'deviceReadonly',
-        type: 'boolean',
+        type: 'boolean'
     }, {
         name: 'limitCommands',
-        type: 'boolean',
+        type: 'boolean'
     }, {
         name: 'disableReports',
-        type: 'boolean',
+        type: 'boolean'
     }, {
         name: 'poiLayer',
-        type: 'string',
+        type: 'string'
     }, {
-        name: 'attributes',
+        name: 'attributes'
     }],
 
     proxy: {
@@ -92,7 +92,7 @@ Ext.define('Traccar.model.User', {
         url: 'api/users',
         writer: {
             type: 'json',
-            writeAllFields: true,
-        },
-    },
+            writeAllFields: true
+        }
+    }
 });

@@ -24,7 +24,7 @@ Ext.define('Traccar.store.AllDrivers', {
         type: 'rest',
         url: 'api/drivers',
         extraParams: {
-            all: true,
-        },
-    },
+            all: true
+        }
+    }
 });

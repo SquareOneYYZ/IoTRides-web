@@ -22,7 +22,7 @@ Ext.define('Traccar.view.edit.AttributesController', {
     requires: [
         'Traccar.view.dialog.Attribute',
         'Traccar.store.Attributes',
-        'Traccar.model.Attribute',
+        'Traccar.model.Attribute'
     ],
 
     removeTitle: Strings.stateName,
@@ -40,7 +40,7 @@ Ext.define('Traccar.view.edit.AttributesController', {
                 store.add(Ext.create('Traccar.model.Attribute', {
                     priority: i++,
                     name: propertyName,
-                    value: attributes[propertyName],
+                    value: attributes[propertyName]
                 }));
             }
         }
@@ -96,8 +96,8 @@ Ext.define('Traccar.view.edit.AttributesController', {
         allowBlank: false,
         queryMode: 'local',
         listeners: {
-            change: 'onNameChange',
-        },
+            change: 'onNameChange'
+        }
     },
 
     initDialog: function (record) {
@@ -120,5 +120,5 @@ Ext.define('Traccar.view.edit.AttributesController', {
 
     onEditClick: function () {
         this.initDialog(this.getView().getSelectionModel().getSelection()[0]);
-    },
+    }
 });
