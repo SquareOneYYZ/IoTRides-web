@@ -22,7 +22,7 @@ Ext.define('Traccar.view.dialog.ComputedAttribute', {
     requires: [
         'Traccar.view.dialog.ComputedAttributeController',
         'Traccar.view.UnescapedTextField',
-        'Traccar.view.UnescapedTextAreaField'
+        'Traccar.view.UnescapedTextAreaField',
     ],
 
     controller: 'computedAttribute',
@@ -33,7 +33,7 @@ Ext.define('Traccar.view.dialog.ComputedAttribute', {
         items: [{
             xtype: 'unescapedTextField',
             name: 'description',
-            fieldLabel: Strings.sharedDescription
+            fieldLabel: Strings.sharedDescription,
         }, {
             xtype: 'combobox',
             name: 'attribute',
@@ -42,14 +42,14 @@ Ext.define('Traccar.view.dialog.ComputedAttribute', {
             displayField: 'name',
             valueField: 'key',
             listeners: {
-                change: 'onAttributeChange'
-            }
+                change: 'onAttributeChange',
+            },
         }, {
             xtype: 'unescapedTextAreaField',
             reference: 'expressionField',
             name: 'expression',
             fieldLabel: Strings.sharedExpression,
-            allowBlank: false
+            allowBlank: false,
         }, {
             xtype: 'combobox',
             name: 'type',
@@ -58,8 +58,8 @@ Ext.define('Traccar.view.dialog.ComputedAttribute', {
             fieldLabel: Strings.sharedType,
             displayField: 'name',
             valueField: 'id',
-            editable: false
-        }]
+            editable: false,
+        }],
     },
 
     buttons: [{
@@ -67,18 +67,18 @@ Ext.define('Traccar.view.dialog.ComputedAttribute', {
         tooltip: Strings.sharedCheckComputedAttribute,
         tooltipType: 'title',
         minWidth: 0,
-        handler: 'onCheckClick'
+        handler: 'onCheckClick',
     }, {
         glyph: 'xf00c@FontAwesome',
         tooltip: Strings.sharedSave,
         tooltipType: 'title',
         minWidth: 0,
-        handler: 'onSaveClick'
+        handler: 'onSaveClick',
     }, {
         glyph: 'xf00d@FontAwesome',
         tooltip: Strings.sharedCancel,
         tooltipType: 'title',
         minWidth: 0,
-        handler: 'closeView'
-    }]
+        handler: 'closeView',
+    }],
 });

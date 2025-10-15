@@ -22,24 +22,24 @@ Ext.define('Traccar.view.edit.Notifications', {
 
     requires: [
         'Traccar.view.edit.NotificationsController',
-        'Traccar.view.edit.Toolbar'
+        'Traccar.view.edit.Toolbar',
     ],
 
     controller: 'notifications',
     store: 'Notifications',
 
     tbar: {
-        xtype: 'editToolbar'
+        xtype: 'editToolbar',
     },
 
     listeners: {
-        selectionchange: 'onSelectionChange'
+        selectionchange: 'onSelectionChange',
     },
 
     columns: {
         defaults: {
             flex: 1,
-            minWidth: Traccar.Style.columnWidthNormal
+            minWidth: Traccar.Style.columnWidthNormal,
         },
         items: [{
             text: Strings.notificationType,
@@ -52,13 +52,13 @@ Ext.define('Traccar.view.edit.Notifications', {
                 type: 'list',
                 idField: 'type',
                 labelField: 'name',
-                store: 'AllNotificationTypes'
-            }
+                store: 'AllNotificationTypes',
+            },
         }, {
             text: Strings.notificationAlways,
             dataIndex: 'always',
             renderer: Traccar.AttributeFormatter.getFormatter('always'),
-            filter: 'boolean'
+            filter: 'boolean',
         }, {
             text: Strings.sharedAlarms,
             dataIndex: 'attributes',
@@ -75,7 +75,7 @@ Ext.define('Traccar.view.edit.Notifications', {
                     }
                 }
                 return result;
-            }
+            },
         }, {
             text: Strings.notificationNotificators,
             dataIndex: 'notificators',
@@ -84,7 +84,7 @@ Ext.define('Traccar.view.edit.Notifications', {
                 type: 'arraylist',
                 idField: 'type',
                 labelField: 'name',
-                store: 'AllNotificators'
+                store: 'AllNotificators',
             },
             renderer: function (value) {
                 var result = '', i, notificators;
@@ -95,7 +95,7 @@ Ext.define('Traccar.view.edit.Notifications', {
                     }
                 }
                 return result;
-            }
+            },
         }, {
             text: Strings.sharedCalendar,
             dataIndex: 'calendarId',
@@ -103,9 +103,9 @@ Ext.define('Traccar.view.edit.Notifications', {
             filter: {
                 type: 'list',
                 labelField: 'name',
-                store: 'AllCalendars'
+                store: 'AllCalendars',
             },
-            renderer: Traccar.AttributeFormatter.getFormatter('calendarId')
-        }]
-    }
+            renderer: Traccar.AttributeFormatter.getFormatter('calendarId'),
+        }],
+    },
 });

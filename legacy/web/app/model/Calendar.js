@@ -22,13 +22,13 @@ Ext.define('Traccar.model.Calendar', {
 
     fields: [{
         name: 'id',
-        type: 'int'
+        type: 'int',
     }, {
         name: 'name',
-        type: 'string'
+        type: 'string',
     }, {
-        name: 'data'
+        name: 'data',
     }, {
-        name: 'attributes'
-    }]
+        name: 'attributes',
+    }],
 });

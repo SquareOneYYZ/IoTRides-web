@@ -22,11 +22,11 @@ Ext.define('Traccar.store.GroupAttributes', {
     data: [{
         key: 'processing.copyAttributes',
         name: Strings.attributeProcessingCopyAttributes,
-        valueType: 'string'
+        valueType: 'string',
     }, {
         key: 'decoder.timezone',
         name: Strings.sharedTimezone,
         valueType: 'string',
-        dataType: 'timezone'
-    }]
+        dataType: 'timezone',
+    }],
 });

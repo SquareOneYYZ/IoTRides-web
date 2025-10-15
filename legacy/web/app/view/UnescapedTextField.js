@@ -25,5 +25,5 @@ Ext.define('Traccar.view.UnescapedTextField', {
 
     onValueChange: function (field, newValue) {
         field.setValue(Ext.String.htmlDecode(newValue));
-    }
+    },
 });

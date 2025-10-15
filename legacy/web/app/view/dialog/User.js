@@ -21,7 +21,7 @@ Ext.define('Traccar.view.dialog.User', {
     requires: [
         'Traccar.view.ClearableComboBox',
         'Traccar.view.dialog.UserController',
-        'Traccar.view.UnescapedTextField'
+        'Traccar.view.UnescapedTextField',
     ],
 
     controller: 'user',
@@ -35,19 +35,19 @@ Ext.define('Traccar.view.dialog.User', {
             items: [{
                 xtype: 'unescapedTextField',
                 name: 'name',
-                fieldLabel: Strings.sharedName
+                fieldLabel: Strings.sharedName,
             }, {
                 xtype: 'unescapedTextField',
                 name: 'email',
                 fieldLabel: Strings.userEmail,
-                allowBlank: false
+                allowBlank: false,
             }, {
                 xtype: 'textfield',
                 name: 'password',
                 fieldLabel: Strings.userPassword,
                 inputType: 'password',
-                allowBlank: false
-            }]
+                allowBlank: false,
+            }],
         }, {
             xtype: 'fieldset',
             title: Strings.sharedPreferences,
@@ -56,43 +56,43 @@ Ext.define('Traccar.view.dialog.User', {
             items: [{
                 xtype: 'unescapedTextField',
                 name: 'phone',
-                fieldLabel: Strings.sharedPhone
+                fieldLabel: Strings.sharedPhone,
             }, {
                 xtype: 'clearableComboBox',
                 name: 'map',
                 fieldLabel: Strings.mapLayer,
                 store: 'MapTypes',
                 displayField: 'name',
-                valueField: 'key'
+                valueField: 'key',
             }, {
                 xtype: 'numberfield',
                 reference: 'latitude',
                 name: 'latitude',
                 fieldLabel: Strings.positionLatitude,
-                decimalPrecision: Traccar.Style.coordinatePrecision
+                decimalPrecision: Traccar.Style.coordinatePrecision,
             }, {
                 xtype: 'numberfield',
                 reference: 'longitude',
                 name: 'longitude',
                 fieldLabel: Strings.positionLongitude,
-                decimalPrecision: Traccar.Style.coordinatePrecision
+                decimalPrecision: Traccar.Style.coordinatePrecision,
             }, {
                 xtype: 'numberfield',
                 reference: 'zoom',
                 name: 'zoom',
-                fieldLabel: Strings.serverZoom
+                fieldLabel: Strings.serverZoom,
             }, {
                 xtype: 'clearableComboBox',
                 name: 'coordinateFormat',
                 fieldLabel: Strings.settingsCoordinateFormat,
                 store: 'CoordinateFormats',
                 displayField: 'name',
-                valueField: 'key'
+                valueField: 'key',
             }, {
                 xtype: 'unescapedTextField',
                 name: 'poiLayer',
-                fieldLabel: Strings.mapPoiLayer
-            }]
+                fieldLabel: Strings.mapPoiLayer,
+            }],
         }, {
             xtype: 'fieldset',
             title: Strings.sharedPermissions,
@@ -105,7 +105,7 @@ Ext.define('Traccar.view.dialog.User', {
                 name: 'disabled',
                 fieldLabel: Strings.sharedDisabled,
                 disabled: true,
-                reference: 'disabledField'
+                reference: 'disabledField',
             }, {
                 xtype: 'checkboxfield',
                 inputValue: true,
@@ -113,7 +113,7 @@ Ext.define('Traccar.view.dialog.User', {
                 name: 'administrator',
                 fieldLabel: Strings.userAdmin,
                 disabled: true,
-                reference: 'adminField'
+                reference: 'adminField',
             }, {
                 xtype: 'checkboxfield',
                 inputValue: true,
@@ -121,7 +121,7 @@ Ext.define('Traccar.view.dialog.User', {
                 name: 'readonly',
                 fieldLabel: Strings.serverReadonly,
                 disabled: true,
-                reference: 'readonlyField'
+                reference: 'readonlyField',
             }, {
                 xtype: 'checkboxfield',
                 inputValue: true,
@@ -129,7 +129,7 @@ Ext.define('Traccar.view.dialog.User', {
                 name: 'deviceReadonly',
                 fieldLabel: Strings.userDeviceReadonly,
                 disabled: true,
-                reference: 'deviceReadonlyField'
+                reference: 'deviceReadonlyField',
             }, {
                 xtype: 'checkboxfield',
                 inputValue: true,
@@ -137,7 +137,7 @@ Ext.define('Traccar.view.dialog.User', {
                 name: 'limitCommands',
                 fieldLabel: Strings.userLimitCommands,
                 disabled: true,
-                reference: 'limitCommandsField'
+                reference: 'limitCommandsField',
             }, {
                 xtype: 'checkboxfield',
                 inputValue: true,
@@ -145,7 +145,7 @@ Ext.define('Traccar.view.dialog.User', {
                 name: 'disableReports',
                 fieldLabel: Strings.userDisableReports,
                 disabled: true,
-                reference: 'disableReportsField'
+                reference: 'disableReportsField',
             }, {
                 xtype: 'datefield',
                 name: 'expirationTime',
@@ -153,32 +153,32 @@ Ext.define('Traccar.view.dialog.User', {
                 disabled: true,
                 reference: 'expirationTimeField',
                 startDay: Traccar.Style.weekStartDay,
-                format: Traccar.Style.dateFormat
+                format: Traccar.Style.dateFormat,
             }, {
                 xtype: 'numberfield',
                 name: 'deviceLimit',
                 fieldLabel: Strings.userDeviceLimit,
                 disabled: true,
-                reference: 'deviceLimitField'
+                reference: 'deviceLimitField',
             }, {
                 xtype: 'numberfield',
                 name: 'userLimit',
                 fieldLabel: Strings.userUserLimit,
                 disabled: true,
-                reference: 'userLimitField'
-            }]
-        }]
+                reference: 'userLimitField',
+            }],
+        }],
     },
 
     buttons: [{
         text: Strings.sharedAttributes,
-        handler: 'showAttributesView'
+        handler: 'showAttributesView',
     }, {
         glyph: 'xf041@FontAwesome',
         minWidth: 0,
         handler: 'getMapState',
         tooltip: Strings.sharedGetMapState,
-        tooltipType: 'title'
+        tooltipType: 'title',
     }, {
         glyph: 'xf003@FontAwesome',
         minWidth: 0,
@@ -186,20 +186,20 @@ Ext.define('Traccar.view.dialog.User', {
         hidden: true,
         reference: 'testNotificationButton',
         tooltip: Strings.sharedTestNotification,
-        tooltipType: 'title'
+        tooltipType: 'title',
     }, {
-        xtype: 'tbfill'
+        xtype: 'tbfill',
     }, {
         glyph: 'xf00c@FontAwesome',
         tooltip: Strings.sharedSave,
         tooltipType: 'title',
         minWidth: 0,
-        handler: 'onSaveClick'
+        handler: 'onSaveClick',
     }, {
         glyph: 'xf00d@FontAwesome',
         tooltip: Strings.sharedCancel,
         tooltipType: 'title',
         minWidth: 0,
-        handler: 'closeView'
-    }]
+        handler: 'closeView',
+    }],
 });

@@ -22,5 +22,5 @@ Ext.define('Traccar.view.MainController', {
     init: function () {
         this.lookupReference('reportView').setHidden(Traccar.app.getPreference('disableReports', false));
         this.lookupReference('eventsView').setHidden(Traccar.app.getBooleanAttributePreference('ui.disableEvents'));
-    }
+    },
 });

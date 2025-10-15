@@ -20,7 +20,7 @@ Ext.define('Traccar.view.dialog.SendCommand', {
     extend: 'Traccar.view.dialog.Base',
 
     requires: [
-        'Traccar.view.dialog.SendCommandController'
+        'Traccar.view.dialog.SendCommandController',
     ],
 
     controller: 'sendCommand',
@@ -37,12 +37,12 @@ Ext.define('Traccar.view.dialog.SendCommand', {
         editable: false,
         allowBlank: false,
         listeners: {
-            select: 'onCommandSelect'
-        }
+            select: 'onCommandSelect',
+        },
     }, {
         xtype: 'form',
         listeners: {
-            validitychange: 'onValidityChange'
+            validitychange: 'onValidityChange',
         },
         items: [{
             xtype: 'fieldset',
@@ -56,8 +56,8 @@ Ext.define('Traccar.view.dialog.SendCommand', {
                 uncheckedValue: false,
                 fieldLabel: Strings.commandSendSms,
                 listeners: {
-                    change: 'onTextChannelChange'
-                }
+                    change: 'onTextChannelChange',
+                },
             }, {
                 xtype: 'combobox',
                 name: 'type',
@@ -69,17 +69,17 @@ Ext.define('Traccar.view.dialog.SendCommand', {
                 editable: false,
                 allowBlank: false,
                 listeners: {
-                    change: 'onTypeChange'
-                }
+                    change: 'onTypeChange',
+                },
             }, {
                 xtype: 'fieldcontainer',
-                reference: 'parameters'
-            }]
-        }]
+                reference: 'parameters',
+            }],
+        }],
     }],
 
     buttons: [{
-        xtype: 'tbfill'
+        xtype: 'tbfill',
     }, {
         glyph: 'xf093@FontAwesome',
         tooltip: Strings.sharedSend,
@@ -87,12 +87,12 @@ Ext.define('Traccar.view.dialog.SendCommand', {
         minWidth: 0,
         disabled: true,
         reference: 'sendButton',
-        handler: 'onSendClick'
+        handler: 'onSendClick',
     }, {
         glyph: 'xf00d@FontAwesome',
         tooltip: Strings.sharedCancel,
         tooltipType: 'title',
         minWidth: 0,
-        handler: 'closeView'
-    }]
+        handler: 'closeView',
+    }],
 });

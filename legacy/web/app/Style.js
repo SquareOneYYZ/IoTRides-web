@@ -53,7 +53,7 @@ Ext.define('Traccar.Style', {
         '#4DD0E1',
         '#4DB6AC',
         '#FF8A65',
-        '#A1887F'
+        '#A1887F',
     ],
     mapRouteWidth: 5,
 
@@ -91,5 +91,5 @@ Ext.define('Traccar.Style', {
 
     chartPadding: '20 40 10 10',
     chartMarkerRadius: 3,
-    chartMarkerHighlightScaling: 1.5
+    chartMarkerHighlightScaling: 1.5,
 });

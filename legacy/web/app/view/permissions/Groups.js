@@ -20,7 +20,7 @@ Ext.define('Traccar.view.permissions.Groups', {
     xtype: 'linkGroupsView',
 
     requires: [
-        'Traccar.AttributeFormatter'
+        'Traccar.AttributeFormatter',
     ],
 
     columns: {
@@ -29,7 +29,7 @@ Ext.define('Traccar.view.permissions.Groups', {
             dataIndex: 'name',
             flex: 1,
             minWidth: Traccar.Style.columnWidthNormal,
-            filter: 'string'
+            filter: 'string',
         }, {
             text: Strings.groupDialog,
             dataIndex: 'groupId',
@@ -39,9 +39,9 @@ Ext.define('Traccar.view.permissions.Groups', {
             filter: {
                 type: 'list',
                 labelField: 'name',
-                store: 'AllGroups'
+                store: 'AllGroups',
             },
-            renderer: Traccar.AttributeFormatter.getFormatter('groupId')
-        }]
-    }
+            renderer: Traccar.AttributeFormatter.getFormatter('groupId'),
+        }],
+    },
 });

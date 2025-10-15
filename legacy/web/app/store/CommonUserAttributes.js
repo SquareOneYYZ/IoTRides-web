@@ -23,68 +23,68 @@ Ext.define('Traccar.store.CommonUserAttributes', {
         key: 'web.liveRouteLength',
         name: Strings.attributeWebLiveRouteLength,
         valueType: 'number',
-        allowDecimals: false
+        allowDecimals: false,
     }, {
         key: 'web.selectZoom',
         name: Strings.attributeWebSelectZoom,
         valueType: 'number',
         allowDecimals: false,
         minValue: Traccar.Style.mapDefaultZoom,
-        maxValue: Traccar.Style.mapMaxZoom
+        maxValue: Traccar.Style.mapMaxZoom,
     }, {
         key: 'web.maxZoom',
         name: Strings.attributeWebMaxZoom,
         valueType: 'number',
         allowDecimals: false,
         minValue: Traccar.Style.mapDefaultZoom,
-        maxValue: Traccar.Style.mapMaxZoom
+        maxValue: Traccar.Style.mapMaxZoom,
     }, {
         key: 'ui.disableEvents',
         name: Strings.attributeUiDisableEvents,
-        valueType: 'boolean'
+        valueType: 'boolean',
     }, {
         key: 'ui.disableVehicleFeatures',
         name: Strings.attributeUiDisableVehicleFeatures,
-        valueType: 'boolean'
+        valueType: 'boolean',
     }, {
         key: 'ui.disableDrivers',
         name: Strings.attributeUiDisableDrivers,
-        valueType: 'boolean'
+        valueType: 'boolean',
     }, {
         key: 'ui.disableComputedAttributes',
         name: Strings.attributeUiDisableComputedAttributes,
-        valueType: 'boolean'
+        valueType: 'boolean',
     }, {
         key: 'ui.disableCalendars',
         name: Strings.attributeUiDisableCalendars,
-        valueType: 'boolean'
+        valueType: 'boolean',
     }, {
         key: 'ui.disableMaintenance',
         name: Strings.attributeUiDisableMaintenance,
-        valueType: 'boolean'
+        valueType: 'boolean',
     }, {
         key: 'ui.hidePositionAttributes',
         name: Strings.attributeUiHidePositionAttributes,
-        valueType: 'string'
+        valueType: 'string',
     }, {
         key: 'distanceUnit',
         name: Strings.settingsDistanceUnit,
         valueType: 'string',
-        dataType: 'distanceUnit'
+        dataType: 'distanceUnit',
     }, {
         key: 'speedUnit',
         name: Strings.settingsSpeedUnit,
         valueType: 'string',
-        dataType: 'speedUnit'
+        dataType: 'speedUnit',
     }, {
         key: 'volumeUnit',
         name: Strings.settingsVolumeUnit,
         valueType: 'string',
-        dataType: 'volumeUnit'
+        dataType: 'volumeUnit',
     }, {
         key: 'timezone',
         name: Strings.sharedTimezone,
         valueType: 'string',
-        dataType: 'timezone'
-    }]
+        dataType: 'timezone',
+    }],
 });

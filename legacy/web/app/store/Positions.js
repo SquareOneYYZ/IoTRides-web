@@ -23,7 +23,7 @@ Ext.define('Traccar.store.Positions', {
         type: 'rest',
         url: 'api/positions',
         headers: {
-            'Accept': 'application/json'
-        }
-    }
+            'Accept': 'application/json',
+        },
+    },
 });

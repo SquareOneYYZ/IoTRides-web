@@ -29,9 +29,9 @@ Ext.define('Traccar.store.DeviceImages', {
                 svg: document.getElementById(key + 'Svg').contentDocument,
                 fillId: key === 'arrow' ? 'arrow' : 'background',
                 rotateId: key === 'arrow' ? 'arrow' : 'background',
-                scaleId: key === 'arrow' ? 'arrow' : 'layer1'
+                scaleId: key === 'arrow' ? 'arrow' : 'layer1',
             });
         }
         return data;
-    })()
+    })(),
 });

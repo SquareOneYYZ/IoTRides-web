@@ -20,8 +20,10 @@
  * Resolved in current yet unreleased version
  */
 
-Ext.define('Traccar.view.TouchFix62', {
-    override: 'Ext.dom.Element'
+Ext.define(
+'Traccar.view.TouchFix62', 
+{
+    override: 'Ext.dom.Element',
 },
 function () {
     var additiveEvents = this.prototype.additiveEvents,
@@ -45,4 +47,5 @@ function () {
         additiveEvents['pointerup'] = 'mouseup';
         additiveEvents['pointercancel'] = 'mouseup';
     }
-});
+},
+);

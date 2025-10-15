@@ -28,5 +28,5 @@ Ext.define('Traccar.view.BaseWindow', {
             this.style = 'border-width: 0';
         }
         this.callParent();
-    }
+    },
 });

@@ -20,7 +20,7 @@ Ext.define('Traccar.view.dialog.SavedCommandController', {
     alias: 'controller.savedCommand',
 
     defaultFieldConfig: {
-        allowBlank: false
+        allowBlank: false,
     },
 
     onTypeChange: function (combo, newValue) {
@@ -94,6 +94,6 @@ Ext.define('Traccar.view.dialog.SavedCommandController', {
 
     onValidityChange: function (form, valid) {
         this.lookupReference('saveButton').setDisabled(!valid);
-    }
+    },
 
 });

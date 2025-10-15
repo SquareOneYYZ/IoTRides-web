@@ -24,17 +24,17 @@ Ext.define('Traccar.store.VolumeUnits', {
         key: 'ltr',
         name: Strings.sharedLiterAbbreviation,
         fullName: Strings.sharedLiter,
-        factor: 1
+        factor: 1,
     }, {
         key: 'impGal',
         name: Strings.sharedGallonAbbreviation,
         fullName: Strings.sharedImpGallon,
-        factor: 4.546
+        factor: 4.546,
     }, {
         key: 'usGal',
         name: Strings.sharedGallonAbbreviation,
         fullName: Strings.sharedUsGallon,
-        factor: 3.785
+        factor: 3.785,
     }],
 
     convertValue: function (value, unit, back) {
@@ -53,5 +53,5 @@ Ext.define('Traccar.store.VolumeUnits', {
         }
         model = this.findRecord('key', unit);
         return (convert ? this.convertValue(value, unit) : value).toFixed(1) + ' ' + model.get('name');
-    }
+    },
 });

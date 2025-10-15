@@ -21,39 +21,39 @@ Ext.define('Traccar.model.Statistics', {
 
     fields: [{
         name: 'id',
-        type: 'int'
+        type: 'int',
     }, {
         name: 'captureTime',
         type: 'date',
-        dateFormat: 'c'
+        dateFormat: 'c',
     }, {
         name: 'activeUsers',
-        type: 'int'
+        type: 'int',
     }, {
         name: 'activeDevices',
-        type: 'int'
+        type: 'int',
     }, {
         name: 'requests',
-        type: 'int'
+        type: 'int',
     }, {
         name: 'messagesReceived',
-        type: 'int'
+        type: 'int',
     }, {
         name: 'messagesStored',
-        type: 'int'
+        type: 'int',
     }, {
         name: 'mailSent',
-        type: 'int'
+        type: 'int',
     }, {
         name: 'smsSent',
-        type: 'int'
+        type: 'int',
     }, {
         name: 'geocoderRequests',
-        type: 'int'
+        type: 'int',
     }, {
         name: 'geolocationRequests',
-        type: 'int'
+        type: 'int',
     }, {
-        name: 'attributes'
-    }]
+        name: 'attributes',
+    }],
 });

@@ -21,23 +21,23 @@ Ext.define('Traccar.view.edit.Attributes', {
 
     requires: [
         'Traccar.view.edit.AttributesController',
-        'Traccar.view.edit.Toolbar'
+        'Traccar.view.edit.Toolbar',
     ],
 
     controller: 'attributes',
 
     tbar: {
-        xtype: 'editToolbar'
+        xtype: 'editToolbar',
     },
 
     listeners: {
-        selectionchange: 'onSelectionChange'
+        selectionchange: 'onSelectionChange',
     },
 
     columns: {
         defaults: {
             flex: 1,
-            minWidth: Traccar.Style.columnWidthNormal
+            minWidth: Traccar.Style.columnWidthNormal,
         },
         items: [{
             text: Strings.sharedName,
@@ -49,7 +49,7 @@ Ext.define('Traccar.view.edit.Attributes', {
                     attribute = Ext.getStore(this.attributesStore).getById(value);
                 }
                 return attribute && attribute.get('name') || value;
-            }
+            },
         }, {
             text: Strings.stateValue,
             dataIndex: 'value',
@@ -59,7 +59,7 @@ Ext.define('Traccar.view.edit.Attributes', {
                     attribute = Ext.getStore(this.attributesStore).getById(record.get('name'));
                 }
                 return Traccar.AttributeFormatter.renderAttribute(value, attribute);
-            }
-        }]
-    }
+            },
+        }],
+    },
 });

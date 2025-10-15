@@ -41,9 +41,9 @@ Ext.define('Traccar.view.permissions.BaseController', {
                                 this.getView().getSelectionModel().select(index, true, true);
                             }
                         }
-                    }
+                    },
                 });
-            }
+            },
         });
     },
 
@@ -60,7 +60,7 @@ Ext.define('Traccar.view.permissions.BaseController', {
                     selection.deselect(record, true);
                     Traccar.app.showError(response);
                 }
-            }
+            },
         });
     },
 
@@ -78,7 +78,7 @@ Ext.define('Traccar.view.permissions.BaseController', {
                     selection.select(record, true, true);
                     Traccar.app.showError(response);
                 }
-            }
+            },
         });
-    }
+    },
 });

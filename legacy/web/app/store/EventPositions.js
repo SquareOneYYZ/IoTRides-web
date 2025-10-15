@@ -25,7 +25,7 @@ Ext.define('Traccar.store.EventPositions', {
         type: 'rest',
         url: 'api/positions',
         headers: {
-            'Accept': 'application/json'
-        }
-    }
+            'Accept': 'application/json',
+        },
+    },
 });

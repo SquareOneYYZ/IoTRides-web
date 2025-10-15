@@ -27,7 +27,7 @@ Ext.define('Traccar.view.edit.GroupsController', {
         'Traccar.view.permissions.SavedCommands',
         'Traccar.view.permissions.Maintenances',
         'Traccar.view.BaseWindow',
-        'Traccar.model.Group'
+        'Traccar.model.Group',
     ],
 
     objectModel: 'Traccar.model.Group',
@@ -36,12 +36,15 @@ Ext.define('Traccar.view.edit.GroupsController', {
 
     init: function () {
         this.lookupReference('toolbarDriversButton').setHidden(
-            Traccar.app.getVehicleFeaturesDisabled() || Traccar.app.getBooleanAttributePreference('ui.disableDrivers'));
+            Traccar.app.getVehicleFeaturesDisabled() || Traccar.app.getBooleanAttributePreference('ui.disableDrivers'),
+);
         this.lookupReference('toolbarAttributesButton').setHidden(
-            Traccar.app.getBooleanAttributePreference('ui.disableComputedAttributes'));
+            Traccar.app.getBooleanAttributePreference('ui.disableComputedAttributes'),
+);
         this.lookupReference('toolbarCommandsButton').setHidden(Traccar.app.getPreference('limitCommands', false));
         this.lookupReference('toolbarMaintenancesButton').setHidden(
-            Traccar.app.getVehicleFeaturesDisabled() || Traccar.app.getBooleanAttributePreference('ui.disableMaintenance'));
+            Traccar.app.getVehicleFeaturesDisabled() || Traccar.app.getBooleanAttributePreference('ui.disableMaintenance'),
+);
     },
 
     onGeofencesClick: function () {
@@ -53,8 +56,8 @@ Ext.define('Traccar.view.edit.GroupsController', {
                 baseObjectName: 'groupId',
                 linkObjectName: 'geofenceId',
                 storeName: 'Geofences',
-                baseObject: group.getId()
-            }
+                baseObject: group.getId(),
+            },
         }).show();
     },
 
@@ -67,8 +70,8 @@ Ext.define('Traccar.view.edit.GroupsController', {
                 baseObjectName: 'groupId',
                 linkObjectName: 'attributeId',
                 storeName: 'ComputedAttributes',
-                baseObject: group.getId()
-            }
+                baseObject: group.getId(),
+            },
         }).show();
     },
 
@@ -81,8 +84,8 @@ Ext.define('Traccar.view.edit.GroupsController', {
                 baseObjectName: 'groupId',
                 linkObjectName: 'driverId',
                 storeName: 'Drivers',
-                baseObject: group.getId()
-            }
+                baseObject: group.getId(),
+            },
         }).show();
     },
 
@@ -95,8 +98,8 @@ Ext.define('Traccar.view.edit.GroupsController', {
                 baseObjectName: 'groupId',
                 linkObjectName: 'commandId',
                 storeName: 'Commands',
-                baseObject: group.getId()
-            }
+                baseObject: group.getId(),
+            },
         }).show();
     },
 
@@ -109,8 +112,8 @@ Ext.define('Traccar.view.edit.GroupsController', {
                 baseObjectName: 'groupId',
                 linkObjectName: 'notificationId',
                 storeName: 'Notifications',
-                baseObject: group.getId()
-            }
+                baseObject: group.getId(),
+            },
         }).show();
     },
 
@@ -123,8 +126,8 @@ Ext.define('Traccar.view.edit.GroupsController', {
                 baseObjectName: 'groupId',
                 linkObjectName: 'maintenanceId',
                 storeName: 'Maintenances',
-                baseObject: group.getId()
-            }
+                baseObject: group.getId(),
+            },
         }).show();
     },
 
@@ -137,5 +140,5 @@ Ext.define('Traccar.view.edit.GroupsController', {
         this.lookupReference('toolbarNotificationsButton').setDisabled(disabled);
         this.lookupReference('toolbarMaintenancesButton').setDisabled(disabled);
         this.callParent(arguments);
-    }
+    },
 });

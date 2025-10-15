@@ -25,10 +25,10 @@ Ext.define('Traccar.store.AlarmTypes', {
             if (Strings.hasOwnProperty(key) && key.lastIndexOf('alarm', 0) === 0) {
                 items.push({
                     key: key.charAt(5).toLowerCase() + key.slice(6),
-                    name: Strings[key]
+                    name: Strings[key],
                 });
             }
         }
         return items;
-    })()
+    })(),
 });

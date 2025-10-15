@@ -23,7 +23,7 @@ Ext.define('Traccar.store.AllNotifications', {
         type: 'rest',
         url: 'api/notifications',
         extraParams: {
-            all: true
-        }
-    }
+            all: true,
+        },
+    },
 });

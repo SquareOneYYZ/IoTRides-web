@@ -22,24 +22,24 @@ Ext.define('Traccar.store.ReportPeriods', {
 
     data: [{
         key: 'custom',
-        name: Strings.reportCustom
+        name: Strings.reportCustom,
     }, {
         key: 'today',
-        name: Strings.reportToday
+        name: Strings.reportToday,
     }, {
         key: 'yesterday',
-        name: Strings.reportYesterday
+        name: Strings.reportYesterday,
     }, {
         key: 'thisWeek',
-        name: Strings.reportThisWeek
+        name: Strings.reportThisWeek,
     }, {
         key: 'previousWeek',
-        name: Strings.reportPreviousWeek
+        name: Strings.reportPreviousWeek,
     }, {
         key: 'thisMonth',
-        name: Strings.reportThisMonth
+        name: Strings.reportThisMonth,
     }, {
         key: 'previousMonth',
-        name: Strings.reportPreviousMonth
-    }]
+        name: Strings.reportPreviousMonth,
+    }],
 });

@@ -26,7 +26,7 @@ Ext.define('Traccar.view.permissions.Users', {
             dataIndex: 'name',
             flex: 1,
             minWidth: Traccar.Style.columnWidthNormal,
-            filter: 'string'
-        }]
-    }
+            filter: 'string',
+        }],
+    },
 });

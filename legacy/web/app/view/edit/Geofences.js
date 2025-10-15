@@ -21,33 +21,33 @@ Ext.define('Traccar.view.edit.Geofences', {
 
     requires: [
         'Traccar.view.edit.GeofencesController',
-        'Traccar.view.edit.Toolbar'
+        'Traccar.view.edit.Toolbar',
     ],
 
     controller: 'geofences',
     store: 'Geofences',
 
     tbar: {
-        xtype: 'editToolbar'
+        xtype: 'editToolbar',
     },
 
     listeners: {
-        selectionchange: 'onSelectionChange'
+        selectionchange: 'onSelectionChange',
     },
 
     columns: {
         defaults: {
             flex: 1,
-            minWidth: Traccar.Style.columnWidthNormal
+            minWidth: Traccar.Style.columnWidthNormal,
         },
         items: [{
             text: Strings.sharedName,
             dataIndex: 'name',
-            filter: 'string'
+            filter: 'string',
         }, {
             text: Strings.sharedDescription,
             dataIndex: 'description',
-            filter: 'string'
+            filter: 'string',
         }, {
             text: Strings.sharedCalendar,
             dataIndex: 'calendarId',
@@ -55,9 +55,9 @@ Ext.define('Traccar.view.edit.Geofences', {
             filter: {
                 type: 'list',
                 labelField: 'name',
-                store: 'AllCalendars'
+                store: 'AllCalendars',
             },
-            renderer: Traccar.AttributeFormatter.getFormatter('calendarId')
-        }]
-    }
+            renderer: Traccar.AttributeFormatter.getFormatter('calendarId'),
+        }],
+    },
 });

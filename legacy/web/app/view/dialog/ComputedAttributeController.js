@@ -21,7 +21,7 @@ Ext.define('Traccar.view.dialog.ComputedAttributeController', {
     alias: 'controller.computedAttribute',
 
     requires: [
-        'Traccar.view.dialog.SelectDevice'
+        'Traccar.view.dialog.SelectDevice',
     ],
 
     onAttributeChange: function (combobox, newValue) {
@@ -41,5 +41,5 @@ Ext.define('Traccar.view.dialog.ComputedAttributeController', {
         form.updateRecord();
         dialog.record = form.getRecord();
         dialog.show();
-    }
+    },
 });

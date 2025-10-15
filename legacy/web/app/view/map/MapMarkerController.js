@@ -23,7 +23,7 @@ Ext.define('Traccar.view.map.MapMarkerController', {
     requires: [
         'Traccar.model.Position',
         'Traccar.model.Device',
-        'Traccar.DeviceImages'
+        'Traccar.DeviceImages',
     ],
 
     config: {
@@ -32,46 +32,46 @@ Ext.define('Traccar.view.map.MapMarkerController', {
                 '*': {
                     selectdevice: 'selectDevice',
                     selectreport: 'selectReport',
-                    selectevent: 'selectEvent'
+                    selectevent: 'selectEvent',
                 },
                 'devices': {
-                    deselectfeature: 'deselectDevice'
-                }
+                    deselectfeature: 'deselectDevice',
+                },
             },
             store: {
                 '#Devices': {
                     add: 'updateDevice',
                     update: 'updateDevice',
-                    remove: 'removeDevice'
+                    remove: 'removeDevice',
                 },
                 '#VisibleDevices': {
                     add: 'updateVisibleDevices',
                     update: 'updateVisibleDevices',
                     remove: 'updateVisibleDevices',
-                    refresh: 'filterDevices'
+                    refresh: 'filterDevices',
                 },
                 '#LatestPositions': {
                     add: 'updateLatest',
-                    update: 'updateLatest'
+                    update: 'updateLatest',
                 },
                 '#ReportRoute': {
                     add: 'addReportMarkers',
                     load: 'loadReport',
-                    clear: 'clearReport'
+                    clear: 'clearReport',
                 },
                 '#Events': {
                     remove: 'clearEvent',
-                    clear: 'clearEvent'
-                }
+                    clear: 'clearEvent',
+                },
             },
             component: {
                 '#': {
                     mapready: 'initGeolocation',
                     selectfeature: 'selectFeature',
-                    deselectfeature: 'deselectFeature'
-                }
-            }
-        }
+                    deselectfeature: 'deselectFeature',
+                },
+            },
+        },
     },
 
     init: function () {
@@ -88,9 +88,9 @@ Ext.define('Traccar.view.map.MapMarkerController', {
 
         geolocation = new ol.Geolocation({
             trackingOptions: {
-                enableHighAccuracy: true
+                enableHighAccuracy: true,
             },
-            projection: this.getView().getMapView().getProjection()
+            projection: this.getView().getMapView().getProjection(),
         });
 
         geolocation.on('error', function (error) {
@@ -107,13 +107,13 @@ Ext.define('Traccar.view.map.MapMarkerController', {
             image: new ol.style.Circle({
                 radius: 6,
                 fill: new ol.style.Fill({
-                    color: '#3399CC'
+                    color: '#3399CC',
                 }),
                 stroke: new ol.style.Stroke({
                     color: '#fff',
-                    width: 2
-                })
-            })
+                    width: 2,
+                }),
+            }),
         }));
 
         geolocation.on('change:position', function () {
@@ -143,25 +143,25 @@ Ext.define('Traccar.view.map.MapMarkerController', {
         fillColor[3] = Traccar.Style.mapGeofenceOverlayOpacity;
         styleConfig = {
             fill: new ol.style.Fill({
-                color: fillColor
+                color: fillColor,
             }),
             stroke: new ol.style.Stroke({
                 color: strokeColor,
-                width: Traccar.Style.mapGeofenceWidth
-            })
+                width: Traccar.Style.mapGeofenceWidth,
+            }),
         };
         if (label) {
             styleConfig.text = new ol.style.Text({
                 text: label,
                 overflow: true,
                 fill: new ol.style.Fill({
-                    color: Traccar.Style.mapGeofenceTextColor
+                    color: Traccar.Style.mapGeofenceTextColor,
                 }),
                 stroke: new ol.style.Stroke({
                     color: Traccar.Style.mapTextStrokeColor,
-                    width: Traccar.Style.mapTextStrokeWidth
+                    width: Traccar.Style.mapTextStrokeWidth,
                 }),
-                font: Traccar.Style.mapTextFont
+                font: Traccar.Style.mapTextFont,
             });
         }
         return new ol.style.Style(styleConfig);
@@ -192,8 +192,8 @@ Ext.define('Traccar.view.map.MapMarkerController', {
             if (deviceId in this.latestMarkers) {
                 marker = this.latestMarkers[deviceId];
                 style = marker.getStyle();
-                if (style.getImage().fill !== this.getDeviceColor(device) ||
-                        style.getImage().category !== device.get('category')) {
+                if (style.getImage().fill !== this.getDeviceColor(device)
+                        || style.getImage().category !== device.get('category')) {
                     this.updateDeviceMarker(style, this.getDeviceColor(device), device.get('category'));
                     marker.changed();
                 }
@@ -301,8 +301,7 @@ Ext.define('Traccar.view.map.MapMarkerController', {
 
         if (position.get('accuracy')) {
             center = ol.proj.fromLonLat([position.get('longitude'), position.get('latitude')]);
-            radius = Ext.getStore('DistanceUnits').convertValue(
-                position.get('accuracy'), Traccar.app.getAttributePreference('distanceUnit'), true);
+            radius = Ext.getStore('DistanceUnits').convertValue(position.get('accuracy'), Traccar.app.getAttributePreference('distanceUnit'), true);
 
             if (feature) {
                 feature.getGeometry().setCenter(center);
@@ -328,7 +327,7 @@ Ext.define('Traccar.view.map.MapMarkerController', {
         var geometry, deviceId, marker, style;
         geometry = new ol.geom.Point(ol.proj.fromLonLat([
             position.get('longitude'),
-            position.get('latitude')
+            position.get('latitude'),
         ]));
         deviceId = position.get('deviceId');
         if (deviceId in this.latestMarkers) {
@@ -338,9 +337,11 @@ Ext.define('Traccar.view.map.MapMarkerController', {
             marker = new ol.Feature(geometry);
             marker.set('record', device);
 
-            style = this.getLatestMarker(this.getDeviceColor(device),
+            style = this.getLatestMarker(
+this.getDeviceColor(device),
                 position.get('course'),
-                device.get('category'));
+                device.get('category'),
+);
             style.getText().setText(Ext.String.htmlDecode(device.get('name')));
             marker.setStyle(style);
             marker.setId(device.get('id'));
@@ -361,8 +362,8 @@ Ext.define('Traccar.view.map.MapMarkerController', {
             liveCoordinates = this.liveRoutes[deviceId].getGeometry().getCoordinates();
             lastLiveCoordinates = liveCoordinates[liveCoordinates.length - 1];
             newCoordinates = ol.proj.fromLonLat([position.get('longitude'), position.get('latitude')]);
-            if (lastLiveCoordinates[0] === newCoordinates[0] &&
-                    lastLiveCoordinates[1] === newCoordinates[1]) {
+            if (lastLiveCoordinates[0] === newCoordinates[0]
+                    && lastLiveCoordinates[1] === newCoordinates[1]) {
                 return;
             }
             if (liveCoordinates.length >= this.liveRouteLength) {
@@ -375,9 +376,9 @@ Ext.define('Traccar.view.map.MapMarkerController', {
                 geometry: new ol.geom.LineString([
                     ol.proj.fromLonLat([
                         position.get('longitude'),
-                        position.get('latitude')
-                    ])
-                ])
+                        position.get('latitude'),
+                    ]),
+                ]),
             });
             liveLine.setStyle(this.getRouteStyle(deviceId));
             liveLine.setId(deviceId);
@@ -399,11 +400,11 @@ Ext.define('Traccar.view.map.MapMarkerController', {
                 position = data[i];
                 point = ol.proj.fromLonLat([
                     position.get('longitude'),
-                    position.get('latitude')
+                    position.get('latitude'),
                 ]);
                 if (i === 0 || data[i].get('deviceId') !== data[i - 1].get('deviceId')) {
                     this.reportRoute.push(new ol.Feature({
-                        geometry: new ol.geom.LineString([])
+                        geometry: new ol.geom.LineString([]),
                     }));
                     this.reportRoute[this.reportRoute.length - 1].setStyle(this.getRouteStyle(data[i].get('deviceId')));
                     routeSource.addFeature(this.reportRoute[this.reportRoute.length - 1]);
@@ -416,7 +417,7 @@ Ext.define('Traccar.view.map.MapMarkerController', {
     addReportMarker: function (position) {
         var geometry, marker, style, point = ol.proj.fromLonLat([
             position.get('longitude'),
-            position.get('latitude')
+            position.get('latitude'),
         ]);
         geometry = new ol.geom.Point(point);
         marker = new ol.Feature(geometry);
@@ -460,8 +461,8 @@ Ext.define('Traccar.view.map.MapMarkerController', {
             this.reportMarkers = {};
         }
 
-        if (this.selectedMarker && !this.selectedMarker.get('event') &&
-                this.selectedMarker.get('record') instanceof Traccar.model.Position) {
+        if (this.selectedMarker && !this.selectedMarker.get('event')
+                && this.selectedMarker.get('record') instanceof Traccar.model.Position) {
             this.selectedMarker = null;
         }
     },
@@ -476,8 +477,8 @@ Ext.define('Traccar.view.map.MapMarkerController', {
         return new ol.style.Style({
             stroke: new ol.style.Stroke({
                 color: Traccar.app.getReportColor(deviceId),
-                width: Traccar.Style.mapRouteWidth
-            })
+                width: Traccar.Style.mapRouteWidth,
+            }),
         });
     },
 
@@ -488,15 +489,15 @@ Ext.define('Traccar.view.map.MapMarkerController', {
             text: new ol.style.Text({
                 textBaseline: 'bottom',
                 fill: new ol.style.Fill({
-                    color: Traccar.Style.mapTextColor
+                    color: Traccar.Style.mapTextColor,
                 }),
                 stroke: new ol.style.Stroke({
                     color: Traccar.Style.mapTextStrokeColor,
-                    width: Traccar.Style.mapTextStrokeWidth
+                    width: Traccar.Style.mapTextStrokeWidth,
                 }),
                 offsetY: -image.getSize()[1] / 2 - Traccar.Style.mapTextOffset,
-                font: Traccar.Style.mapTextFont
-            })
+                font: Traccar.Style.mapTextFont,
+            }),
         });
     },
 
@@ -510,8 +511,7 @@ Ext.define('Traccar.view.map.MapMarkerController', {
 
     resizeMarker: function (style, zoom) {
         var image, text;
-        image = Traccar.DeviceImages.getImageIcon(
-            style.getImage().fill, zoom, style.getImage().angle, style.getImage().category);
+        image = Traccar.DeviceImages.getImageIcon(style.getImage().fill, zoom, style.getImage().angle, style.getImage().category);
         text = style.getText();
         text.setOffsetY(-image.getSize()[1] / 2 - Traccar.Style.mapTextOffset);
         style.setText(text);
@@ -519,14 +519,12 @@ Ext.define('Traccar.view.map.MapMarkerController', {
     },
 
     rotateMarker: function (style, angle) {
-        style.setImage(Traccar.DeviceImages.getImageIcon(
-            style.getImage().fill, style.getImage().zoom, angle, style.getImage().category));
+        style.setImage(Traccar.DeviceImages.getImageIcon(style.getImage().fill, style.getImage().zoom, angle, style.getImage().category));
     },
 
     updateDeviceMarker: function (style, color, category) {
         var image, text;
-        image = Traccar.DeviceImages.getImageIcon(
-            color, style.getImage().zoom, style.getImage().angle, category);
+        image = Traccar.DeviceImages.getImageIcon(color, style.getImage().zoom, style.getImage().angle, category);
         text = style.getText();
         text.setOffsetY(-image.getSize()[1] / 2 - Traccar.Style.mapTextOffset);
         style.setText(text);
@@ -537,8 +535,8 @@ Ext.define('Traccar.view.map.MapMarkerController', {
         if (this.selectedMarker) {
             if (this.selectedMarker.get('event')) {
                 this.getView().getMarkersSource().removeFeature(this.selectedMarker);
-            } else if (!Ext.getStore('ReportRoute').showMarkers &&
-                    this.selectedMarker.get('record') instanceof Traccar.model.Position) {
+            } else if (!Ext.getStore('ReportRoute').showMarkers
+                    && this.selectedMarker.get('record') instanceof Traccar.model.Position) {
                 this.getView().getMarkersSource().removeFeature(this.selectedMarker);
                 delete this.reportMarkers[this.selectedMarker.get('record').get('id')];
             } else {
@@ -614,7 +612,7 @@ Ext.define('Traccar.view.map.MapMarkerController', {
         for (i = 0; i < data.length; i++) {
             point = ol.proj.fromLonLat([
                 data[i].get('longitude'),
-                data[i].get('latitude')
+                data[i].get('latitude'),
             ]);
             if (i === 0) {
                 minx = maxx = point[0];
@@ -683,5 +681,5 @@ Ext.define('Traccar.view.map.MapMarkerController', {
 
     filterDevices: function () {
         Ext.getStore('Devices').each(this.updateDeviceVisibility, this, false);
-    }
+    },
 });

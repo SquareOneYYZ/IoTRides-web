@@ -24,10 +24,10 @@ Ext.define('Traccar.view.dialog.MapPickerController', {
         listen: {
             controller: {
                 '*': {
-                    mapstate: 'setMapState'
-                }
-            }
-        }
+                    mapstate: 'setMapState',
+                },
+            },
+        },
     },
 
     getMapState: function () {
@@ -38,5 +38,5 @@ Ext.define('Traccar.view.dialog.MapPickerController', {
         this.lookupReference('latitude').setValue(lat);
         this.lookupReference('longitude').setValue(lon);
         this.lookupReference('zoom').setValue(zoom);
-    }
+    },
 });

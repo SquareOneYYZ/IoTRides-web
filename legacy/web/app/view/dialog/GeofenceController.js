@@ -21,22 +21,23 @@ Ext.define('Traccar.view.dialog.GeofenceController', {
 
     requires: [
         'Traccar.view.BaseWindow',
-        'Traccar.view.map.GeofenceMap'
+        'Traccar.view.map.GeofenceMap',
     ],
 
     config: {
         listen: {
             controller: {
                 '*': {
-                    savearea: 'saveArea'
-                }
-            }
-        }
+                    savearea: 'saveArea',
+                },
+            },
+        },
     },
 
     init: function () {
         this.lookupReference('calendarCombo').setHidden(
-            Traccar.app.getBooleanAttributePreference('ui.disableCalendars'));
+            Traccar.app.getBooleanAttributePreference('ui.disableCalendars'),
+);
     },
 
     saveArea: function (value) {
@@ -51,8 +52,8 @@ Ext.define('Traccar.view.dialog.GeofenceController', {
             title: Strings.sharedArea,
             items: {
                 xtype: 'geofenceMapView',
-                area: record.get('area')
-            }
+                area: record.get('area'),
+            },
         }).show();
-    }
+    },
 });

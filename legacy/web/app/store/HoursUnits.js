@@ -22,7 +22,7 @@ Ext.define('Traccar.store.HoursUnits', {
     data: [{
         key: 'h',
         name: Strings.sharedHourAbbreviation,
-        fullName: Strings.sharedHour
+        fullName: Strings.sharedHour,
     }],
 
     convertValue: function (value, unit, back) {
@@ -39,5 +39,5 @@ Ext.define('Traccar.store.HoursUnits', {
             minutes = Math.floor(value % 1 * 60);
         }
         return hours + ' ' + Strings.sharedHourAbbreviation + ' ' + minutes + ' ' + Strings.sharedMinuteAbbreviation;
-    }
+    },
 });

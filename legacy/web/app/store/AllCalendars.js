@@ -24,7 +24,7 @@ Ext.define('Traccar.store.AllCalendars', {
         type: 'rest',
         url: 'api/calendars',
         extraParams: {
-            all: true
-        }
-    }
+            all: true,
+        },
+    },
 });

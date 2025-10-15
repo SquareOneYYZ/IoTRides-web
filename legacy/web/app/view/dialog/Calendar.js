@@ -21,7 +21,7 @@ Ext.define('Traccar.view.dialog.Calendar', {
 
     requires: [
         'Traccar.view.dialog.CalendarController',
-        'Traccar.view.UnescapedTextField'
+        'Traccar.view.UnescapedTextField',
     ],
 
     controller: 'calendar',
@@ -36,7 +36,7 @@ Ext.define('Traccar.view.dialog.Calendar', {
                 xtype: 'unescapedTextField',
                 name: 'name',
                 fieldLabel: Strings.sharedName,
-                allowBlank: false
+                allowBlank: false,
             }, {
                 xtype: 'filefield',
                 name: 'file',
@@ -47,17 +47,17 @@ Ext.define('Traccar.view.dialog.Calendar', {
                     text: '',
                     tooltip: Strings.sharedSelectFile,
                     tooltipType: 'title',
-                    minWidth: 0
+                    minWidth: 0,
                 },
                 listeners: {
-                    change: 'onFileChange'
-                }
-            }]
+                    change: 'onFileChange',
+                },
+            }],
         }, {
             xtype: 'hiddenfield',
             name: 'data',
             allowBlank: false,
-            reference: 'dataField'
-        }]
-    }
+            reference: 'dataField',
+        }],
+    },
 });

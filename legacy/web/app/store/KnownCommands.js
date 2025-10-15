@@ -24,8 +24,8 @@ Ext.define('Traccar.store.KnownCommands', {
         parameters: [{
             key: 'data',
             name: Strings.commandData,
-            valueType: 'string'
-        }]
+            valueType: 'string',
+        }],
     }, {
         type: 'positionPeriodic',
         parameters: [{
@@ -34,41 +34,41 @@ Ext.define('Traccar.store.KnownCommands', {
             valueType: 'number',
             allowDecimals: false,
             minValue: 0,
-            dataType: 'frequency'
-        }]
+            dataType: 'frequency',
+        }],
     }, {
         type: 'setTimezone',
         parameters: [{
             key: 'timezone',
             name: Strings.commandTimezone,
             valueType: 'string',
-            dataType: 'timezone'
-        }]
+            dataType: 'timezone',
+        }],
     }, {
         type: 'sendSms',
         parameters: [{
             key: 'phone',
             name: Strings.commandPhone,
-            valueType: 'string'
+            valueType: 'string',
         }, {
             key: 'message',
             name: Strings.commandMessage,
-            valueType: 'string'
-        }]
+            valueType: 'string',
+        }],
     }, {
         type: 'message',
         parameters: [{
             key: 'message',
             name: Strings.commandMessage,
-            valueType: 'string'
-        }]
+            valueType: 'string',
+        }],
     }, {
         type: 'sendUssd',
         parameters: [{
             key: 'phone',
             name: Strings.commandPhone,
-            valueType: 'string'
-        }]
+            valueType: 'string',
+        }],
     }, {
         type: 'sosNumber',
         parameters: [{
@@ -76,33 +76,33 @@ Ext.define('Traccar.store.KnownCommands', {
             name: Strings.commandIndex,
             valueType: 'number',
             allowDecimals: false,
-            minValue: 0
+            minValue: 0,
         }, {
             key: 'phone',
             name: Strings.commandPhone,
-            valueType: 'string'
-        }]
+            valueType: 'string',
+        }],
     }, {
         type: 'silenceTime',
         parameters: [{
             key: 'data',
             name: Strings.commandData,
-            valueType: 'string'
-        }]
+            valueType: 'string',
+        }],
     }, {
         type: 'setPhonebook',
         parameters: [{
             key: 'data',
             name: Strings.commandData,
-            valueType: 'string'
-        }]
+            valueType: 'string',
+        }],
     }, {
         type: 'voiceMessage',
         parameters: [{
             key: 'data',
             name: Strings.commandData,
-            valueType: 'string'
-        }]
+            valueType: 'string',
+        }],
     }, {
         type: 'outputControl',
         parameters: [{
@@ -110,75 +110,75 @@ Ext.define('Traccar.store.KnownCommands', {
             name: Strings.commandIndex,
             valueType: 'number',
             allowDecimals: false,
-            minValue: 0
+            minValue: 0,
         }, {
             key: 'data',
             name: Strings.commandData,
-            valueType: 'string'
-        }]
+            valueType: 'string',
+        }],
     }, {
         type: 'voiceMonitoring',
         parameters: [{
             key: 'enable',
             name: Strings.commandEnable,
-            valueType: 'boolean'
-        }]
+            valueType: 'boolean',
+        }],
     }, {
         type: 'setAgps',
         parameters: [{
             key: 'enable',
             name: Strings.commandEnable,
-            valueType: 'boolean'
-        }]
+            valueType: 'boolean',
+        }],
     }, {
         type: 'setIndicator',
         parameters: [{
             key: 'data',
             name: Strings.commandData,
-            valueType: 'string'
-        }]
+            valueType: 'string',
+        }],
     }, {
         type: 'configuration',
         parameters: [{
             key: 'data',
             name: Strings.commandData,
-            valueType: 'string'
-        }]
+            valueType: 'string',
+        }],
     }, {
         type: 'setConnection',
         parameters: [{
             key: 'server',
             name: Strings.commandServer,
-            valueType: 'string'
+            valueType: 'string',
         }, {
             key: 'port',
             name: Strings.commandPort,
             valueType: 'number',
             allowDecimals: false,
             minValue: 1,
-            maxValue: 65535
-        }]
+            maxValue: 65535,
+        }],
     }, {
         type: 'setOdometer',
         parameters: [{
             key: 'data',
             name: Strings.commandData,
-            valueType: 'string'
-        }]
+            valueType: 'string',
+        }],
     }, {
         type: 'modePowerSaving',
         parameters: [{
             key: 'enable',
             name: Strings.commandEnable,
-            valueType: 'boolean'
-        }]
+            valueType: 'boolean',
+        }],
     }, {
         type: 'modeDeepSleep',
         parameters: [{
             key: 'enable',
             name: Strings.commandEnable,
-            valueType: 'boolean'
-        }]
+            valueType: 'boolean',
+        }],
     }, {
         type: 'alarmGeofence',
         parameters: [{
@@ -186,56 +186,56 @@ Ext.define('Traccar.store.KnownCommands', {
             name: Strings.commandRadius,
             valueType: 'number',
             allowDecimals: false,
-            minValue: 0
-        }]
+            minValue: 0,
+        }],
     }, {
         type: 'alarmBattery',
         parameters: [{
             key: 'enable',
             name: Strings.commandEnable,
-            valueType: 'boolean'
-        }]
+            valueType: 'boolean',
+        }],
     }, {
         type: 'alarmSos',
         parameters: [{
             key: 'enable',
             name: Strings.commandEnable,
-            valueType: 'boolean'
-        }]
+            valueType: 'boolean',
+        }],
     }, {
         type: 'alarmRemove',
         parameters: [{
             key: 'enable',
             name: Strings.commandEnable,
-            valueType: 'boolean'
-        }]
+            valueType: 'boolean',
+        }],
     }, {
         type: 'alarmClock',
         parameters: [{
             key: 'data',
             name: Strings.commandData,
-            valueType: 'string'
-        }]
+            valueType: 'string',
+        }],
     }, {
         type: 'alarmSpeed',
         parameters: [{
             key: 'data',
             name: Strings.commandData,
-            valueType: 'string'
-        }]
+            valueType: 'string',
+        }],
     }, {
         type: 'alarmFall',
         parameters: [{
             key: 'enable',
             name: Strings.commandEnable,
-            valueType: 'boolean'
-        }]
+            valueType: 'boolean',
+        }],
     }, {
         type: 'alarmVibration',
         parameters: [{
             key: 'data',
             name: Strings.commandData,
-            valueType: 'string'
-        }]
-    }]
+            valueType: 'string',
+        }],
+    }],
 });

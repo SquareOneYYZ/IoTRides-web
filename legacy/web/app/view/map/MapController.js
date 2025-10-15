@@ -20,7 +20,7 @@ Ext.define('Traccar.view.map.MapController', {
     alias: 'controller.map',
 
     requires: [
-        'Traccar.GeofenceConverter'
+        'Traccar.GeofenceConverter',
     ],
 
     config: {
@@ -28,26 +28,28 @@ Ext.define('Traccar.view.map.MapController', {
             controller: {
                 '*': {
                     mapstaterequest: 'getMapState',
-                    zoomtoalldevices: 'zoomToAllDevices'
-                }
+                    zoomtoalldevices: 'zoomToAllDevices',
+                },
             },
             store: {
                 '#Geofences': {
                     load: 'updateGeofences',
                     add: 'updateGeofences',
                     update: 'updateGeofences',
-                    remove: 'updateGeofences'
-                }
-            }
-        }
+                    remove: 'updateGeofences',
+                },
+            },
+        },
     },
 
     init: function () {
         this.callParent();
         this.lookupReference('showReportsButton').setVisible(
-            Traccar.app.isMobile() && !Traccar.app.getPreference('disableReports', false));
+            Traccar.app.isMobile() && !Traccar.app.getPreference('disableReports', false),
+);
         this.lookupReference('showEventsButton').setVisible(
-            Traccar.app.isMobile() && !Traccar.app.getBooleanAttributePreference('ui.disableEvents'));
+            Traccar.app.isMobile() && !Traccar.app.getBooleanAttributePreference('ui.disableEvents'),
+);
     },
 
     showReports: function () {
@@ -85,10 +87,12 @@ Ext.define('Traccar.view.map.MapController', {
         if (this.lookupReference('showGeofencesButton').pressed) {
             Ext.getStore('Geofences').each(function (geofence) {
                 var feature = new ol.Feature(
-                    Traccar.GeofenceConverter.wktToGeometry(this.getView().getMapView(), geofence.get('area')));
+                    Traccar.GeofenceConverter.wktToGeometry(this.getView().getMapView(), geofence.get('area')),
+);
                 feature.setStyle(this.getAreaStyle(
                     Ext.String.htmlDecode(geofence.get('name')),
-                    geofence.get('attributes') ? geofence.get('attributes').color : null));
+                    geofence.get('attributes') ? geofence.get('attributes').color : null,
+));
                 this.getView().getGeofencesSource().addFeature(feature);
                 return true;
             }, this);
@@ -97,5 +101,5 @@ Ext.define('Traccar.view.map.MapController', {
 
     zoomToAllDevices: function () {
         this.zoomToAllPositions(Ext.getStore('LatestPositions').getData().items);
-    }
+    },
 });

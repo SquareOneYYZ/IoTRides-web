@@ -26,7 +26,7 @@ Ext.define('Traccar.view.permissions.ComputedAttributes', {
             dataIndex: 'description',
             flex: 1,
             minWidth: Traccar.Style.columnWidthNormal,
-            filter: 'string'
+            filter: 'string',
         }, {
             text: Strings.sharedAttribute,
             dataIndex: 'attribute',
@@ -35,11 +35,11 @@ Ext.define('Traccar.view.permissions.ComputedAttributes', {
             filter: {
                 type: 'list',
                 labelField: 'name',
-                store: 'PositionAttributes'
+                store: 'PositionAttributes',
             },
             renderer: function (value) {
                 return Ext.getStore('PositionAttributes').getAttributeName(value);
-            }
-        }]
-    }
+            },
+        }],
+    },
 });

@@ -21,20 +21,20 @@ Ext.define('Traccar.model.Notification', {
 
     fields: [{
         name: 'id',
-        type: 'int'
+        type: 'int',
     }, {
         name: 'type',
-        type: 'string'
+        type: 'string',
     }, {
         name: 'always',
-        type: 'bool'
+        type: 'bool',
     }, {
-        name: 'attributes'
+        name: 'attributes',
     }, {
         name: 'notificators',
-        type: 'string'
+        type: 'string',
     }, {
         name: 'calendarId',
-        type: 'int'
-    }]
+        type: 'int',
+    }],
 });

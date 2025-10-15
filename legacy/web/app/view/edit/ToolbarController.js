@@ -45,7 +45,7 @@ Ext.define('Traccar.view.edit.ToolbarController', {
             buttons: Ext.Msg.YESNO,
             buttonText: {
                 yes: Strings.sharedRemove,
-                no: Strings.sharedCancel
+                no: Strings.sharedCancel,
             },
             fn: function (btn) {
                 var store = objectInstance.store;
@@ -55,10 +55,10 @@ Ext.define('Traccar.view.edit.ToolbarController', {
                         failure: function (batch) {
                             store.rejectChanges();
                             Traccar.app.showError(batch.exceptions[0].getError().response);
-                        }
+                        },
                     });
                 }
-            }
+            },
         });
     },
 
@@ -66,5 +66,5 @@ Ext.define('Traccar.view.edit.ToolbarController', {
         var disabled = selected.length === 0;
         this.lookupReference('toolbarEditButton').setDisabled(disabled);
         this.lookupReference('toolbarRemoveButton').setDisabled(disabled);
-    }
+    },
 });

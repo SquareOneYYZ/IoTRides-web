@@ -21,10 +21,10 @@ Ext.define('Traccar.view.edit.GeofencesController', {
 
     requires: [
         'Traccar.view.dialog.Geofence',
-        'Traccar.model.Geofence'
+        'Traccar.model.Geofence',
     ],
 
     objectModel: 'Traccar.model.Geofence',
     objectDialog: 'Traccar.view.dialog.Geofence',
-    removeTitle: Strings.sharedGeofence
+    removeTitle: Strings.sharedGeofence,
 });

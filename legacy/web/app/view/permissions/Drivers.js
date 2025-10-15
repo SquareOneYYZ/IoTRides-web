@@ -26,13 +26,13 @@ Ext.define('Traccar.view.permissions.Drivers', {
             dataIndex: 'name',
             flex: 1,
             minWidth: Traccar.Style.columnWidthNormal,
-            filter: 'string'
+            filter: 'string',
         }, {
             text: Strings.deviceIdentifier,
             dataIndex: 'uniqueId',
             flex: 1,
             minWidth: Traccar.Style.columnWidthNormal,
-            filter: 'string'
-        }]
-    }
+            filter: 'string',
+        }],
+    },
 });

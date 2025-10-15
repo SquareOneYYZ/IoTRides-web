@@ -47,16 +47,16 @@ Ext.define('Traccar.view.map.BaseMap', {
                     visible: type === 'custom',
                     source: new ol.source.XYZ({
                         url: Ext.String.htmlDecode(server.get('mapUrl')),
-                        attributions: ''
-                    })
+                        attributions: '',
+                    }),
                 }),
                 new ol.layer.Tile({
                     title: Strings.mapCustomArcgis,
                     type: 'base',
                     visible: type === 'customArcgis',
                     source: new ol.source.TileArcGISRest({
-                        url: Ext.String.htmlDecode(server.get('mapUrl'))
-                    })
+                        url: Ext.String.htmlDecode(server.get('mapUrl')),
+                    }),
                 }),
                 new ol.layer.Tile({
                     title: Strings.mapBingRoad,
@@ -64,8 +64,8 @@ Ext.define('Traccar.view.map.BaseMap', {
                     visible: type === 'bingRoad',
                     source: new ol.source.BingMaps({
                         key: bingKey,
-                        imagerySet: 'Road'
-                    })
+                        imagerySet: 'Road',
+                    }),
                 }),
                 new ol.layer.Tile({
                     title: Strings.mapBingAerial,
@@ -73,8 +73,8 @@ Ext.define('Traccar.view.map.BaseMap', {
                     visible: type === 'bingAerial',
                     source: new ol.source.BingMaps({
                         key: bingKey,
-                        imagerySet: 'Aerial'
-                    })
+                        imagerySet: 'Aerial',
+                    }),
                 }),
                 new ol.layer.Tile({
                     title: Strings.mapBingHybrid,
@@ -82,8 +82,8 @@ Ext.define('Traccar.view.map.BaseMap', {
                     visible: type === 'bingHybrid',
                     source: new ol.source.BingMaps({
                         key: bingKey,
-                        imagerySet: 'AerialWithLabels'
-                    })
+                        imagerySet: 'AerialWithLabels',
+                    }),
                 }),
                 new ol.layer.Tile({
                     title: Strings.mapCarto,
@@ -91,17 +91,17 @@ Ext.define('Traccar.view.map.BaseMap', {
                     visible: type === 'carto',
                     source: new ol.source.XYZ({
                         url: 'https://cartodb-basemaps-{a-d}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png',
-                        attributions: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> ' +
-                            'contributors, &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                    })
+                        attributions: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> '
+                            + 'contributors, &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                    }),
                 }),
                 new ol.layer.Tile({
                     title: Strings.mapAutoNavi,
                     type: 'base',
                     visible: type === 'autoNavi' || type === 'baidu',
                     source: new ol.source.OSM({
-                        url: 'https://webrd0{1-4}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}'
-                    })
+                        url: 'https://webrd0{1-4}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
+                    }),
                 }),
                 new ol.layer.Tile({
                     title: Strings.mapYandexMap,
@@ -110,8 +110,8 @@ Ext.define('Traccar.view.map.BaseMap', {
                     source: new ol.source.XYZ({
                         url: 'https://core-renderer-tiles.maps.yandex.net/tiles?l=map&x={x}&y={y}&z={z}',
                         projection: 'EPSG:3395',
-                        attributions: '&copy; <a href="https://yandex.com/maps/">Yandex</a>'
-                    })
+                        attributions: '&copy; <a href="https://yandex.com/maps/">Yandex</a>',
+                    }),
                 }),
                 new ol.layer.Tile({
                     title: Strings.mapYandexSat,
@@ -120,14 +120,14 @@ Ext.define('Traccar.view.map.BaseMap', {
                     source: new ol.source.XYZ({
                         url: 'https://core-sat.maps.yandex.net/tiles?l=sat&x={x}&y={y}&z={z}',
                         projection: 'EPSG:3395',
-                        attributions: '&copy; <a href="https://yandex.com/maps/">Yandex</a>'
-                    })
+                        attributions: '&copy; <a href="https://yandex.com/maps/">Yandex</a>',
+                    }),
                 }),
                 new ol.layer.Tile({
                     title: Strings.mapOsm,
                     type: 'base',
                     visible: type === 'osm',
-                    source: new ol.source.OSM({})
+                    source: new ol.source.OSM({}),
                 }),
                 new ol.layer.Tile({
                     title: Strings.mapLocationIqStreets,
@@ -135,10 +135,10 @@ Ext.define('Traccar.view.map.BaseMap', {
                     visible: type === 'locationIqStreets' || type === 'wikimedia' || !type,
                     source: new ol.source.XYZ({
                         url: 'https://{a-c}-tiles.locationiq.com/v3/streets/r/{z}/{x}/{y}.png?key=' + locationIqKey,
-                        attributions: '&copy; <a href="https://locationiq.com/">LocationIQ</a>'
-                    })
-                })
-            ]
+                        attributions: '&copy; <a href="https://locationiq.com/">LocationIQ</a>',
+                    }),
+                }),
+            ],
         });
 
         lat = Traccar.app.getPreference('latitude', Traccar.Style.mapDefaultLat);
@@ -149,13 +149,13 @@ Ext.define('Traccar.view.map.BaseMap', {
         this.mapView = new ol.View({
             center: ol.proj.fromLonLat([lon, lat]),
             zoom: zoom,
-            maxZoom: maxZoom
+            maxZoom: maxZoom,
         });
 
         this.map = new ol.Map({
             target: this.body.dom.id,
             layers: [layer],
-            view: this.mapView
+            view: this.mapView,
         });
 
         poiLayer = Traccar.app.getPreference('poiLayer', null);
@@ -164,20 +164,20 @@ Ext.define('Traccar.view.map.BaseMap', {
             this.map.addLayer(new ol.layer.Vector({
                 source: new ol.source.Vector({
                     url: poiLayer,
-                    format: new ol.format.KML()
-                })
+                    format: new ol.format.KML(),
+                }),
             }));
         }
 
         switch (Traccar.app.getAttributePreference('distanceUnit', 'km')) {
             case 'mi':
                 this.map.addControl(new ol.control.ScaleLine({
-                    units: 'us'
+                    units: 'us',
                 }));
                 break;
             case 'nmi':
                 this.map.addControl(new ol.control.ScaleLine({
-                    units: 'nautical'
+                    units: 'nautical',
                 }));
                 break;
             default:
@@ -207,7 +207,7 @@ Ext.define('Traccar.view.map.BaseMap', {
             var i, features = self.map.getFeaturesAtPixel(e.pixel, {
                 layerFilter: function (layer) {
                     return !layer.get('name');
-                }
+                },
             });
             if (features) {
                 for (i = 0; i < features.length; i++) {
@@ -230,8 +230,8 @@ Ext.define('Traccar.view.map.BaseMap', {
 
         resize: function () {
             this.map.updateSize();
-        }
-    }
+        },
+    },
 }, function () {
     var projection;
     proj4.defs('EPSG:3395', '+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs');

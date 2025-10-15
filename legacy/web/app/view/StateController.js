@@ -24,7 +24,7 @@ Ext.define('Traccar.view.StateController', {
         'Traccar.model.Attribute',
         'Traccar.model.Position',
         'Traccar.view.BaseWindow',
-        'Traccar.view.edit.ComputedAttributes'
+        'Traccar.view.edit.ComputedAttributes',
     ],
 
     config: {
@@ -34,30 +34,31 @@ Ext.define('Traccar.view.StateController', {
                     selectdevice: 'selectDevice',
                     selectreport: 'selectPosition',
                     selectevent: 'selectPosition',
-                    deselectfeature: 'deselectFeature'
-                }
+                    deselectfeature: 'deselectFeature',
+                },
             },
             global: {
-                stategeocode: 'onGeocode'
+                stategeocode: 'onGeocode',
             },
             store: {
                 '#LatestPositions': {
                     add: 'updateLatest',
-                    update: 'updateLatest'
+                    update: 'updateLatest',
                 },
                 '#ReportRoute': {
-                    clear: 'clearReport'
-                }
-            }
-        }
+                    clear: 'clearReport',
+                },
+            },
+        },
     },
 
     init: function () {
         var i, hideAttributesPreference, attributesList;
-        if (Traccar.app.getUser().get('administrator') ||
-                !Traccar.app.getUser().get('deviceReadonly') && !Traccar.app.getPreference('readonly', false)) {
+        if (Traccar.app.getUser().get('administrator')
+                || !Traccar.app.getUser().get('deviceReadonly') && !Traccar.app.getPreference('readonly', false)) {
             this.lookupReference('computedAttributesButton').setDisabled(
-                Traccar.app.getBooleanAttributePreference('ui.disableComputedAttributes'));
+                Traccar.app.getBooleanAttributePreference('ui.disableComputedAttributes'),
+);
         }
         hideAttributesPreference = Traccar.app.getAttributePreference('ui.hidePositionAttributes');
         this.hideAttributes = {};
@@ -73,8 +74,8 @@ Ext.define('Traccar.view.StateController', {
         Ext.create('Traccar.view.BaseWindow', {
             title: Strings.sharedComputedAttributes,
             items: {
-                xtype: 'computedAttributesView'
-            }
+                xtype: 'computedAttributesView',
+            },
         }).show();
     },
 
@@ -87,7 +88,7 @@ Ext.define('Traccar.view.StateController', {
                 priority: i,
                 name: Strings['position' + list[i].replace(/^\w/g, function (s) {
                     return s.toUpperCase();
-                })]
+                })],
             };
         }
         return result;
@@ -129,7 +130,7 @@ Ext.define('Traccar.view.StateController', {
                     priority: this.keys[key].priority,
                     name: this.keys[key].name,
                     attribute: key,
-                    value: Traccar.AttributeFormatter.getFormatter(key)(this.position.get(key))
+                    value: Traccar.AttributeFormatter.getFormatter(key)(this.position.get(key)),
                 }));
             }
         }
@@ -149,7 +150,7 @@ Ext.define('Traccar.view.StateController', {
                         priority: 1024,
                         name: name,
                         attribute: key,
-                        value: value
+                        value: value,
                     }));
                 }
             }
@@ -199,7 +200,7 @@ Ext.define('Traccar.view.StateController', {
                 url: 'api/server/geocode',
                 params: {
                     latitude: this.position.get('latitude'),
-                    longitude: this.position.get('longitude')
+                    longitude: this.position.get('longitude'),
                 },
                 success: function (response) {
                     if (this.position && this.position.getId() === positionId) {
@@ -209,8 +210,8 @@ Ext.define('Traccar.view.StateController', {
                 },
                 failure: function (response) {
                     Traccar.app.showError(response);
-                }
+                },
             });
         }
-    }
+    },
 });

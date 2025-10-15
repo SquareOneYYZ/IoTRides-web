@@ -24,7 +24,7 @@ Ext.define('Traccar.store.Maintenances', {
         type: 'rest',
         url: 'api/maintenance',
         writer: {
-            writeAllFields: true
-        }
-    }
+            writeAllFields: true,
+        },
+    },
 });

@@ -21,7 +21,7 @@ Ext.define('Traccar.view.dialog.Geofence', {
     requires: [
         'Traccar.view.ClearableComboBox',
         'Traccar.view.dialog.GeofenceController',
-        'Traccar.view.UnescapedTextField'
+        'Traccar.view.UnescapedTextField',
     ],
 
     controller: 'geofence',
@@ -35,8 +35,8 @@ Ext.define('Traccar.view.dialog.Geofence', {
             items: [{
                 xtype: 'unescapedTextField',
                 name: 'name',
-                fieldLabel: Strings.sharedName
-            }]
+                fieldLabel: Strings.sharedName,
+            }],
         }, {
             xtype: 'fieldset',
             title: Strings.sharedExtra,
@@ -45,7 +45,7 @@ Ext.define('Traccar.view.dialog.Geofence', {
             items: [{
                 xtype: 'unescapedTextField',
                 name: 'description',
-                fieldLabel: Strings.sharedDescription
+                fieldLabel: Strings.sharedDescription,
             }, {
                 xtype: 'clearableComboBox',
                 reference: 'calendarCombo',
@@ -54,36 +54,36 @@ Ext.define('Traccar.view.dialog.Geofence', {
                 queryMode: 'local',
                 displayField: 'name',
                 valueField: 'id',
-                fieldLabel: Strings.sharedCalendar
+                fieldLabel: Strings.sharedCalendar,
             }, {
                 xtype: 'hiddenfield',
                 name: 'area',
                 allowBlank: false,
-                reference: 'areaField'
-            }]
-        }]
+                reference: 'areaField',
+            }],
+        }],
     },
 
     buttons: [{
         text: Strings.sharedArea,
         glyph: 'xf21d@FontAwesome',
-        handler: 'onAreaClick'
+        handler: 'onAreaClick',
     }, {
         text: Strings.sharedAttributes,
-        handler: 'showAttributesView'
+        handler: 'showAttributesView',
     }, {
-        xtype: 'tbfill'
+        xtype: 'tbfill',
     }, {
         glyph: 'xf00c@FontAwesome',
         tooltip: Strings.sharedSave,
         tooltipType: 'title',
         minWidth: 0,
-        handler: 'onSaveClick'
+        handler: 'onSaveClick',
     }, {
         glyph: 'xf00d@FontAwesome',
         tooltip: Strings.sharedCancel,
         tooltipType: 'title',
         minWidth: 0,
-        handler: 'closeView'
-    }]
+        handler: 'closeView',
+    }],
 });

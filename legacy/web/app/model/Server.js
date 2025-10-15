@@ -21,65 +21,65 @@ Ext.define('Traccar.model.Server', {
 
     fields: [{
         name: 'id',
-        type: 'int'
+        type: 'int',
     }, {
         name: 'registration',
-        type: 'boolean'
+        type: 'boolean',
     }, {
         name: 'readonly',
-        type: 'boolean'
+        type: 'boolean',
     }, {
         name: 'deviceReadonly',
-        type: 'boolean'
+        type: 'boolean',
     }, {
         name: 'limitCommands',
-        type: 'boolean'
+        type: 'boolean',
     }, {
         name: 'disableReports',
-        type: 'boolean'
+        type: 'boolean',
     }, {
         name: 'map',
-        type: 'string'
+        type: 'string',
     }, {
         name: 'bingKey',
-        type: 'string'
+        type: 'string',
     }, {
         name: 'mapUrl',
-        type: 'string'
+        type: 'string',
     }, {
         name: 'latitude',
-        type: 'float'
+        type: 'float',
     }, {
         name: 'longitude',
-        type: 'float'
+        type: 'float',
     }, {
         name: 'zoom',
-        type: 'int'
+        type: 'int',
     }, {
         name: 'forceSettings',
-        type: 'boolean'
+        type: 'boolean',
     }, {
         name: 'coordinateFormat',
-        type: 'string'
+        type: 'string',
     }, {
         name: 'poiLayer',
-        type: 'string'
+        type: 'string',
     }, {
         name: 'announcement',
-        type: 'string'
+        type: 'string',
     }, {
-        name: 'attributes'
+        name: 'attributes',
     }],
 
     proxy: {
         type: 'ajax',
         url: 'api/server',
         actionMethods: {
-            update: 'PUT'
+            update: 'PUT',
         },
         writer: {
             type: 'json',
-            writeAllFields: true
-        }
-    }
+            writeAllFields: true,
+        },
+    },
 });

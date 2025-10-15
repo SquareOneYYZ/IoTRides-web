@@ -23,226 +23,226 @@ Ext.define('Traccar.store.PositionAttributes', {
     data: [{
         key: 'raw',
         name: Strings.positionRaw,
-        valueType: 'string'
+        valueType: 'string',
     }, {
         key: 'index',
         name: Strings.positionIndex,
-        valueType: 'number'
+        valueType: 'number',
     }, {
         key: 'hdop',
         name: Strings.positionHdop,
-        valueType: 'number'
+        valueType: 'number',
     }, {
         key: 'vdop',
         name: Strings.positionVdop,
-        valueType: 'number'
+        valueType: 'number',
     }, {
         key: 'pdop',
         name: Strings.positionPdop,
-        valueType: 'number'
+        valueType: 'number',
     }, {
         key: 'sat',
         name: Strings.positionSat,
-        valueType: 'number'
+        valueType: 'number',
     }, {
         key: 'satVisible',
         name: Strings.positionSatVisible,
-        valueType: 'number'
+        valueType: 'number',
     }, {
         key: 'rssi',
         name: Strings.positionRssi,
-        valueType: 'number'
+        valueType: 'number',
     }, {
         key: 'gps',
         name: Strings.positionGps,
-        valueType: 'number'
+        valueType: 'number',
     }, {
         key: 'roaming',
         name: Strings.positionRoaming,
-        valueType: 'boolean'
+        valueType: 'boolean',
     }, {
         key: 'event',
         name: Strings.positionEvent,
-        valueType: 'string'
+        valueType: 'string',
     }, {
         key: 'alarm',
         name: Strings.positionAlarm,
-        valueType: 'string'
+        valueType: 'string',
     }, {
         key: 'status',
         name: Strings.positionStatus,
-        valueType: 'string'
+        valueType: 'string',
     }, {
         key: 'odometer',
         name: Strings.positionOdometer,
         valueType: 'number',
-        dataType: 'distance'
+        dataType: 'distance',
     }, {
         key: 'serviceOdometer',
         name: Strings.positionServiceOdometer,
         valueType: 'number',
-        dataType: 'distance'
+        dataType: 'distance',
     }, {
         key: 'tripOdometer',
         name: Strings.positionTripOdometer,
         valueType: 'number',
-        dataType: 'distance'
+        dataType: 'distance',
     }, {
         key: 'hours',
         name: Strings.positionHours,
         valueType: 'number',
-        dataType: 'hours'
+        dataType: 'hours',
     }, {
         key: 'steps',
         name: Strings.positionSteps,
-        valueType: 'number'
+        valueType: 'number',
     }, {
         key: 'input',
         name: Strings.positionInput,
-        valueType: 'string'
+        valueType: 'string',
     }, {
         key: 'output',
         name: Strings.positionOutput,
-        valueType: 'string'
+        valueType: 'string',
     }, {
         key: 'power',
         name: Strings.positionPower,
         valueType: 'number',
-        dataType: 'voltage'
+        dataType: 'voltage',
     }, {
         key: 'battery',
         name: Strings.positionBattery,
         valueType: 'number',
-        dataType: 'voltage'
+        dataType: 'voltage',
     }, {
         key: 'batteryLevel',
         name: Strings.positionBatteryLevel,
         valueType: 'number',
-        dataType: 'percentage'
+        dataType: 'percentage',
     }, {
         key: 'fuel',
         name: Strings.positionFuel,
         valueType: 'number',
-        dataType: 'volume'
+        dataType: 'volume',
     }, {
         key: 'fuelConsumption',
         name: Strings.positionFuelConsumption,
         valueType: 'number',
-        dataType: 'consumption'
+        dataType: 'consumption',
     }, {
         key: 'versionFw',
         name: Strings.positionVersionFw,
-        valueType: 'string'
+        valueType: 'string',
     }, {
         key: 'versionHw',
         name: Strings.positionVersionHw,
-        valueType: 'string'
+        valueType: 'string',
     }, {
         key: 'type',
         name: Strings.sharedType,
-        valueType: 'string'
+        valueType: 'string',
     }, {
         key: 'ignition',
         name: Strings.positionIgnition,
-        valueType: 'boolean'
+        valueType: 'boolean',
     }, {
         key: 'flags',
         name: Strings.positionFlags,
-        valueType: 'string'
+        valueType: 'string',
     }, {
         key: 'charge',
         name: Strings.positionCharge,
-        valueType: 'boolean'
+        valueType: 'boolean',
     }, {
         key: 'ip',
         name: Strings.positionIp,
-        valueType: 'string'
+        valueType: 'string',
     }, {
         key: 'archive',
         name: Strings.positionArchive,
-        valueType: 'boolean'
+        valueType: 'boolean',
     }, {
         key: 'distance',
         name: Strings.positionDistance,
         valueType: 'number',
-        dataType: 'distance'
+        dataType: 'distance',
     }, {
         key: 'totalDistance',
         name: Strings.deviceTotalDistance,
         valueType: 'number',
-        dataType: 'distance'
+        dataType: 'distance',
     }, {
         key: 'rpm',
         name: Strings.positionRpm,
-        valueType: 'number'
+        valueType: 'number',
     }, {
         key: 'vin',
         name: Strings.positionVin,
-        valueType: 'string'
+        valueType: 'string',
     }, {
         key: 'approximate',
         name: Strings.positionApproximate,
-        valueType: 'boolean'
+        valueType: 'boolean',
     }, {
         key: 'throttle',
         name: Strings.positionThrottle,
-        valueType: 'number'
+        valueType: 'number',
     }, {
         key: 'motion',
         name: Strings.positionMotion,
-        valueType: 'boolean'
+        valueType: 'boolean',
     }, {
         key: 'armed',
         name: Strings.positionArmed,
-        valueType: 'number'
+        valueType: 'number',
     }, {
         key: 'geofence',
         name: Strings.sharedGeofence,
-        valueType: 'string'
+        valueType: 'string',
     }, {
         key: 'acceleration',
         name: Strings.positionAcceleration,
-        valueType: 'number'
+        valueType: 'number',
     }, {
         key: 'deviceTemp',
         name: Strings.positionDeviceTemp,
         valueType: 'number',
-        dataType: 'temperature'
+        dataType: 'temperature',
     }, {
         key: 'operator',
         name: Strings.positionOperator,
-        valueType: 'string'
+        valueType: 'string',
     }, {
         key: 'command',
         name: Strings.deviceCommand,
-        valueType: 'string'
+        valueType: 'string',
     }, {
         key: 'blocked',
         name: Strings.positionBlocked,
-        valueType: 'boolean'
+        valueType: 'boolean',
     }, {
         key: 'dtcs',
         name: Strings.positionDtcs,
-        valueType: 'string'
+        valueType: 'string',
     }, {
         key: 'obdSpeed',
         name: Strings.positionObdSpeed,
         valueType: 'number',
-        dataType: 'speed'
+        dataType: 'speed',
     }, {
         key: 'obdOdometer',
         name: Strings.positionObdOdometer,
         valueType: 'number',
-        dataType: 'distance'
+        dataType: 'distance',
     }, {
         key: 'result',
         name: Strings.eventCommandResult,
-        valueType: 'string'
+        valueType: 'string',
     }, {
         key: 'driverUniqueId',
         name: Strings.positionDriverUniqueId,
         valueType: 'string',
-        dataType: 'driverUniqueId'
+        dataType: 'driverUniqueId',
     }],
 
     getAttributeName: function (key, capitalize) {
@@ -265,5 +265,5 @@ Ext.define('Traccar.store.PositionAttributes', {
         } else {
             return null;
         }
-    }
+    },
 });

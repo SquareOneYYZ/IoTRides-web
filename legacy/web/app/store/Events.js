@@ -24,6 +24,6 @@ Ext.define('Traccar.store.Events', {
 
     proxy: {
         type: 'rest',
-        url: 'api/events'
-    }
+        url: 'api/events',
+    },
 });

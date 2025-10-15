@@ -22,10 +22,10 @@ Ext.define('Traccar.view.edit.MaintenancesController', {
 
     requires: [
         'Traccar.view.dialog.Maintenance',
-        'Traccar.model.Maintenance'
+        'Traccar.model.Maintenance',
     ],
 
     objectModel: 'Traccar.model.Maintenance',
     objectDialog: 'Traccar.view.dialog.Maintenance',
-    removeTitle: Strings.sharedMaintenance
+    removeTitle: Strings.sharedMaintenance,
 });

@@ -22,14 +22,14 @@ Ext.define('Traccar.model.Driver', {
 
     fields: [{
         name: 'id',
-        type: 'int'
+        type: 'int',
     }, {
         name: 'name',
-        type: 'string'
+        type: 'string',
     }, {
         name: 'uniqueId',
-        type: 'string'
+        type: 'string',
     }, {
-        name: 'attributes'
-    }]
+        name: 'attributes',
+    }],
 });

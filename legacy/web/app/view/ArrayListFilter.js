@@ -46,5 +46,5 @@ Ext.define('Traccar.view.ArrayListFilter', {
             }
             return false;
         });
-    }
+    },
 });

@@ -21,6 +21,6 @@ Ext.define('Traccar.store.Statistics', {
 
     proxy: {
         type: 'rest',
-        url: 'api/statistics'
-    }
+        url: 'api/statistics',
+    },
 });

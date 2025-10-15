@@ -21,7 +21,7 @@ Ext.define('Traccar.view.dialog.Device', {
     requires: [
         'Traccar.view.ClearableComboBox',
         'Traccar.view.dialog.DeviceController',
-        'Traccar.view.UnescapedTextField'
+        'Traccar.view.UnescapedTextField',
     ],
 
     controller: 'device',
@@ -36,13 +36,13 @@ Ext.define('Traccar.view.dialog.Device', {
                 xtype: 'unescapedTextField',
                 name: 'name',
                 fieldLabel: Strings.sharedName,
-                allowBlank: false
+                allowBlank: false,
             }, {
                 xtype: 'unescapedTextField',
                 name: 'uniqueId',
                 fieldLabel: Strings.deviceIdentifier,
-                allowBlank: false
-            }]
+                allowBlank: false,
+            }],
         }, {
             xtype: 'fieldset',
             title: Strings.sharedExtra,
@@ -55,19 +55,19 @@ Ext.define('Traccar.view.dialog.Device', {
                 store: 'Groups',
                 queryMode: 'local',
                 displayField: 'name',
-                valueField: 'id'
+                valueField: 'id',
             }, {
                 xtype: 'unescapedTextField',
                 name: 'phone',
-                fieldLabel: Strings.sharedPhone
+                fieldLabel: Strings.sharedPhone,
             }, {
                 xtype: 'unescapedTextField',
                 name: 'model',
-                fieldLabel: Strings.deviceModel
+                fieldLabel: Strings.deviceModel,
             }, {
                 xtype: 'unescapedTextField',
                 name: 'contact',
-                fieldLabel: Strings.deviceContact
+                fieldLabel: Strings.deviceContact,
             }, {
                 xtype: 'combobox',
                 name: 'category',
@@ -79,12 +79,12 @@ Ext.define('Traccar.view.dialog.Device', {
                 editable: false,
                 listConfig: {
                     getInnerTpl: function () {
-                        return '<table><tr valign="middle" ><td><div align="center" style="width:40px;height:40px;" >' +
-                        '{[new XMLSerializer().serializeToString(Traccar.DeviceImages.getImageSvg(' +
-                        'Traccar.Style.mapColorOnline, false, 0, values.key))]}</div></td>' +
-                        '<td>{name}</td></tr></table>';
-                    }
-                }
+                        return '<table><tr valign="middle" ><td><div align="center" style="width:40px;height:40px;" >'
+                        + '{[new XMLSerializer().serializeToString(Traccar.DeviceImages.getImageSvg('
+                        + 'Traccar.Style.mapColorOnline, false, 0, values.key))]}</div></td>'
+                        + '<td>{name}</td></tr></table>';
+                    },
+                },
             }, {
                 xtype: 'checkboxfield',
                 inputValue: true,
@@ -92,8 +92,8 @@ Ext.define('Traccar.view.dialog.Device', {
                 name: 'disabled',
                 fieldLabel: Strings.sharedDisabled,
                 hidden: true,
-                reference: 'disabledField'
-            }]
-        }]
-    }
+                reference: 'disabledField',
+            }],
+        }],
+    },
 });

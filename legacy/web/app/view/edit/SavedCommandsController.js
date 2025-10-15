@@ -22,10 +22,10 @@ Ext.define('Traccar.view.edit.SavedCommandsController', {
 
     requires: [
         'Traccar.view.dialog.SavedCommand',
-        'Traccar.model.Command'
+        'Traccar.model.Command',
     ],
 
     objectModel: 'Traccar.model.Command',
     objectDialog: 'Traccar.view.dialog.SavedCommand',
-    removeTitle: Strings.sharedSavedCommand
+    removeTitle: Strings.sharedSavedCommand,
 });

@@ -23,7 +23,7 @@ Ext.define('Traccar.store.Users', {
         type: 'rest',
         url: 'api/users',
         writer: {
-            writeAllFields: true
-        }
-    }
+            writeAllFields: true,
+        },
+    },
 });

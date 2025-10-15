@@ -19,7 +19,7 @@ Ext.define('Traccar.view.dialog.SelectDevice', {
     extend: 'Traccar.view.dialog.Base',
 
     requires: [
-        'Traccar.view.dialog.SelectDeviceController'
+        'Traccar.view.dialog.SelectDeviceController',
     ],
 
     controller: 'selectDevice',
@@ -36,9 +36,9 @@ Ext.define('Traccar.view.dialog.SelectDevice', {
             valueField: 'id',
             editable: false,
             listeners: {
-                change: 'onDeviceChange'
-            }
-        }]
+                change: 'onDeviceChange',
+            },
+        }],
     },
 
     buttons: [{
@@ -48,12 +48,12 @@ Ext.define('Traccar.view.dialog.SelectDevice', {
         tooltipType: 'title',
         minWidth: 0,
         handler: 'onSaveClick',
-        disabled: true
+        disabled: true,
     }, {
         glyph: 'xf00d@FontAwesome',
         tooltip: Strings.sharedCancel,
         tooltipType: 'title',
         minWidth: 0,
-        handler: 'closeView'
-    }]
+        handler: 'closeView',
+    }],
 });

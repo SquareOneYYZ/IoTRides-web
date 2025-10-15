@@ -22,50 +22,50 @@ Ext.define('Traccar.view.edit.ComputedAttributes', {
 
     requires: [
         'Traccar.view.edit.ComputedAttributesController',
-        'Traccar.view.edit.Toolbar'
+        'Traccar.view.edit.Toolbar',
     ],
 
     controller: 'computedAttributes',
     store: 'ComputedAttributes',
 
     tbar: {
-        xtype: 'editToolbar'
+        xtype: 'editToolbar',
     },
 
     listeners: {
-        selectionchange: 'onSelectionChange'
+        selectionchange: 'onSelectionChange',
     },
 
     columns: {
         defaults: {
             flex: 1,
-            minWidth: Traccar.Style.columnWidthNormal
+            minWidth: Traccar.Style.columnWidthNormal,
         },
         items: [{
             text: Strings.sharedDescription,
             dataIndex: 'description',
-            filter: 'string'
+            filter: 'string',
         }, {
             text: Strings.sharedAttribute,
             dataIndex: 'attribute',
             filter: {
                 type: 'list',
                 labelField: 'name',
-                store: 'PositionAttributes'
+                store: 'PositionAttributes',
             },
             renderer: function (value) {
                 return Ext.getStore('PositionAttributes').getAttributeName(value);
-            }
+            },
         }, {
             text: Strings.sharedExpression,
-            dataIndex: 'expression'
+            dataIndex: 'expression',
         }, {
             text: Strings.sharedType,
             dataIndex: 'type',
             filter: {
                 type: 'list',
                 labelField: 'name',
-                store: 'AttributeValueTypes'
+                store: 'AttributeValueTypes',
             },
             renderer: function (value) {
                 var type = Ext.getStore('AttributeValueTypes').getById(value);
@@ -74,7 +74,7 @@ Ext.define('Traccar.view.edit.ComputedAttributes', {
                 } else {
                     return value;
                 }
-            }
-        }]
-    }
+            },
+        }],
+    },
 });

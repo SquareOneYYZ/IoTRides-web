@@ -22,10 +22,10 @@ Ext.define('Traccar.view.edit.ComputedAttributesController', {
 
     requires: [
         'Traccar.view.dialog.ComputedAttribute',
-        'Traccar.model.ComputedAttribute'
+        'Traccar.model.ComputedAttribute',
     ],
 
     objectModel: 'Traccar.model.ComputedAttribute',
     objectDialog: 'Traccar.view.dialog.ComputedAttribute',
-    removeTitle: Strings.sharedComputedAttribute
+    removeTitle: Strings.sharedComputedAttribute,
 });

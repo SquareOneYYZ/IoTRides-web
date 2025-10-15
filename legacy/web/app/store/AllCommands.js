@@ -24,7 +24,7 @@ Ext.define('Traccar.store.AllCommands', {
         type: 'rest',
         url: 'api/commands',
         extraParams: {
-            all: true
-        }
-    }
+            all: true,
+        },
+    },
 });

@@ -22,10 +22,10 @@ Ext.define('Traccar.view.edit.CalendarsController', {
 
     requires: [
         'Traccar.view.dialog.Calendar',
-        'Traccar.model.Calendar'
+        'Traccar.model.Calendar',
     ],
 
     objectModel: 'Traccar.model.Calendar',
     objectDialog: 'Traccar.view.dialog.Calendar',
-    removeTitle: Strings.sharedCalendar
+    removeTitle: Strings.sharedCalendar,
 });

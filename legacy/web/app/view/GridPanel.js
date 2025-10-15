@@ -20,7 +20,7 @@ Ext.define('Traccar.view.GridPanel', {
     xtype: 'customGridPanel',
 
     requires: [
-        'Ext.grid.filters.Filters'
+        'Ext.grid.filters.Filters',
     ],
 
     plugins: 'gridfilters',
@@ -29,6 +29,6 @@ Ext.define('Traccar.view.GridPanel', {
         enableTextSelection: true,
         getRowClass: function () {
             return this.enableTextSelection ? 'x-selectable' : '';
-        }
-    }
+        },
+    },
 });

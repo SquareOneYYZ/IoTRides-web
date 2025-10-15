@@ -19,7 +19,7 @@ Ext.define('Traccar.view.dialog.Register', {
     extend: 'Traccar.view.dialog.Base',
 
     requires: [
-        'Traccar.view.dialog.RegisterController'
+        'Traccar.view.dialog.RegisterController',
     ],
 
     controller: 'register',
@@ -35,7 +35,7 @@ Ext.define('Traccar.view.dialog.Register', {
             xtype: 'textfield',
             name: 'name',
             fieldLabel: Strings.sharedName,
-            allowBlank: false
+            allowBlank: false,
         }, {
             xtype: 'textfield',
             name: 'email',
@@ -47,21 +47,21 @@ Ext.define('Traccar.view.dialog.Register', {
                     return Ext.form.field.VTypes.emailText;
                 }
             },
-            allowBlank: false
+            allowBlank: false,
         }, {
             xtype: 'textfield',
             name: 'password',
             fieldLabel: Strings.userPassword,
             inputType: 'password',
-            allowBlank: false
-        }]
+            allowBlank: false,
+        }],
     },
 
     buttons: [{
         text: Strings.sharedSave,
-        handler: 'onCreateClick'
+        handler: 'onCreateClick',
     }, {
         text: Strings.sharedCancel,
-        handler: 'closeView'
-    }]
+        handler: 'closeView',
+    }],
 });

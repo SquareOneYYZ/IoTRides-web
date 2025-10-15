@@ -22,56 +22,56 @@ Ext.define('Traccar.model.ReportTrip', {
 
     fields: [{
         name: 'deviceId',
-        type: 'int'
+        type: 'int',
     }, {
         name: 'deviceName',
-        type: 'string'
+        type: 'string',
     }, {
         name: 'maxSpeed',
         type: 'float',
-        convert: Traccar.AttributeFormatter.getConverter('speed')
+        convert: Traccar.AttributeFormatter.getConverter('speed'),
     }, {
         name: 'averageSpeed',
         type: 'float',
-        convert: Traccar.AttributeFormatter.getConverter('speed')
+        convert: Traccar.AttributeFormatter.getConverter('speed'),
     }, {
         name: 'distance',
         type: 'float',
-        convert: Traccar.AttributeFormatter.getConverter('distance')
+        convert: Traccar.AttributeFormatter.getConverter('distance'),
     }, {
         name: 'startOdometer',
         type: 'float',
-        convert: Traccar.AttributeFormatter.getConverter('distance')
+        convert: Traccar.AttributeFormatter.getConverter('distance'),
     }, {
         name: 'endOdometer',
         type: 'float',
-        convert: Traccar.AttributeFormatter.getConverter('distance')
+        convert: Traccar.AttributeFormatter.getConverter('distance'),
     }, {
         name: 'duration',
-        type: 'int'
+        type: 'int',
     }, {
         name: 'startTime',
         type: 'date',
-        dateFormat: 'c'
+        dateFormat: 'c',
     }, {
         name: 'startAddress',
-        type: 'string'
+        type: 'string',
     }, {
         name: 'endTime',
         type: 'date',
-        dateFormat: 'c'
+        dateFormat: 'c',
     }, {
         name: 'endAddress',
-        type: 'string'
+        type: 'string',
     }, {
         name: 'spentFuel',
         type: 'float',
-        convert: Traccar.AttributeFormatter.getConverter('spentFuel')
+        convert: Traccar.AttributeFormatter.getConverter('spentFuel'),
     }, {
         name: 'driverUniqueId',
-        type: 'string'
+        type: 'string',
     }, {
         name: 'driverName',
-        type: 'string'
-    }]
+        type: 'string',
+    }],
 });

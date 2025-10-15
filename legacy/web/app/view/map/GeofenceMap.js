@@ -21,7 +21,7 @@ Ext.define('Traccar.view.map.GeofenceMap', {
 
     requires: [
         'Traccar.view.map.GeofenceMapController',
-        'Traccar.GeofenceConverter'
+        'Traccar.GeofenceConverter',
     ],
 
     controller: 'geofenceMap',
@@ -35,11 +35,11 @@ Ext.define('Traccar.view.map.GeofenceMap', {
             displayField: 'name',
             editable: false,
             listeners: {
-                select: 'onTypeSelect'
-            }
+                select: 'onTypeSelect',
+            },
         }, '-', {
             xtype: 'tbtext',
-            html: Strings.sharedImport
+            html: Strings.sharedImport,
         }, {
             xtype: 'filefield',
             name: 'file',
@@ -47,31 +47,31 @@ Ext.define('Traccar.view.map.GeofenceMap', {
                 glyph: 'xf093@FontAwesome',
                 text: '',
                 tooltip: Strings.sharedSelectFile,
-                tooltipType: 'title'
+                tooltipType: 'title',
             },
             listeners: {
                 change: 'onFileChange',
                 afterrender: function (fileField) {
                     fileField.fileInputEl.set({
-                        accept: '.gpx'
+                        accept: '.gpx',
                     });
-                }
-            }
+                },
+            },
         }, {
-            xtype: 'tbfill'
+            xtype: 'tbfill',
         }, {
             glyph: 'xf00c@FontAwesome',
             tooltip: Strings.sharedSave,
             tooltipType: 'title',
             minWidth: 0,
-            handler: 'onSaveClick'
+            handler: 'onSaveClick',
         }, {
             glyph: 'xf00d@FontAwesome',
             tooltip: Strings.sharedCancel,
             tooltipType: 'title',
             minWidth: 0,
-            handler: 'onCancelClick'
-        }]
+            handler: 'onCancelClick',
+        }],
     },
 
     getFeatures: function () {
@@ -91,7 +91,7 @@ Ext.define('Traccar.view.map.GeofenceMap', {
             this.features.push(new ol.Feature(geometry));
             this.map.once('postrender', function () {
                 mapView.fit(geometry, {
-                    padding: [20, 20, 20, 20]
+                    padding: [20, 20, 20, 20],
                 });
             });
         } else {
@@ -101,23 +101,23 @@ Ext.define('Traccar.view.map.GeofenceMap', {
         fillColor[3] = Traccar.Style.mapGeofenceOverlayOpacity;
         featureOverlay = new ol.layer.Vector({
             source: new ol.source.Vector({
-                features: this.features
+                features: this.features,
             }),
             style: new ol.style.Style({
                 fill: new ol.style.Fill({
-                    color: fillColor
+                    color: fillColor,
                 }),
                 stroke: new ol.style.Stroke({
                     color: Traccar.Style.mapGeofenceColor,
-                    width: Traccar.Style.mapGeofenceWidth
+                    width: Traccar.Style.mapGeofenceWidth,
                 }),
                 image: new ol.style.Circle({
                     radius: Traccar.Style.mapGeofenceRadius,
                     fill: new ol.style.Fill({
-                        color: Traccar.Style.mapGeofenceColor
-                    })
-                })
-            })
+                        color: Traccar.Style.mapGeofenceColor,
+                    }),
+                }),
+            }),
         });
         featureOverlay.setMap(map);
 
@@ -125,7 +125,7 @@ Ext.define('Traccar.view.map.GeofenceMap', {
             features: this.features,
             deleteCondition: function (event) {
                 return ol.events.condition.shiftKeyOnly(event) && ol.events.condition.singleClick(event);
-            }
+            },
         }));
     },
 
@@ -133,7 +133,7 @@ Ext.define('Traccar.view.map.GeofenceMap', {
         var self = this;
         this.draw = new ol.interaction.Draw({
             features: this.features,
-            type: type
+            type: type,
         });
         this.draw.on('drawstart', function () {
             self.features.clear();
@@ -146,5 +146,5 @@ Ext.define('Traccar.view.map.GeofenceMap', {
             this.map.removeInteraction(this.draw);
             this.draw = null;
         }
-    }
+    },
 });

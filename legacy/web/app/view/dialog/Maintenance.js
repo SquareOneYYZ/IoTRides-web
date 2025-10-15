@@ -22,7 +22,7 @@ Ext.define('Traccar.view.dialog.Maintenance', {
     requires: [
         'Traccar.view.dialog.MaintenanceController',
         'Traccar.view.CustomNumberField',
-        'Traccar.view.UnescapedTextField'
+        'Traccar.view.UnescapedTextField',
     ],
 
     controller: 'maintenance',
@@ -32,7 +32,7 @@ Ext.define('Traccar.view.dialog.Maintenance', {
     items: {
         xtype: 'form',
         listeners: {
-            validitychange: 'onValidityChange'
+            validitychange: 'onValidityChange',
         },
         items: [{
             xtype: 'fieldset',
@@ -41,7 +41,7 @@ Ext.define('Traccar.view.dialog.Maintenance', {
                 xtype: 'unescapedTextField',
                 name: 'name',
                 fieldLabel: Strings.sharedName,
-                allowBlank: false
+                allowBlank: false,
             }, {
                 xtype: 'combobox',
                 name: 'type',
@@ -53,13 +53,13 @@ Ext.define('Traccar.view.dialog.Maintenance', {
                 queryMode: 'local',
                 store: 'MaintenanceTypes',
                 listeners: {
-                    change: 'onNameChange'
-                }
+                    change: 'onNameChange',
+                },
             }, {
                 xtype: 'customNumberField',
                 name: 'start',
                 reference: 'startField',
-                fieldLabel: Strings.maintenanceStart
+                fieldLabel: Strings.maintenanceStart,
             }, {
                 xtype: 'customNumberField',
                 name: 'period',
@@ -68,8 +68,8 @@ Ext.define('Traccar.view.dialog.Maintenance', {
                 fieldLabel: Strings.maintenancePeriod,
                 validator: function (value) {
                     return this.parseValue(value) !== 0 ? true : Strings.errorZero;
-                }
-            }]
-        }]
-    }
+                },
+            }],
+        }],
+    },
 });

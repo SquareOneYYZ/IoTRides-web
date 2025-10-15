@@ -20,7 +20,7 @@ Ext.define('Traccar.view.State', {
     xtype: 'stateView',
 
     requires: [
-        'Traccar.view.StateController'
+        'Traccar.view.StateController',
     ],
 
     controller: 'state',
@@ -34,9 +34,9 @@ Ext.define('Traccar.view.State', {
         items: [{
             xtype: 'tbtext',
             html: Strings.stateTitle,
-            baseCls: 'x-panel-header-title-default'
+            baseCls: 'x-panel-header-title-default',
         }, {
-            xtype: 'tbfill'
+            xtype: 'tbfill',
         }, {
             xtype: 'button',
             disabled: true,
@@ -44,18 +44,18 @@ Ext.define('Traccar.view.State', {
             reference: 'computedAttributesButton',
             glyph: 'xf0ae@FontAwesome',
             tooltip: Strings.sharedComputedAttributes,
-            tooltipType: 'title'
-        }]
+            tooltipType: 'title',
+        }],
     },
 
     columns: {
         defaults: {
             minWidth: Traccar.Style.columnWidthNormal,
-            flex: 1
+            flex: 1,
         },
         items: [{
             text: Strings.stateName,
-            dataIndex: 'name'
+            dataIndex: 'name',
         }, {
             text: Strings.stateValue,
             dataIndex: 'value',
@@ -66,20 +66,20 @@ Ext.define('Traccar.view.State', {
                 if (attribute === 'alarm') {
                     metaData.tdCls = 'view-color-red';
                 } else if (attribute === 'address' && !value) {
-                    return '<a href="#" onclick="Ext.fireEvent(\'stategeocode\')" >' +
-                        Strings.sharedShowAddress + '</a>';
+                    return '<a href="#" onclick="Ext.fireEvent(\'stategeocode\')" >'
+                        + Strings.sharedShowAddress + '</a>';
                 } else if (attribute === 'image' || attribute === 'video' || attribute === 'audio') {
                     position = this.getController().position;
                     if (position) {
                         device = Ext.getStore('Devices').getById(position.get('deviceId'));
                         if (device) {
-                            return '<a target="_blank" href="/api/media/' +
-                                device.get('uniqueId') + '/' + value + '" >' + value + '</a>';
+                            return '<a target="_blank" href="/api/media/'
+                                + device.get('uniqueId') + '/' + value + '" >' + value + '</a>';
                         }
                     }
                 }
                 return value;
-            }
-        }]
-    }
+            },
+        }],
+    },
 });

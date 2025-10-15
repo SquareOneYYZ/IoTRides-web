@@ -8,13 +8,13 @@ export default [
     'filter': ['all',
       ['==', 'active', 'false'],
       ['==', '$type', 'Polygon'],
-      ['!=', 'mode', 'static']
+      ['!=', 'mode', 'static'],
     ],
     'paint': {
       'fill-color': '#3bb2d0',
       'fill-outline-color': '#3bb2d0',
-      'fill-opacity': 0.1
-    }
+      'fill-opacity': 0.1,
+    },
   },
   {
     'id': 'gl-draw-polygon-fill-active',
@@ -23,8 +23,8 @@ export default [
     'paint': {
       'fill-color': '#fbb03b',
       'fill-outline-color': '#fbb03b',
-      'fill-opacity': 0.1
-    }
+      'fill-opacity': 0.1,
+    },
   },
   {
     'id': 'gl-draw-polygon-midpoint',
@@ -34,8 +34,8 @@ export default [
       ['==', 'meta', 'midpoint']],
     'paint': {
       'circle-radius': 3,
-      'circle-color': '#fbb03b'
-    }
+      'circle-color': '#fbb03b',
+    },
   },
   {
     'id': 'gl-draw-polygon-stroke-inactive',
@@ -43,16 +43,16 @@ export default [
     'filter': ['all',
       ['==', 'active', 'false'],
       ['==', '$type', 'Polygon'],
-      ['!=', 'mode', 'static']
+      ['!=', 'mode', 'static'],
     ],
     'layout': {
       'line-cap': 'round',
-      'line-join': 'round'
+      'line-join': 'round',
     },
     'paint': {
       'line-color': '#3bb2d0',
-      'line-width': 2
-    }
+      'line-width': 2,
+    },
   },
   {
     'id': 'gl-draw-polygon-stroke-active',
@@ -60,13 +60,13 @@ export default [
     'filter': ['all', ['==', 'active', 'true'], ['==', '$type', 'Polygon']],
     'layout': {
       'line-cap': 'round',
-      'line-join': 'round'
+      'line-join': 'round',
     },
     'paint': {
       'line-color': '#fbb03b',
       'line-dasharray': [0.2, 2],
-      'line-width': 2
-    }
+      'line-width': 2,
+    },
   },
   {
     'id': 'gl-draw-line-inactive',
@@ -74,33 +74,33 @@ export default [
     'filter': ['all',
       ['==', 'active', 'false'],
       ['==', '$type', 'LineString'],
-      ['!=', 'mode', 'static']
+      ['!=', 'mode', 'static'],
     ],
     'layout': {
       'line-cap': 'round',
-      'line-join': 'round'
+      'line-join': 'round',
     },
     'paint': {
       'line-color': '#3bb2d0',
-      'line-width': 2
-    }
+      'line-width': 2,
+    },
   },
   {
     'id': 'gl-draw-line-active',
     'type': 'line',
     'filter': ['all',
       ['==', '$type', 'LineString'],
-      ['==', 'active', 'true']
+      ['==', 'active', 'true'],
     ],
     'layout': {
       'line-cap': 'round',
-      'line-join': 'round'
+      'line-join': 'round',
     },
     'paint': {
       'line-color': '#fbb03b',
       'line-dasharray': [0.2, 2],
-      'line-width': 2
-    }
+      'line-width': 2,
+    },
   },
   {
     'id': 'gl-draw-polygon-and-line-vertex-stroke-inactive',
@@ -108,12 +108,12 @@ export default [
     'filter': ['all',
       ['==', 'meta', 'vertex'],
       ['==', '$type', 'Point'],
-      ['!=', 'mode', 'static']
+      ['!=', 'mode', 'static'],
     ],
     'paint': {
       'circle-radius': 5,
-      'circle-color': '#fff'
-    }
+      'circle-color': '#fff',
+    },
   },
   {
     'id': 'gl-draw-polygon-and-line-vertex-inactive',
@@ -121,12 +121,12 @@ export default [
     'filter': ['all',
       ['==', 'meta', 'vertex'],
       ['==', '$type', 'Point'],
-      ['!=', 'mode', 'static']
+      ['!=', 'mode', 'static'],
     ],
     'paint': {
       'circle-radius': 3,
-      'circle-color': '#fbb03b'
-    }
+      'circle-color': '#fbb03b',
+    },
   },
   {
     'id': 'gl-draw-point-point-stroke-inactive',
@@ -135,13 +135,13 @@ export default [
       ['==', 'active', 'false'],
       ['==', '$type', 'Point'],
       ['==', 'meta', 'feature'],
-      ['!=', 'mode', 'static']
+      ['!=', 'mode', 'static'],
     ],
     'paint': {
       'circle-radius': 5,
       'circle-opacity': 1,
-      'circle-color': '#fff'
-    }
+      'circle-color': '#fff',
+    },
   },
   {
     'id': 'gl-draw-point-inactive',
@@ -150,12 +150,12 @@ export default [
       ['==', 'active', 'false'],
       ['==', '$type', 'Point'],
       ['==', 'meta', 'feature'],
-      ['!=', 'mode', 'static']
+      ['!=', 'mode', 'static'],
     ],
     'paint': {
       'circle-radius': 3,
-      'circle-color': '#3bb2d0'
-    }
+      'circle-color': '#3bb2d0',
+    },
   },
   {
     'id': 'gl-draw-point-stroke-active',
@@ -163,12 +163,12 @@ export default [
     'filter': ['all',
       ['==', '$type', 'Point'],
       ['==', 'active', 'true'],
-      ['!=', 'meta', 'midpoint']
+      ['!=', 'meta', 'midpoint'],
     ],
     'paint': {
       'circle-radius': 7,
-      'circle-color': '#fff'
-    }
+      'circle-color': '#fff',
+    },
   },
   {
     'id': 'gl-draw-point-active',
@@ -179,8 +179,8 @@ export default [
       ['==', 'active', 'true']],
     'paint': {
       'circle-radius': 5,
-      'circle-color': '#fbb03b'
-    }
+      'circle-color': '#fbb03b',
+    },
   },
   {
     'id': 'gl-draw-polygon-fill-static',
@@ -189,8 +189,8 @@ export default [
     'paint': {
       'fill-color': '#404040',
       'fill-outline-color': '#404040',
-      'fill-opacity': 0.1
-    }
+      'fill-opacity': 0.1,
+    },
   },
   {
     'id': 'gl-draw-polygon-stroke-static',
@@ -198,12 +198,12 @@ export default [
     'filter': ['all', ['==', 'mode', 'static'], ['==', '$type', 'Polygon']],
     'layout': {
       'line-cap': 'round',
-      'line-join': 'round'
+      'line-join': 'round',
     },
     'paint': {
       'line-color': '#404040',
-      'line-width': 2
-    }
+      'line-width': 2,
+    },
   },
   {
     'id': 'gl-draw-line-static',
@@ -211,12 +211,12 @@ export default [
     'filter': ['all', ['==', 'mode', 'static'], ['==', '$type', 'LineString']],
     'layout': {
       'line-cap': 'round',
-      'line-join': 'round'
+      'line-join': 'round',
     },
     'paint': {
       'line-color': '#404040',
-      'line-width': 2
-    }
+      'line-width': 2,
+    },
   },
   {
     'id': 'gl-draw-point-static',
@@ -224,7 +224,7 @@ export default [
     'filter': ['all', ['==', 'mode', 'static'], ['==', '$type', 'Point']],
     'paint': {
       'circle-radius': 5,
-      'circle-color': '#404040'
-    }
-  }
+      'circle-color': '#404040',
+    },
+  },
 ];

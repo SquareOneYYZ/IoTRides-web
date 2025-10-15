@@ -22,7 +22,7 @@ Ext.define('Traccar.view.edit.Groups', {
     requires: [
         'Traccar.AttributeFormatter',
         'Traccar.view.edit.GroupsController',
-        'Traccar.view.edit.Toolbar'
+        'Traccar.view.edit.Toolbar',
     ],
 
     controller: 'groups',
@@ -37,7 +37,7 @@ Ext.define('Traccar.view.edit.Groups', {
             reference: 'toolbarGeofencesButton',
             glyph: 'xf21d@FontAwesome',
             tooltip: Strings.sharedGeofences,
-            tooltipType: 'title'
+            tooltipType: 'title',
         }, {
             xtype: 'button',
             disabled: true,
@@ -45,7 +45,7 @@ Ext.define('Traccar.view.edit.Groups', {
             reference: 'toolbarAttributesButton',
             glyph: 'xf0ae@FontAwesome',
             tooltip: Strings.sharedComputedAttributes,
-            tooltipType: 'title'
+            tooltipType: 'title',
         }, {
             xtype: 'button',
             disabled: true,
@@ -53,7 +53,7 @@ Ext.define('Traccar.view.edit.Groups', {
             reference: 'toolbarDriversButton',
             glyph: 'xf084@FontAwesome',
             tooltip: Strings.sharedDrivers,
-            tooltipType: 'title'
+            tooltipType: 'title',
         }, {
             xtype: 'button',
             disabled: true,
@@ -61,7 +61,7 @@ Ext.define('Traccar.view.edit.Groups', {
             reference: 'toolbarCommandsButton',
             glyph: 'xf093@FontAwesome',
             tooltip: Strings.sharedSavedCommands,
-            tooltipType: 'title'
+            tooltipType: 'title',
         }, {
             xtype: 'button',
             disabled: true,
@@ -69,7 +69,7 @@ Ext.define('Traccar.view.edit.Groups', {
             reference: 'toolbarNotificationsButton',
             glyph: 'xf003@FontAwesome',
             tooltip: Strings.sharedNotifications,
-            tooltipType: 'title'
+            tooltipType: 'title',
         }, {
             xtype: 'button',
             disabled: true,
@@ -77,23 +77,23 @@ Ext.define('Traccar.view.edit.Groups', {
             reference: 'toolbarMaintenancesButton',
             glyph: 'xf0ad@FontAwesome',
             tooltip: Strings.sharedMaintenance,
-            tooltipType: 'title'
-        }]
+            tooltipType: 'title',
+        }],
     },
 
     listeners: {
-        selectionchange: 'onSelectionChange'
+        selectionchange: 'onSelectionChange',
     },
 
     columns: {
         defaults: {
             flex: 1,
-            minWidth: Traccar.Style.columnWidthNormal
+            minWidth: Traccar.Style.columnWidthNormal,
         },
         items: [{
             text: Strings.sharedName,
             dataIndex: 'name',
-            filter: 'string'
+            filter: 'string',
         }, {
             text: Strings.groupDialog,
             dataIndex: 'groupId',
@@ -101,9 +101,9 @@ Ext.define('Traccar.view.edit.Groups', {
             filter: {
                 type: 'list',
                 labelField: 'name',
-                store: 'AllGroups'
+                store: 'AllGroups',
             },
-            renderer: Traccar.AttributeFormatter.getFormatter('groupId')
-        }]
-    }
+            renderer: Traccar.AttributeFormatter.getFormatter('groupId'),
+        }],
+    },
 });

@@ -33,7 +33,7 @@ Ext.define('Traccar.view.edit.UsersController', {
         'Traccar.view.permissions.Notifications',
         'Traccar.view.permissions.Maintenances',
         'Traccar.view.BaseWindow',
-        'Traccar.model.User'
+        'Traccar.model.User',
     ],
 
     objectModel: 'Traccar.model.User',
@@ -44,20 +44,24 @@ Ext.define('Traccar.view.edit.UsersController', {
         Ext.getStore('Users').load();
         this.lookupReference('userUsersButton').setHidden(!Traccar.app.getUser().get('administrator'));
         this.lookupReference('userDriversButton').setHidden(
-            Traccar.app.getVehicleFeaturesDisabled() || Traccar.app.getBooleanAttributePreference('ui.disableDrivers'));
+            Traccar.app.getVehicleFeaturesDisabled() || Traccar.app.getBooleanAttributePreference('ui.disableDrivers'),
+);
         this.lookupReference('userAttributesButton').setHidden(
-            Traccar.app.getBooleanAttributePreference('ui.disableComputedAttributes'));
+            Traccar.app.getBooleanAttributePreference('ui.disableComputedAttributes'),
+);
         this.lookupReference('userCalendarsButton').setHidden(
-            Traccar.app.getBooleanAttributePreference('ui.disableCalendars'));
+            Traccar.app.getBooleanAttributePreference('ui.disableCalendars'),
+);
         this.lookupReference('userCommandsButton').setHidden(Traccar.app.getPreference('limitCommands', false));
         this.lookupReference('userMaintenancesButton').setHidden(
-            Traccar.app.getVehicleFeaturesDisabled() || Traccar.app.getBooleanAttributePreference('ui.disableMaintenance'));
+            Traccar.app.getVehicleFeaturesDisabled() || Traccar.app.getBooleanAttributePreference('ui.disableMaintenance'),
+);
     },
 
     onEditClick: function () {
         var dialog, user = this.getView().getSelectionModel().getSelection()[0];
         dialog = Ext.create('Traccar.view.dialog.User', {
-            selfEdit: user.get('id') === Traccar.app.getUser().get('id')
+            selfEdit: user.get('id') === Traccar.app.getUser().get('id'),
         });
         dialog.down('form').loadRecord(user);
         dialog.show();
@@ -88,8 +92,8 @@ Ext.define('Traccar.view.edit.UsersController', {
                 linkObjectName: 'deviceId',
                 storeName: 'AllDevices',
                 linkStoreName: 'Devices',
-                baseObject: user.getId()
-            }
+                baseObject: user.getId(),
+            },
         }).show();
     },
 
@@ -103,8 +107,8 @@ Ext.define('Traccar.view.edit.UsersController', {
                 linkObjectName: 'groupId',
                 storeName: 'AllGroups',
                 linkStoreName: 'Groups',
-                baseObject: user.getId()
-            }
+                baseObject: user.getId(),
+            },
         }).show();
     },
 
@@ -118,8 +122,8 @@ Ext.define('Traccar.view.edit.UsersController', {
                 linkObjectName: 'geofenceId',
                 storeName: 'AllGeofences',
                 linkStoreName: 'Geofences',
-                baseObject: user.getId()
-            }
+                baseObject: user.getId(),
+            },
         }).show();
     },
 
@@ -133,8 +137,8 @@ Ext.define('Traccar.view.edit.UsersController', {
                 linkObjectName: 'notificationId',
                 storeName: 'AllNotifications',
                 linkStoreName: 'Notifications',
-                baseObject: user.getId()
-            }
+                baseObject: user.getId(),
+            },
         }).show();
     },
 
@@ -148,8 +152,8 @@ Ext.define('Traccar.view.edit.UsersController', {
                 linkObjectName: 'calendarId',
                 storeName: 'AllCalendars',
                 linkStoreName: 'Calendars',
-                baseObject: user.getId()
-            }
+                baseObject: user.getId(),
+            },
         }).show();
     },
 
@@ -162,8 +166,8 @@ Ext.define('Traccar.view.edit.UsersController', {
                 baseObjectName: 'userId',
                 linkObjectName: 'managedUserId',
                 storeName: 'Users',
-                baseObject: user.getId()
-            }
+                baseObject: user.getId(),
+            },
         }).show();
     },
 
@@ -177,8 +181,8 @@ Ext.define('Traccar.view.edit.UsersController', {
                 linkObjectName: 'attributeId',
                 storeName: 'AllComputedAttributes',
                 linkStoreName: 'ComputedAttributes',
-                baseObject: user.getId()
-            }
+                baseObject: user.getId(),
+            },
         }).show();
     },
 
@@ -192,8 +196,8 @@ Ext.define('Traccar.view.edit.UsersController', {
                 linkObjectName: 'driverId',
                 storeName: 'AllDrivers',
                 linkStoreName: 'Drivers',
-                baseObject: user.getId()
-            }
+                baseObject: user.getId(),
+            },
         }).show();
     },
 
@@ -207,8 +211,8 @@ Ext.define('Traccar.view.edit.UsersController', {
                 linkObjectName: 'commandId',
                 storeName: 'AllCommands',
                 linkStoreName: 'Commands',
-                baseObject: user.getId()
-            }
+                baseObject: user.getId(),
+            },
         }).show();
     },
 
@@ -222,8 +226,8 @@ Ext.define('Traccar.view.edit.UsersController', {
                 linkObjectName: 'maintenanceId',
                 storeName: 'AllMaintenances',
                 linkStoreName: 'Maintenances',
-                baseObject: user.getId()
-            }
+                baseObject: user.getId(),
+            },
         }).show();
     },
 
@@ -240,5 +244,5 @@ Ext.define('Traccar.view.edit.UsersController', {
         this.lookupReference('userMaintenancesButton').setDisabled(disabled);
         this.lookupReference('userUsersButton').setDisabled(disabled || selected[0].get('userLimit') === 0);
         this.callParent(arguments);
-    }
+    },
 });

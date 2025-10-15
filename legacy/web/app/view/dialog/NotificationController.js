@@ -22,7 +22,8 @@ Ext.define('Traccar.view.dialog.NotificationController', {
 
     init: function () {
         this.lookupReference('calendarCombo').setHidden(
-            Traccar.app.getBooleanAttributePreference('ui.disableCalendars'));
+            Traccar.app.getBooleanAttributePreference('ui.disableCalendars'),
+);
     },
 
     onTypeChange: function (view, value) {
@@ -49,5 +50,5 @@ Ext.define('Traccar.view.dialog.NotificationController', {
             record.set('attributes', attributes);
             record.dirty = true;
         }
-    }
+    },
 });

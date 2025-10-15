@@ -22,8 +22,8 @@ Ext.define('Traccar.view.StatisticsController', {
         Ext.getStore('Statistics').load({
             params: {
                 from: this.lookupReference('fromDateField').getValue().toISOString(),
-                to: this.lookupReference('toDateField').getValue().toISOString()
-            }
+                to: this.lookupReference('toDateField').getValue().toISOString(),
+            },
         });
-    }
+    },
 });

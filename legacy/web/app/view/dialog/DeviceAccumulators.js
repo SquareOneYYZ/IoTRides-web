@@ -20,7 +20,7 @@ Ext.define('Traccar.view.dialog.DeviceAccumulators', {
     extend: 'Traccar.view.dialog.Base',
 
     requires: [
-        'Traccar.view.dialog.DeviceAccumulatorsController'
+        'Traccar.view.dialog.DeviceAccumulatorsController',
     ],
 
     controller: 'deviceAccumulators',
@@ -30,12 +30,12 @@ Ext.define('Traccar.view.dialog.DeviceAccumulators', {
         xtype: 'customNumberField',
         dataType: 'distance',
         reference: 'totalDistance',
-        fieldLabel: Strings.deviceTotalDistance
+        fieldLabel: Strings.deviceTotalDistance,
     }, {
         xtype: 'customNumberField',
         dataType: 'hours',
         reference: 'hours',
-        fieldLabel: Strings.positionHours
+        fieldLabel: Strings.positionHours,
     }],
 
     buttons: [{
@@ -44,12 +44,12 @@ Ext.define('Traccar.view.dialog.DeviceAccumulators', {
         tooltip: Strings.sharedSet,
         tooltipType: 'title',
         minWidth: 0,
-        handler: 'onSetClick'
+        handler: 'onSetClick',
     }, {
         glyph: 'xf00d@FontAwesome',
         tooltip: Strings.sharedCancel,
         tooltipType: 'title',
         minWidth: 0,
-        handler: 'closeView'
-    }]
+        handler: 'closeView',
+    }],
 });

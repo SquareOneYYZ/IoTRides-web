@@ -41,7 +41,7 @@ Ext.define('Traccar.view.dialog.UserController', {
             method: 'POST',
             failure: function (response) {
                 Traccar.app.showError(response);
-            }
+            },
         });
     },
 
@@ -61,9 +61,9 @@ Ext.define('Traccar.view.dialog.UserController', {
                 failure: function (batch) {
                     store.rejectChanges();
                     Traccar.app.showError(batch.exceptions[0].getError().response);
-                }
+                },
             });
         }
         button.up('window').close();
-    }
+    },
 });

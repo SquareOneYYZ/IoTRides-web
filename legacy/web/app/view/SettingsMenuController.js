@@ -33,7 +33,7 @@ Ext.define('Traccar.view.SettingsMenuController', {
         'Traccar.view.edit.Calendars',
         'Traccar.view.edit.SavedCommands',
         'Traccar.view.edit.Maintenances',
-        'Traccar.view.BaseWindow'
+        'Traccar.view.BaseWindow',
     ],
 
     init: function () {
@@ -45,7 +45,8 @@ Ext.define('Traccar.view.SettingsMenuController', {
             this.lookupReference('settingsServerButton').setHidden(false);
             this.lookupReference('settingsStatisticsButton').setHidden(false);
             this.lookupReference('settingsComputedAttributesButton').setHidden(
-                Traccar.app.getBooleanAttributePreference('ui.disableComputedAttributes'));
+                Traccar.app.getBooleanAttributePreference('ui.disableComputedAttributes'),
+);
         }
         if (admin || manager) {
             this.lookupReference('settingsUsersButton').setHidden(false);
@@ -56,18 +57,21 @@ Ext.define('Traccar.view.SettingsMenuController', {
             this.lookupReference('settingsGeofencesButton').setHidden(false);
             this.lookupReference('settingsNotificationsButton').setHidden(false);
             this.lookupReference('settingsCalendarsButton').setHidden(
-                Traccar.app.getBooleanAttributePreference('ui.disableCalendars'));
+                Traccar.app.getBooleanAttributePreference('ui.disableCalendars'),
+);
             this.lookupReference('settingsDriversButton').setHidden(
-                Traccar.app.getVehicleFeaturesDisabled() || Traccar.app.getBooleanAttributePreference('ui.disableDrivers'));
+                Traccar.app.getVehicleFeaturesDisabled() || Traccar.app.getBooleanAttributePreference('ui.disableDrivers'),
+);
             this.lookupReference('settingsCommandsButton').setHidden(Traccar.app.getPreference('limitCommands', false));
             this.lookupReference('settingsMaintenancesButton').setHidden(
-                Traccar.app.getVehicleFeaturesDisabled() || Traccar.app.getBooleanAttributePreference('ui.disableMaintenance'));
+                Traccar.app.getVehicleFeaturesDisabled() || Traccar.app.getBooleanAttributePreference('ui.disableMaintenance'),
+);
         }
     },
 
     onUserClick: function () {
         var dialog = Ext.create('Traccar.view.dialog.User', {
-            selfEdit: true
+            selfEdit: true,
         });
         dialog.down('form').loadRecord(Traccar.app.getUser());
         dialog.lookupReference('testNotificationButton').setHidden(false);
@@ -78,8 +82,8 @@ Ext.define('Traccar.view.SettingsMenuController', {
         Ext.create('Traccar.view.BaseWindow', {
             title: Strings.settingsGroups,
             items: {
-                xtype: 'groupsView'
-            }
+                xtype: 'groupsView',
+            },
         }).show();
     },
 
@@ -87,8 +91,8 @@ Ext.define('Traccar.view.SettingsMenuController', {
         Ext.create('Traccar.view.BaseWindow', {
             title: Strings.sharedGeofences,
             items: {
-                xtype: 'geofencesView'
-            }
+                xtype: 'geofencesView',
+            },
         }).show();
     },
 
@@ -102,8 +106,8 @@ Ext.define('Traccar.view.SettingsMenuController', {
         Ext.create('Traccar.view.BaseWindow', {
             title: Strings.settingsUsers,
             items: {
-                xtype: 'usersView'
-            }
+                xtype: 'usersView',
+            },
         }).show();
     },
 
@@ -111,8 +115,8 @@ Ext.define('Traccar.view.SettingsMenuController', {
         Ext.create('Traccar.view.BaseWindow', {
             title: Strings.sharedNotifications,
             items: {
-                xtype: 'notificationsView'
-            }
+                xtype: 'notificationsView',
+            },
         }).show();
     },
 
@@ -120,8 +124,8 @@ Ext.define('Traccar.view.SettingsMenuController', {
         Ext.create('Traccar.view.BaseWindow', {
             title: Strings.sharedComputedAttributes,
             items: {
-                xtype: 'computedAttributesView'
-            }
+                xtype: 'computedAttributesView',
+            },
         }).show();
     },
 
@@ -129,8 +133,8 @@ Ext.define('Traccar.view.SettingsMenuController', {
         Ext.create('Traccar.view.BaseWindow', {
             title: Strings.statisticsTitle,
             items: {
-                xtype: 'statisticsView'
-            }
+                xtype: 'statisticsView',
+            },
         }).show();
     },
 
@@ -138,8 +142,8 @@ Ext.define('Traccar.view.SettingsMenuController', {
         Ext.create('Traccar.view.BaseWindow', {
             title: Strings.sharedCalendars,
             items: {
-                xtype: 'calendarsView'
-            }
+                xtype: 'calendarsView',
+            },
         }).show();
     },
 
@@ -147,8 +151,8 @@ Ext.define('Traccar.view.SettingsMenuController', {
         Ext.create('Traccar.view.BaseWindow', {
             title: Strings.sharedDrivers,
             items: {
-                xtype: 'driversView'
-            }
+                xtype: 'driversView',
+            },
         }).show();
     },
 
@@ -156,8 +160,8 @@ Ext.define('Traccar.view.SettingsMenuController', {
         Ext.create('Traccar.view.BaseWindow', {
             title: Strings.sharedSavedCommands,
             items: {
-                xtype: 'savedCommandsView'
-            }
+                xtype: 'savedCommandsView',
+            },
         }).show();
     },
 
@@ -165,12 +169,12 @@ Ext.define('Traccar.view.SettingsMenuController', {
         Ext.create('Traccar.view.BaseWindow', {
             title: Strings.sharedMaintenance,
             items: {
-                xtype: 'maintenancesView'
-            }
+                xtype: 'maintenancesView',
+            },
         }).show();
     },
 
     onLogoutClick: function () {
         Ext.create('Traccar.view.dialog.LoginController').logout();
-    }
+    },
 });

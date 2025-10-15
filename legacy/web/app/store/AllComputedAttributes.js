@@ -24,7 +24,7 @@ Ext.define('Traccar.store.AllComputedAttributes', {
         type: 'rest',
         url: 'api/attributes/computed',
         extraParams: {
-            all: true
-        }
-    }
+            all: true,
+        },
+    },
 });

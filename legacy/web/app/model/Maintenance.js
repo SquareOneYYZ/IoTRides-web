@@ -22,20 +22,20 @@ Ext.define('Traccar.model.Maintenance', {
 
     fields: [{
         name: 'id',
-        type: 'int'
+        type: 'int',
     }, {
         name: 'name',
-        type: 'string'
+        type: 'string',
     }, {
         name: 'type',
-        type: 'string'
+        type: 'string',
     }, {
         name: 'start',
-        type: 'float'
+        type: 'float',
     }, {
         name: 'period',
-        type: 'float'
+        type: 'float',
     }, {
-        name: 'attributes'
-    }]
+        name: 'attributes',
+    }],
 });

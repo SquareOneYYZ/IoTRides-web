@@ -66,8 +66,8 @@ Ext.define('Traccar.DeviceImages', {
     },
 
     formatSrc: function (svg) {
-        return 'data:image/svg+xml;charset=utf-8,' +
-                encodeURIComponent(new XMLSerializer().serializeToString(svg.documentElement));
+        return 'data:image/svg+xml;charset=utf-8,'
+                + encodeURIComponent(new XMLSerializer().serializeToString(svg.documentElement));
     },
 
     cloneDocument: function (svgDocument) {
@@ -87,7 +87,7 @@ Ext.define('Traccar.DeviceImages', {
 
         image = new ol.style.Icon({
             imgSize: [width, height],
-            src: this.formatSrc(svg)
+            src: this.formatSrc(svg),
         });
         image.fill = color;
         image.zoom = zoom;
@@ -95,5 +95,5 @@ Ext.define('Traccar.DeviceImages', {
         image.category = category;
 
         return image;
-    }
+    },
 });

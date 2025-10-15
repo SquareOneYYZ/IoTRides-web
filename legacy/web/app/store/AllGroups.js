@@ -23,7 +23,7 @@ Ext.define('Traccar.store.AllGroups', {
         type: 'rest',
         url: 'api/groups',
         extraParams: {
-            all: true
-        }
-    }
+            all: true,
+        },
+    },
 });

@@ -32,15 +32,15 @@ Ext.define('Traccar.view.permissions.Notifications', {
                 type: 'list',
                 idField: 'type',
                 labelField: 'name',
-                store: 'AllNotificationTypes'
-            }
+                store: 'AllNotificationTypes',
+            },
         }, {
             text: Strings.notificationAlways,
             dataIndex: 'always',
             flex: 1,
             minWidth: Traccar.Style.columnWidthNormal,
             renderer: Traccar.AttributeFormatter.getFormatter('always'),
-            filter: 'boolean'
+            filter: 'boolean',
         }, {
             text: Strings.notificationNotificators,
             dataIndex: 'notificators',
@@ -49,7 +49,7 @@ Ext.define('Traccar.view.permissions.Notifications', {
                 type: 'arraylist',
                 idField: 'type',
                 labelField: 'name',
-                store: 'AllNotificators'
+                store: 'AllNotificators',
             },
             renderer: function (value) {
                 var result = '', i, notificators;
@@ -60,7 +60,7 @@ Ext.define('Traccar.view.permissions.Notifications', {
                     }
                 }
                 return result;
-            }
+            },
         }, {
             text: Strings.sharedCalendar,
             dataIndex: 'calendarId',
@@ -70,9 +70,9 @@ Ext.define('Traccar.view.permissions.Notifications', {
             filter: {
                 type: 'list',
                 labelField: 'name',
-                store: 'AllCalendars'
+                store: 'AllCalendars',
             },
-            renderer: Traccar.AttributeFormatter.getFormatter('calendarId')
-        }]
-    }
+            renderer: Traccar.AttributeFormatter.getFormatter('calendarId'),
+        }],
+    },
 });

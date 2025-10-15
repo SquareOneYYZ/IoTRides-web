@@ -22,29 +22,29 @@ Ext.define('Traccar.view.edit.SavedCommands', {
 
     requires: [
         'Traccar.view.edit.SavedCommandsController',
-        'Traccar.view.edit.Toolbar'
+        'Traccar.view.edit.Toolbar',
     ],
 
     controller: 'savedCommands',
     store: 'Commands',
 
     tbar: {
-        xtype: 'editToolbar'
+        xtype: 'editToolbar',
     },
 
     listeners: {
-        selectionchange: 'onSelectionChange'
+        selectionchange: 'onSelectionChange',
     },
 
     columns: {
         defaults: {
             flex: 1,
-            minWidth: Traccar.Style.columnWidthNormal
+            minWidth: Traccar.Style.columnWidthNormal,
         },
         items: [{
             text: Strings.sharedDescription,
             dataIndex: 'description',
-            filter: 'string'
+            filter: 'string',
         }, {
             text: Strings.sharedType,
             dataIndex: 'type',
@@ -52,14 +52,14 @@ Ext.define('Traccar.view.edit.SavedCommands', {
                 type: 'list',
                 idField: 'type',
                 labelField: 'name',
-                store: 'AllCommandTypes'
+                store: 'AllCommandTypes',
             },
-            renderer: Traccar.AttributeFormatter.getFormatter('commandType')
+            renderer: Traccar.AttributeFormatter.getFormatter('commandType'),
         }, {
             text: Strings.commandSendSms,
             dataIndex: 'textChannel',
             renderer: Traccar.AttributeFormatter.getFormatter('textChannel'),
-            filter: 'boolean'
-        }]
-    }
+            filter: 'boolean',
+        }],
+    },
 });

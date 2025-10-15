@@ -21,52 +21,52 @@ Ext.define('Traccar.model.Position', {
 
     fields: [{
         name: 'id',
-        type: 'int'
+        type: 'int',
     }, {
         name: 'protocol',
-        type: 'string'
+        type: 'string',
     }, {
         name: 'deviceId',
-        type: 'int'
+        type: 'int',
     }, {
         name: 'serverTime',
         type: 'date',
-        dateFormat: 'c'
+        dateFormat: 'c',
     }, {
         name: 'deviceTime',
         type: 'date',
-        dateFormat: 'c'
+        dateFormat: 'c',
     }, {
         name: 'fixTime',
         type: 'date',
-        dateFormat: 'c'
+        dateFormat: 'c',
     }, {
         name: 'valid',
-        type: 'boolean'
+        type: 'boolean',
     }, {
         name: 'accuracy',
         type: 'float',
-        convert: Traccar.AttributeFormatter.getConverter('accuracy')
+        convert: Traccar.AttributeFormatter.getConverter('accuracy'),
     }, {
         name: 'latitude',
-        type: 'float'
+        type: 'float',
     }, {
         name: 'longitude',
-        type: 'float'
+        type: 'float',
     }, {
         name: 'altitude',
-        type: 'float'
+        type: 'float',
     }, {
         name: 'speed',
         type: 'float',
-        convert: Traccar.AttributeFormatter.getConverter('speed')
+        convert: Traccar.AttributeFormatter.getConverter('speed'),
     }, {
         name: 'course',
-        type: 'float'
+        type: 'float',
     }, {
         name: 'address',
-        type: 'string'
+        type: 'string',
     }, {
-        name: 'attributes'
-    }]
+        name: 'attributes',
+    }],
 });

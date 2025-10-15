@@ -21,7 +21,7 @@ Ext.define('Traccar.view.map.Map', {
 
     requires: [
         'Traccar.view.map.MapController',
-        'Traccar.view.SettingsMenu'
+        'Traccar.view.SettingsMenu',
     ],
 
     controller: 'map',
@@ -35,63 +35,63 @@ Ext.define('Traccar.view.map.Map', {
             stateEvents: ['toggle'],
             enableToggle: true,
             stateful: {
-                pressed: true
-            }
+                pressed: true,
+            },
         },
         items: [{
             xtype: 'tbtext',
             html: Strings.mapTitle,
-            baseCls: 'x-panel-header-title-default'
+            baseCls: 'x-panel-header-title-default',
         }, {
-            xtype: 'tbfill'
+            xtype: 'tbfill',
         }, {
             handler: 'showReports',
             reference: 'showReportsButton',
             glyph: 'xf0f6@FontAwesome',
             stateful: false,
             enableToggle: false,
-            tooltip: Strings.reportTitle
+            tooltip: Strings.reportTitle,
         }, {
             handler: 'showEvents',
             reference: 'showEventsButton',
             glyph: 'xf27b@FontAwesome',
             stateful: false,
             enableToggle: false,
-            tooltip: Strings.reportEvents
+            tooltip: Strings.reportEvents,
         }, {
             handler: 'updateGeofences',
             reference: 'showGeofencesButton',
             glyph: 'xf21d@FontAwesome',
             pressed: true,
             stateId: 'show-geofences-button',
-            tooltip: Strings.sharedGeofences
+            tooltip: Strings.sharedGeofences,
         }, {
             handler: 'showAccuracy',
             reference: 'showAccuracyButton',
             glyph: 'xf140@FontAwesome',
             pressed: true,
             stateId: 'show-accuracy-button',
-            tooltip: Strings.positionAccuracy
+            tooltip: Strings.positionAccuracy,
         }, {
             handler: 'showCurrentLocation',
             glyph: 'xf124@FontAwesome',
-            tooltip: Strings.mapCurrentLocation
+            tooltip: Strings.mapCurrentLocation,
         }, {
             handler: 'showLiveRoutes',
             reference: 'showLiveRoutes',
             glyph: 'xf1b0@FontAwesome',
             stateId: 'show-live-routes-button',
-            tooltip: Strings.mapLiveRoutes
+            tooltip: Strings.mapLiveRoutes,
         }, {
             reference: 'deviceFollowButton',
             glyph: 'xf05b@FontAwesome',
             tooltip: Strings.deviceFollow,
             stateId: 'device-follow-button',
-            toggleHandler: 'onFollowClick'
+            toggleHandler: 'onFollowClick',
         }, {
             xtype: 'settingsMenu',
-            enableToggle: false
-        }]
+            enableToggle: false,
+        }],
     },
 
     getMarkersSource: function () {
@@ -128,31 +128,31 @@ Ext.define('Traccar.view.map.Map', {
         this.geofencesSource = new ol.source.Vector({});
         this.map.addLayer(new ol.layer.Vector({
             name: 'geofencesLayer',
-            source: this.geofencesSource
+            source: this.geofencesSource,
         }));
 
         this.liveRouteSource = new ol.source.Vector({});
         this.liveRouteLayer = new ol.layer.Vector({
             source: this.liveRouteSource,
-            visible: this.lookupReference('showLiveRoutes').pressed
+            visible: this.lookupReference('showLiveRoutes').pressed,
         });
         this.map.addLayer(this.liveRouteLayer);
 
         this.routeSource = new ol.source.Vector({});
         this.map.addLayer(new ol.layer.Vector({
-            source: this.routeSource
+            source: this.routeSource,
         }));
 
         this.accuracySource = new ol.source.Vector({});
         this.accuracyLayer = new ol.layer.Vector({
             name: 'accuracyLayer',
-            source: this.accuracySource
+            source: this.accuracySource,
         });
         this.map.addLayer(this.accuracyLayer);
 
         this.markersSource = new ol.source.Vector({});
         this.map.addLayer(new ol.layer.Vector({
-            source: this.markersSource
+            source: this.markersSource,
         }));
-    }
+    },
 });

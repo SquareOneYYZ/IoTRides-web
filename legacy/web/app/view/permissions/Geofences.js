@@ -25,7 +25,7 @@ Ext.define('Traccar.view.permissions.Geofences', {
             dataIndex: 'name',
             flex: 1,
             minWidth: Traccar.Style.columnWidthNormal,
-            filter: 'string'
+            filter: 'string',
         }, {
             text: Strings.sharedCalendar,
             dataIndex: 'calendarId',
@@ -35,9 +35,9 @@ Ext.define('Traccar.view.permissions.Geofences', {
             filter: {
                 type: 'list',
                 labelField: 'name',
-                store: 'AllCalendars'
+                store: 'AllCalendars',
             },
-            renderer: Traccar.AttributeFormatter.getFormatter('calendarId')
-        }]
-    }
+            renderer: Traccar.AttributeFormatter.getFormatter('calendarId'),
+        }],
+    },
 });

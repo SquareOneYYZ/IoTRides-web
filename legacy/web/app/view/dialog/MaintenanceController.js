@@ -35,8 +35,10 @@ Ext.define('Traccar.view.dialog.MaintenanceController', {
     updateFieldConfig: function (fieldReference, initialConfig, newConfig) {
         var field = this.lookupReference(fieldReference);
         if (field.dataType !== newConfig.dataType) {
-            this.getView().down('fieldset').insert(this.getView().down('fieldset').items.indexOf(field),
-                Ext.merge({}, initialConfig, newConfig));
+            this.getView().down('fieldset').insert(
+this.getView().down('fieldset').items.indexOf(field),
+                Ext.merge({}, initialConfig, newConfig),
+);
             this.getView().down('fieldset').remove(field);
             this.lookupReference(fieldReference).validate();
         } else {
@@ -61,5 +63,5 @@ Ext.define('Traccar.view.dialog.MaintenanceController', {
 
         this.updateFieldConfig('startField', this.startConfig, config);
         this.updateFieldConfig('periodField', this.periodConfig, config);
-    }
+    },
 });
