@@ -8,7 +8,6 @@ export default () => (next) => {
   let throttle = false;
   let counter = 0;
 
-  const intervalId = setInterval(() => {
   setInterval(() => {
     if (throttle) {
       if (buffer.length < threshold) {
@@ -19,7 +18,6 @@ export default () => (next) => {
         buffer.length = 0;
         batch(() => next(latest));
       }
-      batch(() => buffer.splice(0, buffer.length).forEach((action) => next(action)));
     } else {
       if (counter > threshold) {
         throttle = true;
@@ -27,8 +25,7 @@ export default () => (next) => {
       counter = 0;
     }
   }, interval);
-  const cleanup = () => clearInterval(intervalId);
-  const middleware = (action) => {
+
   return (action) => {
     if (action.type === 'devices/update' || action.type === 'positions/update') {
       if (throttle) {
@@ -40,7 +37,4 @@ export default () => (next) => {
     }
     return next(action);
   };
-
-  middleware.cleanup = cleanup;
-  return middleware;
 };
