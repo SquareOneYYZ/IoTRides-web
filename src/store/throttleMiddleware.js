@@ -13,7 +13,11 @@ export default () => (next) => {
       if (buffer.length < threshold) {
         throttle = false;
       }
-      batch(() => buffer.splice(0, buffer.length).forEach((action) => next(action)));
+      if (buffer.length > 0) {
+        const latest = buffer[buffer.length - 1];
+        buffer.length = 0;
+        batch(() => next(latest));
+      }
     } else {
       if (counter > threshold) {
         throttle = true;
