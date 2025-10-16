@@ -8,12 +8,17 @@ export default () => (next) => {
   let throttle = false;
   let counter = 0;
 
-  setInterval(() => {
+  const intervalId = setInterval(() => {
     if (throttle) {
       if (buffer.length < threshold) {
         throttle = false;
       }
-      batch(() => buffer.splice(0, buffer.length).forEach((action) => next(action)));
+      if (buffer.length > 0) {
+        // Only dispatch latest to avoid render spam
+        const latest = buffer[buffer.length - 1];
+        buffer.length = 0;
+        batch(() => next(latest));
+      }
     } else {
       if (counter > threshold) {
         throttle = true;
@@ -22,7 +27,9 @@ export default () => (next) => {
     }
   }, interval);
 
-  return (action) => {
+  const cleanup = () => clearInterval(intervalId);
+
+  const middleware = (action) => {
     if (action.type === 'devices/update' || action.type === 'positions/update') {
       if (throttle) {
         buffer.push(action);
@@ -33,4 +40,7 @@ export default () => (next) => {
     }
     return next(action);
   };
+
+  middleware.cleanup = cleanup;
+  return middleware;
 };
