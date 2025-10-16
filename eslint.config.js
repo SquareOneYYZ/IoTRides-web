@@ -1,3 +1,5 @@
+import js from '@eslint/js';
+import airbnb from 'eslint-config-airbnb';
 import react from 'eslint-plugin-react';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 import importPlugin from 'eslint-plugin-import';
@@ -14,78 +16,22 @@ const cleanGlobals = (globalsObj) => {
   return cleaned;
 };
 
-const sharedRules = {
-  'react/react-in-jsx-scope': 'off',
-  'no-console': 'warn',
-  'comma-dangle': ['error', 'always-multiline'],
-  'operator-linebreak': ['error', 'before'],
-  'function-paren-newline': ['error', 'consistent'],
-  'arrow-body-style': ['error', 'as-needed'],
-  'import/no-duplicates': 'error',
-  'max-len': 'off',
-  'no-shadow': 'off',
-  'no-return-assign': 'off',
-  'no-param-reassign': 'off',
-  'no-prototype-builtins': 'off',
-  'object-curly-newline': [
-    'warn',
-    {
-      ObjectExpression: { minProperties: 8, multiline: true, consistent: true },
-      ObjectPattern: { minProperties: 8, multiline: true, consistent: true },
-      ImportDeclaration: {
-        minProperties: 4,
-        multiline: true,
-        consistent: true,
-      },
-      ExportDeclaration: {
-        minProperties: 4,
-        multiline: true,
-        consistent: true,
-      },
-    },
-  ],
-  'import/no-unresolved': ['warn', { ignore: ['\\.svg', 'virtual:'] }],
-  'react/function-component-definition': [
-    'warn',
-    {
-      namedComponents: 'arrow-function',
-      unnamedComponents: 'arrow-function',
-    },
-  ],
-  'react/jsx-props-no-spreading': 'off',
-  'react/jsx-uses-vars': 'error',
-  'jsx-a11y/anchor-is-valid': 'off',
-  'jsx-a11y/label-has-associated-control': 'off',
-  'react/prop-types': 'off',
-};
-
 export default [
   {
-    ignores: ['node_modules/**', 'dist/**', 'build/**', '*.min.js'],
+    ignores: [
+      'node_modules/**',
+      'dist/**',
+      'build/**',
+      '*.min.js',
+      'legacy/**',
+      'switcher.js',
+      'theme.js',
+      'vite.config.js',
+    ],
   },
+  js.configs.recommended,
   {
-    files: ['legacy/**/*.js'],
-    languageOptions: {
-      ecmaVersion: 2015,
-      sourceType: 'script',
-      globals: {
-        ...cleanGlobals(globals.browser),
-        Ext: 'readonly',
-        Traccar: 'readonly',
-      },
-    },
-    rules: {
-      'no-console': 'off',
-      'comma-dangle': 'off',
-      indent: 'off',
-      'operator-linebreak': 'off',
-      'function-paren-newline': 'off',
-      'arrow-body-style': 'off',
-      'import/no-duplicates': 'off',
-    },
-  },
-  {
-    files: ['src/**/*.{js,jsx}', '*.{js,jsx}'],
+    files: ['**/*.{js,jsx}'],
     languageOptions: {
       ecmaVersion: 2021,
       sourceType: 'module',
@@ -104,11 +50,44 @@ export default [
       'jsx-a11y': jsxA11y,
       import: importPlugin,
     },
-    rules: sharedRules,
     settings: {
       react: {
         version: 'detect',
       },
+      'import/resolver': {
+        node: {
+          extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
+        },
+      },
+    },
+    rules: {
+      ...airbnb.rules,
+      'react/react-in-jsx-scope': 'off',
+      'no-console': 'warn',
+      'max-len': 'off',
+      'no-shadow': 'off',
+      'no-return-assign': 'off',
+      'no-param-reassign': 'off',
+      'no-prototype-builtins': 'off',
+      'no-unused-vars':'off',
+      'object-curly-newline': ['warn', {
+        ObjectExpression: { minProperties: 8, multiline: true, consistent: true },
+        ObjectPattern: { minProperties: 8, multiline: true, consistent: true },
+        ImportDeclaration: { minProperties: 4, multiline: true, consistent: true },
+        ExportDeclaration: { minProperties: 4, multiline: true, consistent: true },
+      }],
+      'import/no-unresolved': ['warn', {
+        ignore: ['\\.svg', 'virtual:'],
+      }],
+      'react/function-component-definition': ['warn', {
+        namedComponents: 'arrow-function',
+        unnamedComponents: 'arrow-function',
+      }],
+      'react/jsx-props-no-spreading': 'off',
+      'react/jsx-uses-vars': 'error',
+      'jsx-a11y/anchor-is-valid': 'off',
+      'jsx-a11y/label-has-associated-control': 'off',
+      'react/prop-types': 'off',
     },
   },
 ];
