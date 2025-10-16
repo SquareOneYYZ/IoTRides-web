@@ -1,6 +1,4 @@
-import {
-  useId, useCallback, useEffect, useMemo, useRef,
-} from 'react';
+import { useId, useCallback, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useMediaQuery } from '@mui/material';
 import { useTheme } from '@mui/styles';
@@ -32,6 +30,7 @@ const MapPositions = ({
 
   const mapCluster = useAttributePreference('mapCluster', true);
   const directionType = useAttributePreference('mapDirection', 'selected');
+
   const createFeature = (devices, position, selectedPositionId) => {
     const device = devices[position.deviceId];
     let showDirection;
@@ -43,7 +42,8 @@ const MapPositions = ({
         showDirection = position.course > 0;
         break;
       default:
-        showDirection = selectedPositionId === position.id && position.course > 0;
+        showDirection =
+          selectedPositionId === position.id && position.course > 0;
         break;
     }
     return {
@@ -61,8 +61,13 @@ const MapPositions = ({
     };
   };
 
-  const onMouseEnter = () => (map.getCanvas().style.cursor = 'pointer');
-  const onMouseLeave = () => (map.getCanvas().style.cursor = '');
+  const onMouseEnter = () => {
+    map.getCanvas().style.cursor = 'pointer';
+  };
+
+  const onMouseLeave = () => {
+    map.getCanvas().style.cursor = '';
+  };
 
   const onMapClick = useCallback(
     (event) => {
@@ -201,7 +206,6 @@ const MapPositions = ({
     scheduleSetData();
   }, [scheduleSetData]);
 
-  useEffect(() => {
     map.addSource(id, {
       type: 'geojson',
       data: {
@@ -212,6 +216,7 @@ const MapPositions = ({
       clusterMaxZoom: 14,
       clusterRadius: 50,
     });
+
     map.addSource(selected, {
       type: 'geojson',
       data: {
@@ -219,6 +224,7 @@ const MapPositions = ({
         features: [],
       },
     });
+
     [id, selected].forEach((source) => {
       map.addLayer({
         id: source,
@@ -241,6 +247,7 @@ const MapPositions = ({
           'text-halo-width': 1,
         },
       });
+
       map.addLayer({
         id: `direction-${source}`,
         type: 'symbol',
@@ -259,6 +266,7 @@ const MapPositions = ({
       map.on('mouseleave', source, onMouseLeave);
       map.on('click', source, onMarkerClick);
     });
+
     map.addLayer({
       id: clusters,
       type: 'symbol',
@@ -305,15 +313,18 @@ const MapPositions = ({
       });
     };
   }, [mapCluster, clusters, onMarkerClick, onClusterClick]);
+
   useEffect(() => {
     [id, selected].forEach((source) => {
       map.getSource(source)?.setData({
         type: 'FeatureCollection',
         features: positions
           .filter((it) => devices.hasOwnProperty(it.deviceId))
-          .filter((it) => (source === id
-            ? it.deviceId !== selectedDeviceId
-            : it.deviceId === selectedDeviceId))
+          .filter((it) =>
+            source === id
+              ? it.deviceId !== selectedDeviceId
+              : it.deviceId === selectedDeviceId,
+          )
           .map((position) => ({
             type: 'Feature',
             geometry: {
@@ -336,7 +347,9 @@ const MapPositions = ({
     devices,
     positions,
     selectedPosition,
+    selectedDeviceId,
   ]);
-};
+
+  return null;
 
 export default MapPositions;
