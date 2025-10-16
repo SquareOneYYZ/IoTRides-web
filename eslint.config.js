@@ -14,15 +14,54 @@ const cleanGlobals = (globalsObj) => {
   return cleaned;
 };
 
+const sharedRules = {
+  'react/react-in-jsx-scope': 'off',
+  'no-console': 'warn',
+  'comma-dangle': ['error', 'always-multiline'],
+  'operator-linebreak': ['error', 'before'],
+  'function-paren-newline': ['error', 'consistent'],
+  'arrow-body-style': ['error', 'as-needed'],
+  'import/no-duplicates': 'error',
+  'max-len': 'off',
+  'no-shadow': 'off',
+  'no-return-assign': 'off',
+  'no-param-reassign': 'off',
+  'no-prototype-builtins': 'off',
+  'object-curly-newline': [
+    'warn',
+    {
+      ObjectExpression: { minProperties: 8, multiline: true, consistent: true },
+      ObjectPattern: { minProperties: 8, multiline: true, consistent: true },
+      ImportDeclaration: {
+        minProperties: 4,
+        multiline: true,
+        consistent: true,
+      },
+      ExportDeclaration: {
+        minProperties: 4,
+        multiline: true,
+        consistent: true,
+      },
+    },
+  ],
+  'import/no-unresolved': ['warn', { ignore: ['\\.svg', 'virtual:'] }],
+  'react/function-component-definition': [
+    'warn',
+    {
+      namedComponents: 'arrow-function',
+      unnamedComponents: 'arrow-function',
+    },
+  ],
+  'react/jsx-props-no-spreading': 'off',
+  'react/jsx-uses-vars': 'error',
+  'jsx-a11y/anchor-is-valid': 'off',
+  'jsx-a11y/label-has-associated-control': 'off',
+  'react/prop-types': 'off',
+};
+
 export default [
   {
-    ignores: [
-      'node_modules/**',
-      'dist/**',
-      'build/**',
-      '*.min.js',
-      'legacy/**',
-    ],
+    ignores: ['node_modules/**', 'dist/**', 'build/**', '*.min.js'],
   },
   {
     files: ['legacy/**/*.js'],
@@ -38,11 +77,11 @@ export default [
     rules: {
       'no-console': 'off',
       'comma-dangle': 'off',
+      indent: 'off',
       'operator-linebreak': 'off',
       'function-paren-newline': 'off',
       'arrow-body-style': 'off',
       'import/no-duplicates': 'off',
-      indent: 'off',
     },
   },
   {
@@ -65,15 +104,7 @@ export default [
       'jsx-a11y': jsxA11y,
       import: importPlugin,
     },
-    rules: {
-      'react/react-in-jsx-scope': 'off',
-      'no-console': 'warn',
-      'comma-dangle': ['error', 'always-multiline'],
-      'operator-linebreak': ['error', 'before'],
-      'function-paren-newline': ['error', 'consistent'],
-      'arrow-body-style': ['error', 'as-needed'],
-      'import/no-duplicates': 'error',
-    },
+    rules: sharedRules,
     settings: {
       react: {
         version: 'detect',
