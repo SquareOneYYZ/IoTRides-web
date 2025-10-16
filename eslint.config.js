@@ -14,51 +14,6 @@ const cleanGlobals = (globalsObj) => {
   return cleaned;
 };
 
-const sharedRules = {
-  'react/react-in-jsx-scope': 'off',
-  'no-console': 'warn',
-  'comma-dangle': ['error', 'always-multiline'],
-  'operator-linebreak': ['error', 'before'],
-  'function-paren-newline': ['error', 'consistent'],
-  'arrow-body-style': ['error', 'as-needed'],
-  'import/no-duplicates': 'error',
-  'max-len': 'off',
-  'no-shadow': 'off',
-  'no-return-assign': 'off',
-  'no-param-reassign': 'off',
-  'no-prototype-builtins': 'off',
-  'object-curly-newline': [
-    'warn',
-    {
-      ObjectExpression: { minProperties: 8, multiline: true, consistent: true },
-      ObjectPattern: { minProperties: 8, multiline: true, consistent: true },
-      ImportDeclaration: {
-        minProperties: 4,
-        multiline: true,
-        consistent: true,
-      },
-      ExportDeclaration: {
-        minProperties: 4,
-        multiline: true,
-        consistent: true,
-      },
-    },
-  ],
-  'import/no-unresolved': ['warn', { ignore: ['\\.svg', 'virtual:'] }],
-  'react/function-component-definition': [
-    'warn',
-    {
-      namedComponents: 'arrow-function',
-      unnamedComponents: 'arrow-function',
-    },
-  ],
-  'react/jsx-props-no-spreading': 'off',
-  'react/jsx-uses-vars': 'error',
-  'jsx-a11y/anchor-is-valid': 'off',
-  'jsx-a11y/label-has-associated-control': 'off',
-  'react/prop-types': 'off',
-};
-
 export default [
   {
     ignores: [
@@ -68,6 +23,27 @@ export default [
       '*.min.js',
       'legacy/**',
     ],
+  },
+  {
+    files: ['legacy/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 2015,
+      sourceType: 'script',
+      globals: {
+        ...cleanGlobals(globals.browser),
+        Ext: 'readonly',
+        Traccar: 'readonly',
+      },
+    },
+    rules: {
+      'no-console': 'off',
+      'comma-dangle': 'off',
+      'operator-linebreak': 'off',
+      'function-paren-newline': 'off',
+      'arrow-body-style': 'off',
+      'import/no-duplicates': 'off',
+      indent: 'off',
+    },
   },
   {
     files: ['src/**/*.{js,jsx}', '*.{js,jsx}'],
@@ -89,7 +65,15 @@ export default [
       'jsx-a11y': jsxA11y,
       import: importPlugin,
     },
-    rules: sharedRules,
+    rules: {
+      'react/react-in-jsx-scope': 'off',
+      'no-console': 'warn',
+      'comma-dangle': ['error', 'always-multiline'],
+      'operator-linebreak': ['error', 'before'],
+      'function-paren-newline': ['error', 'consistent'],
+      'arrow-body-style': ['error', 'as-needed'],
+      'import/no-duplicates': 'error',
+    },
     settings: {
       react: {
         version: 'detect',
