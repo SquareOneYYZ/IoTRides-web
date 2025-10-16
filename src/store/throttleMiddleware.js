@@ -14,7 +14,6 @@ export default () => (next) => {
         throttle = false;
       }
       if (buffer.length > 0) {
-        // Only dispatch latest to avoid render spam
         const latest = buffer[buffer.length - 1];
         buffer.length = 0;
         batch(() => next(latest));
