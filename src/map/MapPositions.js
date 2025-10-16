@@ -1,4 +1,6 @@
-import { useId, useCallback, useEffect, useMemo, useRef } from 'react';
+import {
+  useId, useCallback, useEffect, useMemo, useRef,
+} from 'react';
 import { useSelector } from 'react-redux';
 import { useMediaQuery } from '@mui/material';
 import { useTheme } from '@mui/styles';
@@ -43,8 +45,7 @@ const MapPositions = ({
           showDirection = position.course > 0;
           break;
         default:
-          showDirection =
-            selectedPositionId === position.id && position.course > 0;
+          showDirection = selectedPositionId === position.id && position.course > 0;
           break;
       }
       return {
@@ -61,7 +62,7 @@ const MapPositions = ({
         direction: showDirection,
       };
     },
-    [directionType, showStatus]
+    [directionType, showStatus],
   );
 
   const onMouseEnter = useCallback(() => {
@@ -78,7 +79,7 @@ const MapPositions = ({
         onClick(event.lngLat.lat, event.lngLat.lng);
       }
     },
-    [onClick]
+    [onClick],
   );
 
   const onMarkerClick = useCallback(
@@ -89,7 +90,7 @@ const MapPositions = ({
         onClick(feature.properties.id, feature.properties.deviceId);
       }
     },
-    [onClick]
+    [onClick],
   );
 
   const onClusterClick = useCatchCallback(
@@ -105,7 +106,7 @@ const MapPositions = ({
         zoom,
       });
     },
-    [clusters, id]
+    [clusters, id],
   );
 
   // Optimized feature generation with early returns and better filtering
@@ -119,12 +120,11 @@ const MapPositions = ({
 
     const selectedPosId = selectedPosition?.id;
 
-    for (let i = 0; i < positions.length; i++) {
+    for (let i = 0; i < positions.length; i += 1) {
       const position = positions[i];
       const device = devices[position.deviceId];
 
-      // Skip if device doesn't exist
-      if (!device) continue;
+      if (!device) return false;
 
       const feature = {
         type: 'Feature',
