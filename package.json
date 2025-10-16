@@ -50,9 +50,8 @@
     "start": "vite",
     "build": "vite build",
     "generate-pwa-assets": "pwa-assets-generator --preset minimal public/logo.svg",
-    "lint:legacy": "eslint legacy/",
     "lint:modern": "eslint src/",
-    "lint": "npm run lint:legacy && npm run lint:modern"
+    "lint": "npm run lint:modern"
   },
   "browserslist": {
     "production": [
