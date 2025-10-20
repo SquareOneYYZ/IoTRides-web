@@ -1,19 +1,26 @@
 import { batch } from 'react-redux';
 
+const threshold = 3;
 const interval = 1500;
 
 export default () => (next) => {
-  let buffer = [];
-  let timer = null;
+  const buffer = [];
+  let throttle = false;
+  let counter = 0;
 
-  function flush() {
-    if (buffer.length > 0) {
-      const latest = buffer[buffer.length - 1];
-      batch(() => next(latest));
-      buffer = [];
+  setInterval(() => {
+    if (throttle) {
+      if (buffer.length < threshold) {
+        throttle = false;
+      }
+      batch(() => buffer.splice(0, buffer.length).forEach((action) => next(action)));
+    } else {
+      if (counter > threshold) {
+        throttle = true;
+      }
+      counter = 0;
     }
-    timer = null;
-  }
+  }, interval);
 
   return (action) => {
     if (
@@ -23,8 +30,12 @@ export default () => (next) => {
       buffer.push(action);
       if (!timer) {
         timer = setTimeout(flush, interval);
+      if (throttle) {
+        buffer.push(action);
+        return null;
       }
-      return null;
+      counter += 1;
+      return next(action);
     }
     return next(action);
   };
