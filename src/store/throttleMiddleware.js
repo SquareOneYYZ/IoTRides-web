@@ -17,8 +17,8 @@ export default () => (next) => {
 
   return (action) => {
     if (
-      action.type === 'devices/update' ||
-      action.type === 'positions/update'
+      action.type === 'devices/update'
+      || action.type === 'positions/update'
     ) {
       buffer.push(action);
       if (!timer) {

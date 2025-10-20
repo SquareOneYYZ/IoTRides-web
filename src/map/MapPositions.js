@@ -308,6 +308,7 @@ const MapPositions = ({
     };
   }, [mapCluster, clusters, onMarkerClick, onClusterClick]);
 
+  useEffect(() => {
     [id, selected].forEach((source) => {
       map.getSource(source)?.setData({
         type: 'FeatureCollection',
@@ -339,6 +340,6 @@ const MapPositions = ({
     positions,
     selectedPosition,
   ]);
-
+};
 
 export default MapPositions;
