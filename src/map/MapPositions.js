@@ -1,4 +1,6 @@
-import { useId, useCallback, useEffect } from 'react';
+import {
+ useId, useCallback, useEffect, useMemo 
+} from 'react';
 import { useSelector } from 'react-redux';
 import { useMediaQuery } from '@mui/material';
 import { useTheme } from '@mui/styles';
@@ -31,43 +33,45 @@ const MapPositions = ({
   const mapCluster = useAttributePreference('mapCluster', true);
   const directionType = useAttributePreference('mapDirection', 'selected');
 
-  const createFeature = (devices, position, selectedPositionId) => {
-    const device = devices[position.deviceId];
-    let showDirection;
-    switch (directionType) {
-      case 'none':
-        showDirection = false;
-        break;
-      case 'all':
+  /**
+   * ✅ Stable feature creation logic
+   */
+  const createFeature = useCallback(
+    (devices, position, selectedPositionId) => {
+      const device = devices[position.deviceId];
+      if (!device) return null;
+
+      let showDirection = false;
+      if (directionType === 'all') {
         showDirection = position.course > 0;
-        break;
-      default:
-        showDirection
-          = selectedPositionId === position.id && position.course > 0;
-        break;
-    }
-    return {
-      id: position.id,
-      deviceId: position.deviceId,
-      name: device.name,
-      fixTime: formatTime(position.fixTime, 'seconds'),
-      tollName: 'Event Location',
-      category: mapIconKey(device.category),
-      color: showStatus
-        ? position.attributes.color || getStatusColor(device.status)
-        : 'neutral',
-      rotation: position.course,
-      direction: showDirection,
-    };
-  };
+      } else if (directionType === 'selected') {
+        showDirection = selectedPositionId === position.id && position.course > 0;
+      }
 
-  const onMouseEnter = () => {
+      return {
+        id: position.id,
+        deviceId: position.deviceId,
+        name: device.name,
+        fixTime: formatTime(position.fixTime, 'seconds'),
+        tollName: 'Event Location',
+        category: mapIconKey(device.category),
+        color: showStatus
+          ? position.attributes.color || getStatusColor(device.status)
+          : 'neutral',
+        rotation: position.course,
+        direction: showDirection,
+      };
+    },
+    [directionType, showStatus]
+  );
+
+  const onMouseEnter = useCallback(() => {
     map.getCanvas().style.cursor = 'pointer';
-  };
+  }, []);
 
-  const onMouseLeave = () => {
+  const onMouseLeave = useCallback(() => {
     map.getCanvas().style.cursor = '';
-  };
+  }, []);
 
   const onMapClick = useCallback(
     (event) => {
@@ -75,18 +79,18 @@ const MapPositions = ({
         onClick(event.lngLat.lat, event.lngLat.lng);
       }
     },
-    [onClick],
+    [onClick]
   );
 
   const onMarkerClick = useCallback(
     (event) => {
       event.preventDefault();
-      const feature = event.features[0];
-      if (onClick) {
+      const feature = event.features?.[0];
+      if (feature && onClick) {
         onClick(feature.properties.id, feature.properties.deviceId);
       }
     },
-    [onClick],
+    [onClick]
   );
 
   const onClusterClick = useCatchCallback(
@@ -102,27 +106,30 @@ const MapPositions = ({
         zoom,
       });
     },
-    [clusters],
+    [clusters]
   );
 
+  /**
+   * ✅ Initialize layers and sources once
+   */
   useEffect(() => {
+    if (!map || map.getSource(id)) return;
+
+    // Normal and selected sources
     map.addSource(id, {
       type: 'geojson',
-      data: {
-        type: 'FeatureCollection',
-        features: [],
-      },
+      data: { type: 'FeatureCollection', features: [] },
       cluster: mapCluster,
       clusterMaxZoom: 14,
       clusterRadius: 50,
     });
+
     map.addSource(selected, {
       type: 'geojson',
-      data: {
-        type: 'FeatureCollection',
-        features: [],
-      },
+      data: { type: 'FeatureCollection', features: [] },
     });
+
+    // Symbol + direction layers for both
     [id, selected].forEach((source) => {
       map.addLayer({
         id: source,
@@ -145,6 +152,7 @@ const MapPositions = ({
           'text-halo-width': 1,
         },
       });
+
       map.addLayer({
         id: `direction-${source}`,
         type: 'symbol',
@@ -163,6 +171,8 @@ const MapPositions = ({
       map.on('mouseleave', source, onMouseLeave);
       map.on('click', source, onMarkerClick);
     });
+
+    // Cluster layer
     map.addLayer({
       id: clusters,
       type: 'symbol',
@@ -188,74 +198,75 @@ const MapPositions = ({
       map.off('click', clusters, onClusterClick);
       map.off('click', onMapClick);
 
-      if (map.getLayer(clusters)) {
-        map.removeLayer(clusters);
-      }
+      if (map.getLayer(clusters)) map.removeLayer(clusters);
 
       [id, selected].forEach((source) => {
         map.off('mouseenter', source, onMouseEnter);
         map.off('mouseleave', source, onMouseLeave);
         map.off('click', source, onMarkerClick);
 
-        if (map.getLayer(source)) {
-          map.removeLayer(source);
-        }
-        if (map.getLayer(`direction-${source}`)) {
-          map.removeLayer(`direction-${source}`);
-        }
-        if (map.getSource(source)) {
-          map.removeSource(source);
-        }
+        if (map.getLayer(source)) map.removeLayer(source);
+        if (map.getLayer(`direction-${source}`)) map.removeLayer(`direction-${source}`);
+        if (map.getSource(source)) map.removeSource(source);
       });
     };
   }, [
-    mapCluster,
-    clusters,
-    onMarkerClick,
-    onClusterClick,
     id,
     selected,
+    clusters,
     customIcon,
     iconScale,
     titleField,
+    mapCluster,
     onMouseEnter,
     onMouseLeave,
+    onMarkerClick,
+    onClusterClick,
     onMapClick,
   ]);
 
+  /**
+   * ✅ Compute features once, only update data when changed
+   */
+  const { normalFeatures, selectedFeatures } = useMemo(() => {
+    const validPositions = positions.filter((p) => devices[p.deviceId]);
+    const normal = validPositions
+      .filter((p) => p.deviceId !== selectedDeviceId)
+      .map((p) => ({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [p.longitude, p.latitude] },
+        properties: createFeature(devices, p, selectedPosition?.id),
+      }));
+
+    const selectedSet = validPositions
+      .filter((p) => p.deviceId === selectedDeviceId)
+      .map((p) => ({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [p.longitude, p.latitude] },
+        properties: createFeature(devices, p, selectedPosition?.id),
+      }));
+
+    return { normalFeatures: normal, selectedFeatures: selectedSet };
+  }, [positions, devices, selectedDeviceId, selectedPosition, createFeature]);
+
+  /**
+   * ✅ Update source data efficiently (diff check)
+   */
   useEffect(() => {
-    [id, selected].forEach((source) => {
-      map.getSource(source)?.setData({
-        type: 'FeatureCollection',
-        features: positions
-          .filter((it) => devices.hasOwnProperty(it.deviceId))
-          .filter((it) =>
-            source === id
-              ? it.deviceId !== selectedDeviceId
-              : it.deviceId === selectedDeviceId)
-          .map((position) => ({
-            type: 'Feature',
-            geometry: {
-              type: 'Point',
-              coordinates: [position.longitude, position.latitude],
-            },
-            properties: createFeature(
-              devices,
-              position,
-              selectedPosition && selectedPosition.id,
-            ),
-          })),
-      });
-    });
-  }, [
-    id,
-    selected,
-    devices,
-    positions,
-    selectedPosition,
-    selectedDeviceId,
-    createFeature,
-  ]);
+    const updateSource = (sourceId, features) => {
+      const src = map.getSource(sourceId);
+      if (!src) return;
+      const newData = JSON.stringify(features);
+
+      if (src._lastData !== newData) {
+        src.setData({ type: 'FeatureCollection', features });
+        src._lastData = newData;
+      }
+    };
+
+    updateSource(id, normalFeatures);
+    updateSource(selected, selectedFeatures);
+  }, [id, selected, normalFeatures, selectedFeatures]);
 
   return null;
 };
