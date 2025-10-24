@@ -471,6 +471,7 @@ const EventReportPage = () => {
             />
           )}
           <MapMarkers markers={replayMarkers} />
+
         </MapView>
         <MapScale />
         <MapCamera positions={replayPositions} />
@@ -496,6 +497,7 @@ const EventReportPage = () => {
                 {t('reportReplay')}
                 {' '}
                 -
+                {' '}
                 {deviceName}
               </Typography>
               <IconButton edge="end" onClick={handleReplayStop}>

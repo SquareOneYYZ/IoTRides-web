@@ -109,13 +109,8 @@ const MapPositions = ({
     [clusters]
   );
 
-  /**
-   * ✅ Initialize layers and sources once
-   */
   useEffect(() => {
     if (!map || map.getSource(id)) return;
-
-    // Normal and selected sources
     map.addSource(id, {
       type: 'geojson',
       data: { type: 'FeatureCollection', features: [] },
@@ -129,7 +124,6 @@ const MapPositions = ({
       data: { type: 'FeatureCollection', features: [] },
     });
 
-    // Symbol + direction layers for both
     [id, selected].forEach((source) => {
       map.addLayer({
         id: source,
@@ -172,7 +166,6 @@ const MapPositions = ({
       map.on('click', source, onMarkerClick);
     });
 
-    // Cluster layer
     map.addLayer({
       id: clusters,
       type: 'symbol',
@@ -225,9 +218,6 @@ const MapPositions = ({
     onMapClick,
   ]);
 
-  /**
-   * ✅ Compute features once, only update data when changed
-   */
   const { normalFeatures, selectedFeatures } = useMemo(() => {
     const validPositions = positions.filter((p) => devices[p.deviceId]);
     const normal = validPositions
@@ -249,9 +239,6 @@ const MapPositions = ({
     return { normalFeatures: normal, selectedFeatures: selectedSet };
   }, [positions, devices, selectedDeviceId, selectedPosition, createFeature]);
 
-  /**
-   * ✅ Update source data efficiently (diff check)
-   */
   useEffect(() => {
     const updateSource = (sourceId, features) => {
       const src = map.getSource(sourceId);
