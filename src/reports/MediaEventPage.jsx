@@ -1,94 +1,272 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IconButton } from '@mui/material';
+import {
+  IconButton, CircularProgress, Typography, Box,
+} from '@mui/material';
 import LaunchIcon from '@mui/icons-material/Launch';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
+import ImageIcon from '@mui/icons-material/Image';
 import PageLayout from '../common/components/PageLayout';
 import ReportsMenu from './components/ReportsMenu';
+import ReportFilter from './components/ReportFilter';
 import useReportStyles from './common/useReportStyles';
+import { useCatch } from '../reactHelper';
+import scheduleReport from './common/scheduleReport';
 
-const MediaEventPage = () => {
-  const classes = useReportStyles();
-  const navigate = useNavigate();
+const MediaBlock = ({ media, onLaunch }) => {
+  const ref = useRef(null);
 
-  const videoBlocks = [{ id: 1, url: 'https://example.com/video1.mp4' }, { id: 2, url: 'https://example.com/video2.mp4' }, { id: 3, url: 'https://example.com/video3.mp4' }, { id: 4, url: 'https://example.com/video4.mp4' }, { id: 5, url: 'https://example.com/video5.mp4' }, { id: 6, url: 'https://example.com/video6.mp4' }, { id: 7, url: 'https://example.com/video7.mp4' }, { id: 8, url: 'https://example.com/video8.mp4' }, { id: 9, url: 'https://example.com/video9.mp4' }, { id: 10, url: 'https://example.com/video10.mp4' }, { id: 11, url: 'https://example.com/video11.mp4' }, { id: 12, url: 'https://example.com/video12.mp4' }, { id: 13, url: 'https://example.com/video13.mp4' }, { id: 14, url: 'https://example.com/video14.mp4' }, { id: 15, url: 'https://example.com/video15.mp4' }, { id: 16, url: 'https://example.com/video16.mp4' }, { id: 17, url: 'https://example.com/video17.mp4' }, { id: 18, url: 'https://example.com/video18.mp4' }, { id: 19, url: 'https://example.com/video19.mp4' }, { id: 20, url: 'https://example.com/video20.mp4' }];
-
-  const toggleFullscreen = (container) => {
+  const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
-      container.requestFullscreen?.();
+      ref.current?.requestFullscreen?.();
     } else {
       document.exitFullscreen?.();
     }
   };
 
-  const handleLaunch = (video) => {
-    navigate('/reports/media/details', {
-      state: { video },
-    });
+  const renderMediaContent = () => {
+    if (media.mediaType === 'image' && media.url) {
+      return (
+        <img
+          src={media.url}
+          alt={media.fileName}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+          }}
+        />
+      );
+    }
+
+    if (media.mediaType === 'video') {
+      return <PlayCircleOutlineIcon sx={{ fontSize: 60, color: '#555' }} />;
+    }
+
+    return <ImageIcon sx={{ fontSize: 60, color: '#555' }} />;
+  };
+
+  return (
+    <Box
+      ref={ref}
+      sx={{
+        backgroundColor: '#1e1e1e',
+        borderRadius: 2,
+        position: 'relative',
+        aspectRatio: '16/9',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+        transition: 'transform 0.2s',
+        '&:hover': {
+          transform: 'scale(1.02)',
+        },
+      }}
+    >
+      {renderMediaContent()}
+
+      <Box
+        sx={{
+          position: 'absolute',
+          bottom: 8,
+          left: 8,
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          color: '#fff',
+          padding: '4px 8px',
+          borderRadius: 1,
+          fontSize: '12px',
+        }}
+      >
+        {new Date(media.eventTime).toLocaleString()}
+      </Box>
+
+      <Box
+        sx={{
+          position: 'absolute',
+          top: 8,
+          right: 8,
+          display: 'flex',
+          gap: 0.5,
+        }}
+      >
+        <IconButton
+          size="small"
+          sx={{
+            color: '#fff',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            '&:hover': {
+              backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            },
+          }}
+          onClick={toggleFullscreen}
+        >
+          <FullscreenIcon fontSize="small" />
+        </IconButton>
+
+        <IconButton
+          size="small"
+          sx={{
+            color: '#fff',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            '&:hover': {
+              backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            },
+          }}
+          onClick={() => onLaunch(media)}
+        >
+          <LaunchIcon fontSize="small" />
+        </IconButton>
+      </Box>
+    </Box>
+  );
+};
+
+const EmptyState = ({ message }) => (
+  <Box
+    sx={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      minHeight: 400,
+      padding: 3,
+    }}
+  >
+    <Typography variant="h6" color="text.secondary">
+      {message}
+    </Typography>
+  </Box>
+);
+
+const LoadingState = () => (
+  <Box
+    sx={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      minHeight: 400,
+      flexDirection: 'column',
+      gap: 2,
+    }}
+  >
+    <CircularProgress />
+    <Typography variant="body1" color="text.secondary">
+      Loading media events...
+    </Typography>
+  </Box>
+);
+
+const MediaEventPage = () => {
+  const classes = useReportStyles();
+  const navigate = useNavigate();
+
+  const [mediaBlocks, setMediaBlocks] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = useCatch(async ({ deviceId, from, to, type }) => {
+    const query = new URLSearchParams({ deviceId, from, to });
+
+    if (type === 'export') {
+      window.location.assign(`/api/reports/events/xlsx?${query.toString()}`);
+      return;
+    }
+
+    if (type === 'mail') {
+      const response = await fetch(`/api/reports/events/mail?${query.toString()}`);
+      if (!response.ok) {
+        throw Error(await response.text());
+      }
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/reports/events?${query.toString()}`, {
+        headers: { Accept: 'application/json' },
+      });
+
+      if (!response.ok) {
+        throw Error(await response.text());
+      }
+
+      const events = await response.json();
+      const mediaEvents = events.filter((event) => event.type === 'media');
+
+      const transformedMedia = mediaEvents.map((event) => ({
+        id: event.id,
+        deviceId: event.deviceId,
+        eventTime: event.eventTime,
+        positionId: event.positionId,
+        mediaType: event.attributes?.media || 'unknown',
+        fileName: event.attributes?.file || '',
+        url: event.attributes?.file
+          ? `http://localhost:3000/api/media/${event.deviceId}/${event.attributes.file}`
+          : '',
+      }));
+
+      setMediaBlocks(transformedMedia);
+    } finally {
+      setLoading(false);
+    }
+  });
+
+  const handleSchedule = useCatch(async (deviceIds, groupIds, report) => {
+    const reportConfig = { ...report, type: 'events' };
+    const error = await scheduleReport(deviceIds, groupIds, reportConfig);
+
+    if (error) {
+      throw Error(error);
+    }
+
+    navigate('/reports/scheduled');
+  });
+
+  const handleLaunch = (media) => {
+    navigate('/reports/media/details', { state: { media } });
   };
 
   return (
     <PageLayout menu={<ReportsMenu />} breadcrumbs={['reportTitle', 'reportCombined']}>
-      <div className={classes.container}>
-        <div className={classes.containerMain}>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(5, 1fr)',
-              gridGap: '10px',
-              marginTop: '20px',
-            }}
-          >
-            {videoBlocks.map((video) => {
-              const ref = useRef(null);
-              return (
-                <div
-                  key={video.id}
-                  ref={ref}
-                  style={{
-                    backgroundColor: '#1e1e1e',
-                    borderRadius: '8px',
-                    position: 'relative',
-                    aspectRatio: '16/9',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    overflow: 'hidden',
-                  }}
-                >
-                  <PlayCircleOutlineIcon sx={{ fontSize: 60, color: '#555' }} />
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: '8px',
-                      right: '8px',
-                      display: 'flex',
-                      gap: '4px',
-                    }}
-                  >
-                    <IconButton
-                      size="small"
-                      sx={{ color: '#fff' }}
-                      onClick={() => toggleFullscreen(ref.current)}
-                    >
-                      <FullscreenIcon fontSize="small" />
-                    </IconButton>
+      <Box className={classes.container}>
+        <Box className={classes.containerMain}>
+          <Box className={classes.header}>
+            <ReportFilter
+              handleSubmit={handleSubmit}
+              handleSchedule={handleSchedule}
+              loading={loading}
+            />
+          </Box>
 
-                    <IconButton
-                      size="small"
-                      sx={{ color: '#fff' }}
-                      onClick={() => handleLaunch(video)}
-                    >
-                      <LaunchIcon fontSize="small" />
-                    </IconButton>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+          {loading && <LoadingState />}
+
+          {!loading && mediaBlocks.length === 0 && (
+            <EmptyState message='No media events found. Please select filters and click "Show" to search.' />
+          )}
+
+          {!loading && mediaBlocks.length > 0 && (
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: {
+                  xs: '1fr',
+                  sm: 'repeat(2, 1fr)',
+                  md: 'repeat(3, 1fr)',
+                  lg: 'repeat(4, 1fr)',
+                  xl: 'repeat(5, 1fr)',
+                },
+                gap: 2,
+                mt: 2,
+                mb: 2,
+              }}
+            >
+              {mediaBlocks.map((media) => (
+                <MediaBlock key={media.id} media={media} onLaunch={handleLaunch} />
+              ))}
+            </Box>
+          )}
+        </Box>
+      </Box>
     </PageLayout>
   );
 };
