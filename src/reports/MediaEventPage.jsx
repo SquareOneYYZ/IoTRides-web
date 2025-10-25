@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import {
   IconButton, CircularProgress, Typography, Box,
 } from '@mui/material';
@@ -13,6 +14,7 @@ import ReportFilter from './components/ReportFilter';
 import useReportStyles from './common/useReportStyles';
 import { useCatch } from '../reactHelper';
 import scheduleReport from './common/scheduleReport';
+import { eventsActions } from '../store/events';
 
 const MediaBlock = ({ media, onLaunch }) => {
   const ref = useRef(null);
@@ -160,6 +162,7 @@ const LoadingState = () => (
 const MediaEventPage = () => {
   const classes = useReportStyles();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const [mediaBlocks, setMediaBlocks] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -204,7 +207,6 @@ const MediaEventPage = () => {
           ? `http://localhost:3000/api/media/${event.deviceId}/${event.attributes.file}`
           : '',
       }));
-
       setMediaBlocks(transformedMedia);
     } finally {
       setLoading(false);
@@ -223,7 +225,11 @@ const MediaEventPage = () => {
   });
 
   const handleLaunch = (media) => {
-    navigate('/reports/media/details', { state: { media } });
+    // Dispatch the selected media event to Redux store
+    dispatch(eventsActions.setSelectedEvent(media));
+
+    // Navigate to the media details page
+    navigate('/reports/media/details');
   };
 
   return (
