@@ -13,6 +13,7 @@ const VideoBlock = ({
   showLaunch,
   showFocusIcon,
   onFocus,
+  playing,
 }) => {
   const videoRef = useRef(null);
   const containerRef = useRef(null);
@@ -89,6 +90,19 @@ const VideoBlock = ({
     e.stopPropagation();
     if (onFocus) onFocus();
   };
+
+  useEffect(() => {
+    if (!videoRef.current) return;
+
+    if (playing) {
+      videoRef.current.src = src;
+      videoRef.current.play().catch((err) => console.warn('Play error', err));
+    } else {
+      videoRef.current.pause();
+      videoRef.current.removeAttribute('src');
+      videoRef.current.load();
+    }
+  }, [playing, src]);
 
   return (
     <div

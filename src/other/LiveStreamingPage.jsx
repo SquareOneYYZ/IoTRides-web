@@ -343,23 +343,23 @@ const LiveStreamingPage = () => {
   const navigate = useNavigate();
   const [currentLayout, setCurrentLayout] = useState(1);
   const [focusedCameraIndex, setFocusedCameraIndex] = useState(0);
+  const [playing, setPlaying] = useState(false);
 
   const { open, deviceId } = useSelector((state) => state.livestream);
   const device = useSelector((state) => state.devices.items[deviceId]);
   if (!open || !deviceId) return null;
 
-  const handleStartAll = () => console.log('Starting all streams');
-  const handleStopAll = () => console.log('Stopping all streams');
-  const handleLocation = () => navigate('/map');
+  const handleStartAll = () => setPlaying(true);
+  const handleStopAll = () => setPlaying(false);
   const handleBack = () => navigate(-1);
 
   const videoSources = [
-    { id: 1, src: '/Sample footage24fps.mp4', title: 'Front Camera' },
-    { id: 2, src: '/Sample footage24fps.mp4', title: 'Left Camera' },
-    { id: 3, src: '/Sample footage24fps.mp4', title: 'Right Camera' },
-    { id: 4, src: '/Sample footage24fps.mp4', title: 'Rear Camera' },
-    { id: 5, src: '/Sample footage24fps.mp4', title: 'Top Camera' },
-    { id: 6, src: '/Sample footage24fps.mp4', title: 'Bottom Camera' },
+    { id: 1, src: `rtsp://137.184.170.216:8554/${deviceId}_ch1`, title: 'Front Camera' },
+    { id: 2, src: `rtsp://137.184.170.216:8554/${deviceId}_ch2`, title: 'Left Camera' },
+    { id: 3, src: `rtsp://137.184.170.216:8554/${deviceId}_ch3`, title: 'Right Camera' },
+    { id: 4, src: `rtsp://137.184.170.216:8554/${deviceId}_ch4`, title: 'Rear Camera' },
+    { id: 5, src: `rtsp://137.184.170.216:8554/${deviceId}_ch5`, title: 'Top Camera' },
+    { id: 6, src: `rtsp://137.184.170.216:8554/${deviceId}_ch6`, title: 'Bottom Camera' },
   ];
 
   const totalSlots = Number(currentLayout);
@@ -443,16 +443,6 @@ const LiveStreamingPage = () => {
             >
               Stop
             </Button>
-            <Button
-              variant="text"
-              color="inherit"
-              startIcon={<LocationOn />}
-              onClick={handleLocation}
-              sx={{ mr: 1, display: { xs: 'none', sm: 'flex' } }}
-            >
-              Location
-            </Button>
-
             <IconButton
               color="inherit"
               onClick={handleBack}
@@ -484,6 +474,7 @@ const LiveStreamingPage = () => {
                 key={video.id}
                 src={video.src}
                 title={video.title}
+                playing={playing}
                 className={classes.videoContainer}
                 showLaunch={false}
                 showFocusIcon={isFocusEnabled}
@@ -510,6 +501,7 @@ const LiveStreamingPage = () => {
                 src={video.src}
                 title={video.title}
                 showLaunch={false}
+                playing={playing}
                 showFocusIcon
                 onFocus={() => handleMobileCameraSwitch(
                   videoSources.findIndex((v) => v.id === video.id),
@@ -526,6 +518,7 @@ const LiveStreamingPage = () => {
                 src={video.src}
                 title={video.title}
                 showLaunch={false}
+                playing={playing}
                 showFocusIcon
                 onFocus={() => handleMobileCameraSwitch(index)}
               />

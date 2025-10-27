@@ -99,10 +99,10 @@ const LiveStreamCard = () => {
   };
 
   const cameraStreams = [
-    { title: 'Front Camera', src: 'Sample footage24fps.mp4' },
-    { title: 'Left Camera', src: 'Sample footage24fps.mp4' },
-    { title: 'Right Camera', src: 'Sample footage24fps.mp4' },
-    { title: 'Rear Camera', src: 'Sample footage24fps.mp4' },
+    { title: 'Front Camera', src: `rtsp://137.184.170.216:8554/${deviceId}_ch1` },
+    { title: 'Left Camera', src: `rtsp://137.184.170.216:8554/${deviceId}_ch2` },
+    { title: 'Right Camera', src: `rtsp://137.184.170.216:8554/${deviceId}_ch3` },
+    { title: 'Rear Camera', src: `rtsp://137.184.170.216:8554/${deviceId}_ch4` },
   ];
 
   return (
