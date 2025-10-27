@@ -98,6 +98,25 @@ const LiveStreamCard = () => {
     dispatch(livestreamActions.closeLivestream());
   };
 
+  const handleSendCommand = async (payload) => {
+    try {
+      const sendResponse = await fetch('/api/commands/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          deviceId,
+          type: 'liveStream',
+          description: 'Start Livestream',
+          attributes: payload?.attributes || {},
+        }),
+      });
+
+      if (!sendResponse.ok) throw new Error(await sendResponse.text());
+    } catch (err) {
+      console.error('❌ Error sending livestream command:', err);
+    }
+  };
+
   const cameraStreams = [
     { title: 'Front Camera', src: `rtsp://137.184.170.216:8554/${deviceId}_ch1` },
     { title: 'Left Camera', src: `rtsp://137.184.170.216:8554/${deviceId}_ch2` },
@@ -138,13 +157,15 @@ const LiveStreamCard = () => {
           </div>
 
           <div className={classes.content}>
-            {cameraStreams.map((video) => (
+            {cameraStreams.map((video, index) => (
               <VideoBlock
                 key={video.title}
                 title={video.title}
+                index={index}
                 src={video.src}
                 className={classes.videoBlock}
                 showLaunch
+                onSendCommand={handleSendCommand}
               />
             ))}
           </div>

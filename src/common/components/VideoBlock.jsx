@@ -14,6 +14,8 @@ const VideoBlock = ({
   showFocusIcon,
   onFocus,
   playing,
+  index,
+  onSendCommand,
 }) => {
   const videoRef = useRef(null);
   const containerRef = useRef(null);
@@ -41,6 +43,14 @@ const VideoBlock = ({
   const paddingX = 14 * controlScale;
 
   const handlePlayPause = () => {
+    if (!isPlaying && onSendCommand) {
+      const payload = {
+        attributes: {
+          channel: `ch_${index + 1}`,
+        },
+      };
+      onSendCommand(payload);
+    }
     if (!isStarted) setIsStarted(true);
     if (videoRef.current) {
       if (isPlaying) videoRef.current.pause();

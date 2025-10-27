@@ -136,32 +136,24 @@ const StatusCard = ({
 
   const handleLiveStreamOpen = async () => {
     try {
-      const createResponse = await fetch('/api/commands', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          description: 'Start Livestream',
-          type: 'livestream',
-        }),
-      });
-
-      if (!createResponse.ok) throw new Error(await createResponse.text());
-      const command = await createResponse.json();
-
       const sendResponse = await fetch('/api/commands/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           deviceId,
-          id: command.id,
+          type: 'liveStream',
+          description: 'Start Livestream',
         }),
       });
 
       if (!sendResponse.ok) throw new Error(await sendResponse.text());
 
+      // Open livestream modal/UI if successful
       dispatch(livestreamActions.openLivestream(deviceId));
+
+      console.log('✅ Livestream command sent successfully');
     } catch (err) {
-      console.error('Error sending livestream command:', err);
+      console.error('❌ Error sending livestream command:', err);
     }
   };
 

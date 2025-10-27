@@ -352,6 +352,24 @@ const LiveStreamingPage = () => {
   const handleStartAll = () => setPlaying(true);
   const handleStopAll = () => setPlaying(false);
   const handleBack = () => navigate(-1);
+  const handleSendCommand = async (payload) => {
+    try {
+      const sendResponse = await fetch('/api/commands/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          deviceId,
+          type: 'liveStream',
+          description: 'Start Livestream',
+          attributes: payload?.attributes || {},
+        }),
+      });
+
+      if (!sendResponse.ok) throw new Error(await sendResponse.text());
+    } catch (err) {
+      console.error('❌ Error sending livestream command:', err);
+    }
+  };
 
   const videoSources = [
     { id: 1, src: `rtsp://137.184.170.216:8554/${deviceId}_ch1`, title: 'Front Camera' },
@@ -464,7 +482,7 @@ const LiveStreamingPage = () => {
 
       <div className={classes.content}>
         <div className={`${classes.videoGrid} layout-${currentLayout}`}>
-          {filledVideos.map((video) => {
+          {filledVideos.map((video, index) => {
             const originalIndex = videoSources.findIndex(
               (v) => v.id === video.id,
             );
@@ -475,6 +493,8 @@ const LiveStreamingPage = () => {
                 src={video.src}
                 title={video.title}
                 playing={playing}
+                index={index}
+                onSendCommand={handleSendCommand}
                 className={classes.videoContainer}
                 showLaunch={false}
                 showFocusIcon={isFocusEnabled}
@@ -495,13 +515,15 @@ const LiveStreamingPage = () => {
         <div className={classes.mobileView}>
           {/* Main Video View */}
           <div className={classes.mainVideoContainer}>
-            {videoSources.map((video) => (
+            {videoSources.map((video, index) => (
               <VideoBlock
                 key={video.id}
                 src={video.src}
                 title={video.title}
                 showLaunch={false}
                 playing={playing}
+                index={index}
+                onSendCommand={handleSendCommand}
                 showFocusIcon
                 onFocus={() => handleMobileCameraSwitch(
                   videoSources.findIndex((v) => v.id === video.id),
@@ -518,6 +540,8 @@ const LiveStreamingPage = () => {
                 src={video.src}
                 title={video.title}
                 showLaunch={false}
+                index={index}
+                onSendCommand={handleSendCommand}
                 playing={playing}
                 showFocusIcon
                 onFocus={() => handleMobileCameraSwitch(index)}
