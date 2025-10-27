@@ -63,6 +63,8 @@ import EmulatorPage from './other/EmulatorPage';
 import Loader from './common/components/Loader';
 import { generateLoginToken } from './common/components/NativeInterface';
 import { useLocalization } from './common/components/LocalizationProvider';
+import MediaEventPage from './reports/MediaEventPage';
+import MediaDetailsPage from './reports/MediaDetailsPage';
 
 const Navigation = () => {
   const navigate = useNavigate();
@@ -189,6 +191,8 @@ const Navigation = () => {
           <Route path="chart" element={<ChartReportPage />} />
           <Route path="event" element={<EventReportPage />} />
           <Route path="route" element={<RouteReportPage />} />
+          <Route path="media" element={<MediaEventPage />} />
+          <Route path="media/details" element={<MediaDetailsPage />} />
           <Route path="stop" element={<StopReportPage />} />
           <Route path="summary" element={<SummaryReportPage />} />
           <Route path="trip" element={<TripReportPage />} />
