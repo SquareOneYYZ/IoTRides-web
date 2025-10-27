@@ -133,8 +133,36 @@ const StatusCard = ({
   const dispatch = useDispatch();
   const t = useTranslation();
   const admin = useAdministrator();
-  const handleLiveStreamOpen = () => {
-    dispatch(livestreamActions.openLivestream(deviceId));
+
+  const handleLiveStreamOpen = async () => {
+    try {
+      const createResponse = await fetch('/api/commands', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          description: 'Start Livestream',
+          type: 'livestream',
+        }),
+      });
+
+      if (!createResponse.ok) throw new Error(await createResponse.text());
+      const command = await createResponse.json();
+
+      const sendResponse = await fetch('/api/commands/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          deviceId,
+          id: command.id,
+        }),
+      });
+
+      if (!sendResponse.ok) throw new Error(await sendResponse.text());
+
+      dispatch(livestreamActions.openLivestream(deviceId));
+    } catch (err) {
+      console.error('Error sending livestream command:', err);
+    }
   };
 
   const deviceReadonly = useDeviceReadonly();
