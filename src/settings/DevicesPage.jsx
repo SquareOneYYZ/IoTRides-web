@@ -41,7 +41,6 @@ import useSettingsStyles from './common/useSettingsStyles';
 import DeviceUsersValue from './components/DeviceUsersValue';
 import usePersistedState from '../common/util/usePersistedState';
 
-// Helper function to check if expiration is soon (within 30 days)
 const isExpiringSoon = (expirationTime) => {
   if (!expirationTime) return false;
   const expirationDate = new Date(expirationTime);
@@ -50,7 +49,6 @@ const isExpiringSoon = (expirationTime) => {
   return expirationDate <= thirtyDaysFromNow && expirationDate > new Date();
 };
 
-// Enhanced filter function for global search
 const filterByGlobalSearch = (keyword) => (item) => {
   if (!keyword) return true;
   const searchFields = [
@@ -77,7 +75,6 @@ const DevicesPage = () => {
   const [timestamp, setTimestamp] = useState(Date.now());
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [filters, setFilters] = useState({});
   const [showAll, setShowAll] = usePersistedState('showAllDevices', false);
   const [globalSearch, setGlobalSearch] = useState('');
   const [filters, setFilters] = useState({
