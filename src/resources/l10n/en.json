@@ -556,6 +556,7 @@
 	"reportCombined": "Combined",
 	"reportRoute": "Route",
 	"reportEvents": "Events",
+	"reportMedia": "Media Events",
 	"reportTrips": "Trips",
 	"reportStops": "Stops",
 	"reportSummary": "Summary",
