@@ -23,7 +23,7 @@ const MediaDetailsPage = () => {
   const navigate = useNavigate();
   const selectedEvent = useSelector((state) => state.events.selectedEvent);
   const [eventDetails, setEventDetails] = useState(null);
-  const [positionData, setPositionData] = useState(null);
+  const [route, setRoute] = useState(null);
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -57,28 +57,12 @@ const MediaDetailsPage = () => {
 
       const eventData = await eventResponse.json();
       setEventDetails(eventData);
-
-      const positionId = eventData.positionId || selectedEvent.positionId;
-      if (positionId) {
-        const positionResponse = await fetch(`/api/positions/${positionId}`, {
-          headers: { Accept: 'application/json' },
-        });
-
-        if (positionResponse.ok) {
-          const positionInfo = await positionResponse.json();
-          setPositionData(positionInfo);
-        }
-      }
-
       const deviceId = eventData.deviceId || selectedEvent.deviceId;
       const eventTime = new Date(eventData.eventTime || selectedEvent.eventTime);
-
       const from = new Date(eventTime);
       from.setHours(0, 0, 0, 0);
-
       const to = new Date(eventTime);
       to.setHours(23, 59, 59, 999);
-
       const tripsQuery = new URLSearchParams({
         deviceId,
         from: from.toISOString(),
@@ -92,6 +76,25 @@ const MediaDetailsPage = () => {
       if (tripsResponse.ok) {
         const tripsData = await tripsResponse.json();
         setTrips(tripsData);
+
+        // Fetch route data for each trip if needed
+        if (tripsData.length > 0) {
+          const firstTrip = tripsData[0];
+          const routeQuery = new URLSearchParams({
+            deviceId,
+            from: firstTrip.startTime,
+            to: firstTrip.endTime,
+          });
+
+          const routeResponse = await fetch(`/api/reports/route?${routeQuery.toString()}`, {
+            headers: { Accept: 'application/json' },
+          });
+
+          if (routeResponse.ok) {
+            const routeData = await routeResponse.json();
+            setRoute(routeData);
+          }
+        }
       }
     } catch (err) {
       setError(err.message || 'Failed to load data');
@@ -145,6 +148,25 @@ const MediaDetailsPage = () => {
     return <PlayCircleOutlineIcon sx={{ fontSize: 100, color: '#555' }} />;
   };
 
+  const createMarkers = (route) => {
+    if (!route || route.length === 0) return [];
+    const first = route[0];
+    const last = route[route.length - 1];
+
+    return [
+      { latitude: first.latitude, longitude: first.longitude, image: 'start-success' },
+      { latitude: last.latitude, longitude: last.longitude, image: 'finish-error' },
+    ];
+  };
+
+  const eventDate = selectedEvent?.eventTime
+    ? new Date(selectedEvent.eventTime).toLocaleDateString()
+    : '';
+
+  const eventDateTime = selectedEvent?.eventTime
+    ? new Date(selectedEvent.eventTime).toLocaleString()
+    : '';
+
   if (loading) {
     return (
       <PageLayout menu={<ReportsMenu />} breadcrumbs={['reportTitle', 'reportMediaDetails']}>
@@ -187,134 +209,121 @@ const MediaDetailsPage = () => {
     );
   }
 
-  const markers = positionData ? [{
-    latitude: positionData.latitude,
-    longitude: positionData.longitude,
-  }] : [];
-
-  const positions = positionData ? [positionData] : [];
-
-  const eventDate = selectedEvent?.eventTime
-    ? new Date(selectedEvent.eventTime).toLocaleDateString()
-    : '';
-
-  const eventDateTime = selectedEvent?.eventTime
-    ? new Date(selectedEvent.eventTime).toLocaleString()
-    : '';
-
   return (
     <PageLayout menu={<ReportsMenu />} breadcrumbs={['reportTitle', 'reportMediaDetails']}>
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          p: 2,
-          gap: 3,
-          minHeight: '100vh',
-        }}
-      >
-        <Paper
-          elevation={3}
-          sx={{
-            backgroundColor: '#1e1e1e',
-            borderRadius: 2,
-            aspectRatio: '16/9',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            position: 'relative',
-            overflow: 'hidden',
-          }}
-        >
-          {renderMediaContent()}
-          <Box
+      <div className={classes.container}>
+        <div className={classes.containerMain} style={{ padding: '16px' }}>
+          {/* Video/Image Player Section */}
+          <Paper
             sx={{
-              position: 'absolute',
-              bottom: 10,
-              left: 10,
-              bgcolor: 'rgba(0,0,0,0.7)',
-              color: '#fff',
-              px: 1.5,
-              py: 0.5,
-              borderRadius: 1,
-              fontSize: 14,
+              backgroundColor: '#1e1e1e',
+              borderRadius: 2,
+              aspectRatio: '16/9',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              position: 'relative',
+              overflow: 'hidden',
+              mb: 2,
             }}
           >
-            {selectedEvent?.fileName || 'Media File'}
-          </Box>
-          <Box
-            sx={{
-              position: 'absolute',
-              bottom: 10,
-              right: 10,
-              bgcolor: 'rgba(0,0,0,0.7)',
-              color: '#fff',
-              px: 1.5,
-              py: 0.5,
-              borderRadius: 1,
-              fontSize: 12,
-            }}
-          >
-            {eventDateTime}
-          </Box>
-        </Paper>
-
-        <Paper sx={{ height: 1000, position: 'relative', overflow: 'hidden', borderRadius: 2 }}>
-          <MapView>
-            <MapGeofence />
-            <MapRoutePath positions={positions} />
-            <MapMarkers markers={markers} />
-            <MapCamera positions={positions} />
-          </MapView>
-          <MapScale />
-        </Paper>
-
-        <Paper sx={{ p: 2, overflowX: 'auto' }}>
-          <Typography variant="h6" sx={{ mb: 2 }}>
-            Trips on
-            {' '}
-            {eventDate}
-          </Typography>
-
-          {trips.length === 0 ? (
-            <Box sx={{ p: 3, textAlign: 'center' }}>
-              <Typography variant="body1" color="text.secondary">
-                No trips found for this day.
-              </Typography>
+            {renderMediaContent()}
+            <Box
+              sx={{
+                position: 'absolute',
+                bottom: 10,
+                left: 10,
+                bgcolor: 'rgba(0,0,0,0.7)',
+                color: '#fff',
+                px: 1.5,
+                py: 0.5,
+                borderRadius: 1,
+                fontSize: 14,
+              }}
+            >
+              {selectedEvent?.fileName || 'Media File'}
             </Box>
-          ) : (
-            <Table stickyHeader>
-              <TableHead>
-                <TableRow>
-                  <TableCell />
-                  {columns.map((col) => (
-                    <TableCell key={col}>{col}</TableCell>
-                  ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {trips.map((trip) => (
-                  <TableRow key={trip.id}>
-                    <TableCell padding="none">
-                      <IconButton size="small">
-                        <GpsFixedIcon fontSize="small" />
-                      </IconButton>
-                    </TableCell>
-                    {columns.map((col) => {
-                      const isTimeColumn = col.includes('Time');
-                      const value = trip[col];
-                      const displayValue = isTimeColumn && value
-                        ? new Date(value).toLocaleString()
-                        : value || '-';
-                      return <TableCell key={col}>{displayValue}</TableCell>;
-                    })}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </Paper>
-      </Box>
+            <Box
+              sx={{
+                position: 'absolute',
+                bottom: 10,
+                right: 10,
+                bgcolor: 'rgba(0,0,0,0.7)',
+                color: '#fff',
+                px: 1.5,
+                py: 0.5,
+                borderRadius: 1,
+                fontSize: 12,
+              }}
+            >
+              {eventDateTime}
+            </Box>
+          </Paper>
+
+          <Paper sx={{ height: 500, position: 'relative', overflow: 'hidden', borderRadius: 2, mb: 2 }}>
+            <MapView>
+              <MapGeofence />
+              {route && route.length > 0 && (
+              <>
+                <MapRoutePath positions={route} />
+                <MapMarkers markers={createMarkers(route)} />
+                <MapCamera positions={route} />
+              </>
+              )}
+            </MapView>
+            <MapScale />
+          </Paper>
+
+          {/* Trips Table Section */}
+          <Paper sx={{ p: 2, borderRadius: 2 }}>
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              Trips on
+              {' '}
+              {eventDate}
+            </Typography>
+
+            {trips.length === 0 ? (
+              <Box sx={{ p: 3, textAlign: 'center' }}>
+                <Typography variant="body1" color="text.secondary">
+                  No trips found for this day.
+                </Typography>
+              </Box>
+            ) : (
+              <Box sx={{ overflowX: 'auto' }}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell className={classes.columnAction} />
+                      {columns.map((col) => (
+                        <TableCell key={col}>{col}</TableCell>
+                      ))}
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {trips.map((trip) => (
+                      <TableRow key={trip.startPositionId}>
+                        <TableCell className={classes.columnAction} padding="none">
+                          <IconButton size="small">
+                            <GpsFixedIcon fontSize="small" />
+                          </IconButton>
+                        </TableCell>
+                        {columns.map((col) => {
+                          const isTimeColumn = col.includes('Time');
+                          const value = trip[col];
+                          const displayValue = isTimeColumn && value
+                            ? new Date(value).toLocaleString()
+                            : value || '-';
+                          return <TableCell key={col}>{displayValue}</TableCell>;
+                        })}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </Box>
+            )}
+          </Paper>
+        </div>
+      </div>
     </PageLayout>
   );
 };
