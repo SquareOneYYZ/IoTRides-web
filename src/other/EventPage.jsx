@@ -109,12 +109,10 @@ const EventPage = () => {
   const t = useTranslation();
   const { id } = useParams();
   const timerRef = useRef();
-
   const [event, setEvent] = useState();
   const [position, setPosition] = useState();
   const [device, setDevice] = useState(null);
   const [showCard, setShowCard] = useState(false);
-
   const [replayMode, setReplayMode] = useState(false);
   const [replayPositions, setReplayPositions] = useState([]);
   const [replayIndex, setReplayIndex] = useState(0);
@@ -211,8 +209,8 @@ const EventPage = () => {
   }, [event]);
 
   useEffectAsync(async () => {
-    if (event?.deviceId) {
-      const response = await fetch(`/api/devices/${event.deviceId}`);
+    if (event?.id) {
+      const response = await fetch(`/api/devices/${event.id}`);
       if (response.ok) {
         setDevice(await response.json());
       }
@@ -317,6 +315,7 @@ const EventPage = () => {
                 {t('reportReplay')}
                 {' '}
                 -
+                {' '}
                 {device?.name || ''}
               </Typography>
               <IconButton edge="end" onClick={handleReplayStop}>
