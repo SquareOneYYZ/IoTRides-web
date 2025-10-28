@@ -155,12 +155,13 @@ const EventPage = () => {
   );
 
   const onMarkerClick = useCallback((positionId) => {
-    setShowCard(!!positionId);
+    setShowCard(true);
   }, []);
 
   const onPointClick = useCallback((_, index) => {
     setReplayIndex(index);
     setReplayPlaying(false);
+    setShowCard(true);
   }, []);
 
   const onPointHover = useCallback((_, index) => {
