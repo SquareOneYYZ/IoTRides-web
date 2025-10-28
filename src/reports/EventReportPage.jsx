@@ -82,7 +82,7 @@ const FILTERED_NOTIFICATION_TYPES = [
   'media',
 ];
 const REPLAY_INTERVAL = 500;
-const REPLAY_TIME_WINDOW = 60 * 60 * 1000; // 1 hour in milliseconds
+const REPLAY_TIME_WINDOW = 60 * 60 * 1000; 
 
 const filterEvents = (events, typesToExclude) => {
   const excludeSet = new Set(typesToExclude);
@@ -145,8 +145,6 @@ const EventReportPage = () => {
   const [loading, setLoading] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [position, setPosition] = useState(null);
-
-  // Replay state
   const [replayMode, setReplayMode] = useState(false);
   const [replayPositions, setReplayPositions] = useState([]);
   const [replayIndex, setReplayIndex] = useState(0);
@@ -335,12 +333,13 @@ const EventReportPage = () => {
   }, []);
 
   const onMarkerClick = useCallback((positionId) => {
-    setShowCard(!!positionId);
+    setShowCard(true);
   }, []);
 
   const onPointClick = useCallback((_, index) => {
     setReplayIndex(index);
     setReplayPlaying(false);
+    setShowCard(true);
   }, []);
 
   const onPointHover = useCallback((_, index) => {
