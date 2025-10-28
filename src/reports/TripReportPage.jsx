@@ -26,6 +26,7 @@ import MapCamera from '../map/MapCamera';
 import MapGeofence from '../map/MapGeofence';
 import scheduleReport from './common/scheduleReport';
 import MapScale from '../map/MapScale';
+import useResizableMap from './common/useResizableMap';
 
 const columnsArray = [
   ['startTime', 'reportStartTime'],
@@ -47,7 +48,7 @@ const TripReportPage = () => {
   const navigate = useNavigate();
   const classes = useReportStyles();
   const t = useTranslation();
-
+  const { containerRef, mapHeight, handleMouseDown } = useResizableMap(60, 20, 80);
   const distanceUnit = useAttributePreference('distanceUnit');
   const speedUnit = useAttributePreference('speedUnit');
   const volumeUnit = useAttributePreference('volumeUnit');
@@ -157,23 +158,79 @@ const TripReportPage = () => {
 
   return (
     <PageLayout menu={<ReportsMenu />} breadcrumbs={['reportTitle', 'reportTrips']}>
-      <div className={classes.container}>
+      <div
+        ref={containerRef}
+        className={classes.container}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: 'calc(100vh - 64px)',
+          overflow: 'hidden',
+        }}
+      >
         {selectedItem && (
-          <div className={classes.containerMap}>
+        <>
+          <div
+            className={classes.containerMap}
+            style={{
+              height: `${mapHeight}%`,
+              minHeight: '150px',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
             <MapView>
               <MapGeofence />
               {route && (
-                <>
-                  <MapRoutePath positions={route} />
-                  <MapMarkers markers={createMarkers()} />
-                  <MapCamera positions={route} />
-                </>
+              <>
+                <MapRoutePath positions={route} />
+                <MapMarkers markers={createMarkers()} />
+                <MapCamera positions={route} />
+              </>
               )}
             </MapView>
             <MapScale />
           </div>
+
+          <button
+            type="button"
+            onMouseDown={handleMouseDown}
+            style={{
+              height: '8px',
+              backgroundColor: '#e0e0e0',
+              cursor: 'row-resize',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              borderTop: '1px solid #ccc',
+              borderBottom: '1px solid #ccc',
+              transition: 'background-color 0.2s',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#d0d0d0')}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#e0e0e0')}
+          >
+            {' '}
+            <div
+              style={{
+                width: '40px',
+                height: '4px',
+                backgroundColor: '#999',
+                borderRadius: '2px',
+              }}
+            />
+          </button>
+        </>
         )}
-        <div className={classes.containerMain}>
+
+        <div
+          className={classes.containerMain}
+          style={{
+            flex: 1,
+            overflow: 'auto',
+            minHeight: '150px',
+          }}
+        >
           <div className={classes.header}>
             <ReportFilter handleSubmit={handleSubmit} handleSchedule={handleSchedule} loading={loading}>
               <ColumnSelect columns={columns} setColumns={setColumns} columnsArray={columnsArray} />
@@ -211,6 +268,7 @@ const TripReportPage = () => {
           </Table>
         </div>
       </div>
+
     </PageLayout>
   );
 };
