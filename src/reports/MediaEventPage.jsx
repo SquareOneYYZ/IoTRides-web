@@ -167,6 +167,20 @@ const MediaEventPage = () => {
   const [mediaBlocks, setMediaBlocks] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  const fetchUniqueId = async (deviceId) => {
+    try {
+      const response = await fetch(`https://iotstagingenv.duckdns.org/api/devices/${deviceId}`);
+      if (!response.ok) {
+        throw Error('Failed to fetch device details');
+      }
+      const device = await response.json();
+      return device.uniqueId || deviceId;
+    } catch (error) {
+      console.error(`Error fetching uniqueId for device ${deviceId}:`, error);
+      return deviceId;
+    }
+  };
+
   const handleSubmit = useCatch(async ({ deviceId, from, to, type }) => {
     const query = new URLSearchParams({ deviceId, from, to });
 
@@ -196,17 +210,31 @@ const MediaEventPage = () => {
       const events = await response.json();
       const mediaEvents = events.filter((event) => event.type === 'media');
 
-      const transformedMedia = mediaEvents.map((event) => ({
-        id: event.id,
-        deviceId: event.deviceId,
-        eventTime: event.eventTime,
-        positionId: event.positionId,
-        mediaType: event.attributes?.media || 'unknown',
-        fileName: event.attributes?.file || '',
-        url: event.attributes?.file
-          ? `http://localhost:3000/api/media/${event.deviceId}/${event.attributes.file}`
-          : '',
-      }));
+      const uniqueIdMap = new Map();
+      const uniqueDeviceIds = [...new Set(mediaEvents.map((event) => event.deviceId))];
+
+      await Promise.all(
+        uniqueDeviceIds.map(async (devId) => {
+          const uniqueId = await fetchUniqueId(devId);
+          uniqueIdMap.set(devId, uniqueId);
+        }),
+      );
+
+      const transformedMedia = mediaEvents.map((event) => {
+        const uniqueId = uniqueIdMap.get(event.deviceId);
+        return {
+          id: event.id,
+          deviceId: event.deviceId,
+          uniqueId,
+          eventTime: event.eventTime,
+          positionId: event.positionId,
+          mediaType: event.attributes?.media || 'unknown',
+          fileName: event.attributes?.file || '',
+          url: event.attributes?.file
+            ? `http://localhost:3000/api/media/${uniqueId}/${event.attributes.file}`
+            : '',
+        };
+      });
       setMediaBlocks(transformedMedia);
     } finally {
       setLoading(false);
@@ -225,10 +253,7 @@ const MediaEventPage = () => {
   });
 
   const handleLaunch = (media) => {
-    // Dispatch the selected media event to Redux store
     dispatch(eventsActions.setSelectedEvent(media));
-
-    // Navigate to the media details page
     navigate('/reports/media/details');
   };
 
