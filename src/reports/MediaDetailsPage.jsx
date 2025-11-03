@@ -27,6 +27,7 @@ const MediaDetailsPage = () => {
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [mediaUrl, setMediaUrl] = useState('');
 
   const columns = [
     'startTime',
@@ -36,6 +37,20 @@ const MediaDetailsPage = () => {
     'maxSpeed',
     'duration',
   ];
+
+  const fetchUniqueId = async (deviceId) => {
+    try {
+      const response = await fetch(`/api/devices/${deviceId}`);
+      if (!response.ok) {
+        throw Error('Failed to fetch device details');
+      }
+      const device = await response.json();
+      return device.uniqueId || deviceId;
+    } catch (error) {
+      console.error(`Error fetching uniqueId for device ${deviceId}:`, error);
+      return deviceId;
+    }
+  };
 
   const fetchData = useCatch(async () => {
     if (!selectedEvent || !selectedEvent.id) {
@@ -58,6 +73,14 @@ const MediaDetailsPage = () => {
       const eventData = await eventResponse.json();
       setEventDetails(eventData);
       const deviceId = eventData.deviceId || selectedEvent.deviceId;
+
+      const uniqueId = await fetchUniqueId(deviceId);
+
+      if (eventData.attributes?.file) {
+        const generatedUrl = `http://localhost:3000/api/media/${uniqueId}/${eventData.attributes.file}`;
+        setMediaUrl(generatedUrl);
+      }
+
       const eventTime = new Date(eventData.eventTime || selectedEvent.eventTime);
       const from = new Date(eventTime);
       from.setHours(0, 0, 0, 0);
@@ -77,7 +100,6 @@ const MediaDetailsPage = () => {
         const tripsData = await tripsResponse.json();
         setTrips(tripsData);
 
-        // Fetch route data for each trip if needed
         if (tripsData.length > 0) {
           const firstTrip = tripsData[0];
           const routeQuery = new URLSearchParams({
@@ -108,18 +130,21 @@ const MediaDetailsPage = () => {
   }, [selectedEvent]);
 
   const renderMediaContent = () => {
-    if (!selectedEvent) {
+    if (!selectedEvent && !mediaUrl) {
       return <PlayCircleOutlineIcon sx={{ fontSize: 100, color: '#555' }} />;
     }
 
-    const isImage = selectedEvent.mediaType === 'image' && selectedEvent.url;
-    const isVideo = selectedEvent.mediaType === 'video' && selectedEvent.url;
+    const mediaType = eventDetails?.attributes?.media || selectedEvent?.mediaType;
+    const finalUrl = mediaUrl || selectedEvent?.url;
+
+    const isImage = mediaType === 'image' && finalUrl;
+    const isVideo = mediaType === 'video' && finalUrl;
 
     if (isImage) {
       return (
         <img
-          src={selectedEvent.url}
-          alt={selectedEvent.fileName}
+          src={finalUrl}
+          alt={selectedEvent?.fileName || 'Media'}
           style={{
             width: '100%',
             height: '100%',
@@ -132,7 +157,7 @@ const MediaDetailsPage = () => {
     if (isVideo) {
       return (
         <video
-          src={selectedEvent.url}
+          src={finalUrl}
           controls
           style={{
             width: '100%',
@@ -213,7 +238,6 @@ const MediaDetailsPage = () => {
     <PageLayout menu={<ReportsMenu />} breadcrumbs={['reportTitle', 'reportMediaDetails']}>
       <div className={classes.container}>
         <div className={classes.containerMain} style={{ padding: '16px' }}>
-          {/* Video/Image Player Section */}
           <Paper
             sx={{
               backgroundColor: '#1e1e1e',
@@ -241,7 +265,7 @@ const MediaDetailsPage = () => {
                 fontSize: 14,
               }}
             >
-              {selectedEvent?.fileName || 'Media File'}
+              {selectedEvent?.fileName || eventDetails?.attributes?.file || 'Media File'}
             </Box>
             <Box
               sx={{
@@ -274,7 +298,6 @@ const MediaDetailsPage = () => {
             <MapScale />
           </Paper>
 
-          {/* Trips Table Section */}
           <Paper sx={{ p: 2, borderRadius: 2 }}>
             <Typography variant="h6" sx={{ mb: 2 }}>
               Trips on
