@@ -4,6 +4,7 @@ const { reducer, actions } = createSlice({
   name: 'events',
   initialState: {
     items: [],
+    selectedEvent: null,
   },
   reducers: {
     add(state, action) {
@@ -15,6 +16,12 @@ const { reducer, actions } = createSlice({
     },
     deleteAll(state) {
       state.items = [];
+    },
+    setSelectedEvent(state, action) {
+      state.selectedEvent = action.payload;
+    },
+    clearSelectedEvent(state) {
+      state.selectedEvent = null;
     },
   },
 });

@@ -26,6 +26,7 @@ import trainSvg from '../../resources/images/icon/train.svg';
 import tramSvg from '../../resources/images/icon/tram.svg';
 import truckSvg from '../../resources/images/icon/truck.svg';
 import vanSvg from '../../resources/images/icon/van.svg';
+import eventSvg from '../../resources/images/icon/event.svg';
 
 export const mapIcons = {
   animal: animalSvg,
@@ -35,6 +36,7 @@ export const mapIcons = {
   car: carSvg,
   camper: camperSvg,
   crane: craneSvg,
+  event: eventSvg,
   default: defaultSvg,
   finish: finishSvg,
   helicopter: helicopterSvg,
@@ -85,7 +87,11 @@ export default async () => {
       ['info', 'success', 'error', 'neutral'].forEach((color) => {
         results.push(
           loadImage(mapIcons[category]).then((icon) => {
-            mapImages[`${category}-${color}`] = prepareIcon(background, icon, mapPalette[color].main);
+            mapImages[`${category}-${color}`] = prepareIcon(
+              background,
+              icon,
+              mapPalette[color].main,
+            );
           }),
         );
       });
