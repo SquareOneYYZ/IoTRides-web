@@ -219,10 +219,11 @@ const MediaEventPage = () => {
       const transformedMedia = mediaEvents.map((event) => {
         const uniqueId = uniqueIdMap.get(event.deviceId);
         const mediaUrl = event.attributes?.file
-          ? `http://localhost:3000/api/media/${uniqueId}/${event.attributes.file}`
+          ? `/api/media/${uniqueId}/${event.attributes.file}`
           : '';
 
         // console.log('Media URL generated:', mediaUrl);
+
         return {
           id: event.id,
           deviceId: event.deviceId,

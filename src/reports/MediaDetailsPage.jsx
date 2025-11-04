@@ -77,7 +77,7 @@ const MediaDetailsPage = () => {
       const uniqueId = await fetchUniqueId(deviceId);
 
       if (eventData.attributes?.file) {
-        const generatedUrl = `http://localhost:3000/api/media/${uniqueId}/${eventData.attributes.file}`;
+        const generatedUrl = `/api/media/${uniqueId}/${eventData.attributes.file}`;
         setMediaUrl(generatedUrl);
       }
 
@@ -136,7 +136,6 @@ const MediaDetailsPage = () => {
 
     const mediaType = eventDetails?.attributes?.media || selectedEvent?.mediaType;
     const finalUrl = mediaUrl || selectedEvent?.url;
-
     const isImage = mediaType === 'image' && finalUrl;
     const isVideo = mediaType === 'video' && finalUrl;
 
