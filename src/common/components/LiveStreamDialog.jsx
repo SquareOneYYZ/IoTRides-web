@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import Draggable from 'react-draggable';
 import {
@@ -7,6 +7,7 @@ import {
   IconButton,
   Typography,
   Tooltip,
+  CircularProgress,
 } from '@mui/material';
 import makeStyles from '@mui/styles/makeStyles';
 import CloseIcon from '@mui/icons-material/Close';
@@ -83,6 +84,12 @@ const useStyles = makeStyles((theme) => ({
       bottom: 'auto !important',
     },
   },
+  loadingContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '200px',
+  },
 }));
 
 const LiveStreamCard = () => {
@@ -92,18 +99,48 @@ const LiveStreamCard = () => {
   const { open, deviceId } = useSelector((state) => state.livestream);
   const device = useSelector((state) => state.devices.items[deviceId]);
 
+  const [uniqueId, setUniqueId] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchUniqueId = async (devId) => {
+    try {
+      const response = await fetch(`/api/devices/${devId}`);
+      if (!response.ok) {
+        throw Error('Failed to fetch device details');
+      }
+      const deviceData = await response.json();
+      return deviceData.uniqueId || devId;
+    } catch (error) {
+      console.error(`Error fetching uniqueId for device ${devId}:`, error);
+      return devId;
+    }
+  };
+
+  useEffect(() => {
+    const loadUniqueId = async () => {
+      if (deviceId) {
+        setLoading(true);
+        const id = await fetchUniqueId(deviceId);
+        setUniqueId(id);
+        setLoading(false);
+      }
+    };
+
+    loadUniqueId();
+  }, [deviceId]);
+
   if (!open || !deviceId) return null;
 
   const handleClose = () => {
     dispatch(livestreamActions.closeLivestream());
   };
 
-  const cameraStreams = [
-    { title: 'Front Camera', src: 'Sample footage24fps.mp4' },
-    { title: 'Left Camera', src: 'Sample footage24fps.mp4' },
-    { title: 'Right Camera', src: 'Sample footage24fps.mp4' },
-    { title: 'Rear Camera', src: 'Sample footage24fps.mp4' },
-  ];
+  const cameraStreams = uniqueId ? [
+    { title: 'Front Camera', src: `http://143.110.213.79:8889/${uniqueId}_ch1/` },
+    { title: 'Left Camera', src: `http://143.110.213.79:8889/${uniqueId}_ch2/` },
+    { title: 'Right Camera', src: `http://143.110.213.79:8889/${uniqueId}_ch3/` },
+    { title: 'Rear Camera', src: `http://143.110.213.79:8889/${uniqueId}_ch4/` },
+  ] : [];
 
   return (
     <div
@@ -137,17 +174,23 @@ const LiveStreamCard = () => {
             </CardActions>
           </div>
 
-          <div className={classes.content}>
-            {cameraStreams.map((video) => (
-              <VideoBlock
-                key={video.title}
-                title={video.title}
-                src={video.src}
-                className={classes.videoBlock}
-                showLaunch
-              />
-            ))}
-          </div>
+          {loading ? (
+            <div className={classes.loadingContainer}>
+              <CircularProgress />
+            </div>
+          ) : (
+            <div className={classes.content}>
+              {cameraStreams.map((video) => (
+                <VideoBlock
+                  key={video.title}
+                  title={video.title}
+                  src={video.src}
+                  className={classes.videoBlock}
+                  showLaunch
+                />
+              ))}
+            </div>
+          )}
         </Card>
       </Draggable>
     </div>
