@@ -290,6 +290,7 @@ const MediaEventPage = () => {
                 gap: 2,
                 mt: 2,
                 mb: 2,
+                padding: 2,
               }}
             >
               {mediaBlocks.map((media) => (
