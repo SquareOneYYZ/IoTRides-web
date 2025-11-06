@@ -136,10 +136,10 @@ const LiveStreamCard = () => {
   };
 
   const cameraStreams = uniqueId ? [
-    { title: 'Front Camera', src: `http://143.110.213.79:8889/${uniqueId}_ch1/` },
-    { title: 'Left Camera', src: `http://143.110.213.79:8889/${uniqueId}_ch2/` },
-    { title: 'Right Camera', src: `http://143.110.213.79:8889/${uniqueId}_ch3/` },
-    { title: 'Rear Camera', src: `http://143.110.213.79:8889/${uniqueId}_ch4/` },
+    { title: 'Front Camera', src: `rtsp://143.110.213.79:8889/${uniqueId}_ch1/` },
+    { title: 'Left Camera', src: `rtsp://143.110.213.79:8889/${uniqueId}_ch2/` },
+    { title: 'Right Camera', src: `rtsp://143.110.213.79:8889/${uniqueId}_ch3/` },
+    { title: 'Rear Camera', src: `rtsp://143.110.213.79:8889/${uniqueId}_ch4/` },
   ] : [];
 
   return (
