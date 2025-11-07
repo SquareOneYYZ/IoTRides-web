@@ -149,8 +149,6 @@ const StatusCard = ({
       if (!sendResponse.ok) throw new Error(await sendResponse.text());
 
       dispatch(livestreamActions.openLivestream(deviceId));
-
-      console.log('✅ Livestream command sent successfully');
     } catch (err) {
       console.error('❌ Error sending livestream command:', err);
     }

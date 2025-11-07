@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import Draggable from 'react-draggable';
 import {
@@ -7,6 +7,7 @@ import {
   IconButton,
   Typography,
   Tooltip,
+  CircularProgress,
 } from '@mui/material';
 import makeStyles from '@mui/styles/makeStyles';
 import CloseIcon from '@mui/icons-material/Close';
@@ -83,6 +84,12 @@ const useStyles = makeStyles((theme) => ({
       bottom: 'auto !important',
     },
   },
+  loadingContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '200px',
+  },
 }));
 
 const LiveStreamCard = () => {
@@ -92,37 +99,105 @@ const LiveStreamCard = () => {
   const { open, deviceId } = useSelector((state) => state.livestream);
   const device = useSelector((state) => state.devices.items[deviceId]);
 
+  const [uniqueId, setUniqueId] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [lastCommandTime, setLastCommandTime] = useState({});
+
+  const fetchUniqueId = async (devId) => {
+    try {
+      const response = await fetch(`/api/devices/${devId}`);
+      if (!response.ok) {
+        throw Error('Failed to fetch device details');
+      }
+      const deviceData = await response.json();
+      return deviceData.uniqueId || devId;
+    } catch (error) {
+      console.error(`Error fetching uniqueId for device ${devId}:`, error);
+      return devId;
+    }
+  };
+
+  // Send livestream command with rate limiting
+  const sendChannelCommand = useCallback(async (channels) => {
+    const channelKey = channels.join(',');
+    const now = Date.now();
+    const lastTime = lastCommandTime[channelKey] || 0;
+    const timeDiff = (now - lastTime) / 1000;
+
+    // Check if 15 seconds have passed
+    if (timeDiff < 15) {
+      const remainingTime = Math.ceil(15 - timeDiff);
+      console.log(`Please wait ${remainingTime} seconds before sending command again`);
+      return false;
+    }
+
+    const payload = {
+      deviceId,
+      type: 'liveStream',
+      attributes: {
+        channels,
+        noQueue: false,
+      },
+    };
+
+    try {
+      setLoading(true);
+      const response = await fetch('/api/commands/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw Error(await response.text());
+      }
+
+      // Update last command time
+      setLastCommandTime((prev) => ({
+        ...prev,
+        [channelKey]: now,
+      }));
+
+      console.log(`Livestream command sent for channels: [${channels.join(', ')}]`);
+      return true;
+    } catch (error) {
+      console.error('Failed to send livestream command:', error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [deviceId, lastCommandTime]);
+
+  useEffect(() => {
+    const loadUniqueId = async () => {
+      if (deviceId && open) {
+        setLoading(true);
+        const id = await fetchUniqueId(deviceId);
+        setUniqueId(id);
+
+        // Send initial command for all 4 channels when dialog opens
+        await sendChannelCommand([1, 2, 3, 4]);
+
+        setLoading(false);
+      }
+    };
+
+    loadUniqueId();
+  }, [deviceId, open]);
+
   if (!open || !deviceId) return null;
 
   const handleClose = () => {
     dispatch(livestreamActions.closeLivestream());
+    setLastCommandTime({});
   };
 
-  const handleSendCommand = async (payload) => {
-    try {
-      const sendResponse = await fetch('/api/commands/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          deviceId,
-          type: 'liveStream',
-          description: 'Start Livestream',
-          attributes: payload?.attributes || {},
-        }),
-      });
-
-      if (!sendResponse.ok) throw new Error(await sendResponse.text());
-    } catch (err) {
-      console.error('❌ Error sending livestream command:', err);
-    }
-  };
-
-  const cameraStreams = [
-    { title: 'Front Camera', src: `rtsp://137.184.170.216:8554/${deviceId}_ch1` },
-    { title: 'Left Camera', src: `rtsp://137.184.170.216:8554/${deviceId}_ch2` },
-    { title: 'Right Camera', src: `rtsp://137.184.170.216:8554/${deviceId}_ch3` },
-    { title: 'Rear Camera', src: `rtsp://137.184.170.216:8554/${deviceId}_ch4` },
-  ];
+  const cameraStreams = uniqueId ? [
+    { title: 'Front Camera', src: `rtsp://137.184.170.216:8554/${uniqueId}_ch1/`, channel: 1 },
+    { title: 'Left Camera', src: `rtsp://137.184.170.216:8554/${uniqueId}_ch2/`, channel: 2 },
+    { title: 'Right Camera', src: `rtsp://137.184.170.216:8554/${uniqueId}_ch3/`, channel: 3 },
+    { title: 'Rear Camera', src: `rtsp://137.184.170.216:8554/${uniqueId}_ch4/`, channel: 4 },
+  ] : [];
 
   return (
     <div
@@ -156,19 +231,26 @@ const LiveStreamCard = () => {
             </CardActions>
           </div>
 
-          <div className={classes.content}>
-            {cameraStreams.map((video, index) => (
-              <VideoBlock
-                key={video.title}
-                title={video.title}
-                index={index}
-                src={video.src}
-                className={classes.videoBlock}
-                showLaunch
-                onSendCommand={handleSendCommand}
-              />
-            ))}
-          </div>
+          {loading ? (
+            <div className={classes.loadingContainer}>
+              <CircularProgress />
+            </div>
+          ) : (
+            <div className={classes.content}>
+              {cameraStreams.map((video) => (
+                <VideoBlock
+                  key={video.title}
+                  title={video.title}
+                  src={video.src}
+                  className={classes.videoBlock}
+                  showLaunch
+                  showFocusIcon
+                  onFocus={() => sendChannelCommand([video.channel])}
+                  onPlayCommand={() => sendChannelCommand([video.channel])}
+                />
+              ))}
+            </div>
+          )}
         </Card>
       </Draggable>
     </div>
