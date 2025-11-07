@@ -133,12 +133,39 @@ const StatusCard = ({
   const dispatch = useDispatch();
   const t = useTranslation();
   const admin = useAdministrator();
-  const handleLiveStreamOpen = () => {
-    dispatch(livestreamActions.openLivestream(deviceId));
-  };
+  const [commandSent, setCommandSent] = useState(false);
 
+  const handleLiveStreamOpen = useCatchCallback(async () => {
+    setCommandSent(true);
+
+    const payload = {
+      deviceId,
+      type: 'liveStream',
+      attributes: {
+        channels: [1, 2, 3, 4, 5, 6],
+        noQueue: false,
+      },
+    };
+
+    try {
+      const response = await fetch('/api/commands/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        dispatch(livestreamActions.openLivestream(deviceId));
+      } else {
+        setCommandSent(false);
+        throw Error(await response.text());
+      }
+    } catch (error) {
+      setCommandSent(false);
+      console.error('Failed to send livestream command:', error);
+    }
+  }, [deviceId, dispatch, commandSent]);
   const deviceReadonly = useDeviceReadonly();
-
   const shareDisabled = useSelector(
     (state) => state.session.server.attributes.disableShare,
   );
@@ -307,7 +334,6 @@ const StatusCard = ({
                       disabled={disableActions}
                     >
                       <LiveTvIcon />
-                      {' '}
                     </IconButton>
                   </Tooltip>
                 ) : (
