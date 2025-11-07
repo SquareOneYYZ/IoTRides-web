@@ -63,6 +63,7 @@ import EmulatorPage from './other/EmulatorPage';
 import Loader from './common/components/Loader';
 import { generateLoginToken } from './common/components/NativeInterface';
 import { useLocalization } from './common/components/LocalizationProvider';
+import ReplayMediaPage from './reports/ReplayMediaPage';
 import MediaEventPage from './reports/MediaEventPage';
 import MediaDetailsPage from './reports/MediaDetailsPage';
 
@@ -196,6 +197,7 @@ const Navigation = () => {
           <Route path="stop" element={<StopReportPage />} />
           <Route path="summary" element={<SummaryReportPage />} />
           <Route path="trip" element={<TripReportPage />} />
+          <Route path="replay-media" element={<ReplayMediaPage />} />
           <Route path="scheduled" element={<ScheduledPage />} />
           <Route path="statistics" element={<StatisticsPage />} />
           <Route path="logs" element={<LogsPage />} />
