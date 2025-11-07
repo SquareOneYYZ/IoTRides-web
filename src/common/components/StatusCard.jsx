@@ -148,7 +148,6 @@ const StatusCard = ({
 
       if (!sendResponse.ok) throw new Error(await sendResponse.text());
 
-      // Open livestream modal/UI if successful
       dispatch(livestreamActions.openLivestream(deviceId));
 
       console.log('✅ Livestream command sent successfully');
