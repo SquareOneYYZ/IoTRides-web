@@ -8,6 +8,7 @@ import {
   Typography,
   Tooltip,
   CircularProgress,
+  Alert,
 } from '@mui/material';
 import makeStyles from '@mui/styles/makeStyles';
 import CloseIcon from '@mui/icons-material/Close';
@@ -102,6 +103,7 @@ const LiveStreamCard = () => {
   const [uniqueId, setUniqueId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [lastCommandTime, setLastCommandTime] = useState({});
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
 
   const fetchUniqueId = async (devId) => {
     try {
@@ -127,7 +129,11 @@ const LiveStreamCard = () => {
     // Check if 15 seconds have passed
     if (timeDiff < 15) {
       const remainingTime = Math.ceil(15 - timeDiff);
-      console.log(`Please wait ${remainingTime} seconds before sending command again`);
+      setSnackbar({
+        open: true,
+        message: `Please wait ${remainingTime} seconds before sending command again`,
+        severity: 'warning',
+      });
       return false;
     }
 
@@ -158,10 +164,21 @@ const LiveStreamCard = () => {
         [channelKey]: now,
       }));
 
+      setSnackbar({
+        open: true,
+        message: `Command sent for channel(s): ${channels.join(', ')}`,
+        severity: 'success',
+      });
+
       console.log(`Livestream command sent for channels: [${channels.join(', ')}]`);
       return true;
     } catch (error) {
       console.error('Failed to send livestream command:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to send command',
+        severity: 'error',
+      });
       return false;
     } finally {
       setLoading(false);
@@ -192,6 +209,10 @@ const LiveStreamCard = () => {
     setLastCommandTime({});
   };
 
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
+  };
+
   const cameraStreams = uniqueId ? [
     { title: 'Front Camera', src: `rtsp://137.184.170.216:8554/${uniqueId}_ch1/`, channel: 1 },
     { title: 'Left Camera', src: `rtsp://137.184.170.216:8554/${uniqueId}_ch2/`, channel: 2 },
@@ -200,60 +221,62 @@ const LiveStreamCard = () => {
   ] : [];
 
   return (
-    <div
-      style={{
-        pointerEvents: 'auto',
-        position: 'fixed',
-        zIndex: 10,
-        left: '82%',
-        bottom: '1.7rem',
-        transform: 'translateX(-50%)',
-      }}
-      className={classes.responsiveContainer}
-    >
-      <Draggable
-        handle={`.${classes.header}`}
-        disabled={window.innerWidth <= 600}
+    <>
+      <div
+        style={{
+          pointerEvents: 'auto',
+          position: 'fixed',
+          zIndex: 10,
+          left: '82%',
+          bottom: '1.7rem',
+          transform: 'translateX(-50%)',
+        }}
+        className={classes.responsiveContainer}
       >
-        <Card elevation={5} className={classes.card}>
-          <div className={classes.header}>
-            <Typography variant="body2" color="textSecondary">
-              Live Stream -
-              {' '}
-              {device?.name || `Device ${deviceId}`}
-            </Typography>
-            <CardActions className={classes.actions}>
-              <Tooltip title="Close Stream">
-                <IconButton onClick={handleClose}>
-                  <CloseIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            </CardActions>
-          </div>
+        <Draggable
+          handle={`.${classes.header}`}
+          disabled={window.innerWidth <= 600}
+        >
+          <Card elevation={5} className={classes.card}>
+            <div className={classes.header}>
+              <Typography variant="body2" color="textSecondary">
+                Live Stream -
+                {' '}
+                {device?.name || `Device ${deviceId}`}
+              </Typography>
+              <CardActions className={classes.actions}>
+                <Tooltip title="Close Stream">
+                  <IconButton onClick={handleClose}>
+                    <CloseIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </CardActions>
+            </div>
 
-          {loading ? (
-            <div className={classes.loadingContainer}>
-              <CircularProgress />
-            </div>
-          ) : (
-            <div className={classes.content}>
-              {cameraStreams.map((video) => (
-                <VideoBlock
-                  key={video.title}
-                  title={video.title}
-                  src={video.src}
-                  className={classes.videoBlock}
-                  showLaunch
-                  showFocusIcon
-                  onFocus={() => sendChannelCommand([video.channel])}
-                  onPlayCommand={() => sendChannelCommand([video.channel])}
-                />
-              ))}
-            </div>
-          )}
-        </Card>
-      </Draggable>
-    </div>
+            {loading ? (
+              <div className={classes.loadingContainer}>
+                <CircularProgress />
+              </div>
+            ) : (
+              <div className={classes.content}>
+                {cameraStreams.map((video) => (
+                  <VideoBlock
+                    key={video.title}
+                    title={video.title}
+                    src={video.src}
+                    className={classes.videoBlock}
+                    showLaunch
+                    showFocusIcon
+                    onFocus={() => sendChannelCommand([video.channel])}
+                    onPlayCommand={() => sendChannelCommand([video.channel])}
+                  />
+                ))}
+              </div>
+            )}
+          </Card>
+        </Draggable>
+      </div>
+    </>
   );
 };
 

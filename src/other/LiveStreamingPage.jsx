@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
-  Box, Button, IconButton, Typography, Tooltip,
+  Box,
+  Button,
+  IconButton,
+  Typography,
+  CircularProgress,
 } from '@mui/material';
 import makeStyles from '@mui/styles/makeStyles';
 import { PlayArrow, Stop, LocationOn } from '@mui/icons-material';
@@ -27,11 +31,11 @@ const useStyles = makeStyles((theme) => ({
     position: 'relative',
 
     [theme.breakpoints.down('md')]: {
-      flexDirection: 'row', // Changed from 'column' to 'row'
-      alignItems: 'center', // Changed from 'flex-start' to 'center'
+      flexDirection: 'row',
+      alignItems: 'center',
       padding: theme.spacing(1.5),
       gap: theme.spacing(1.5),
-      flexWrap: 'wrap', // Added to allow wrapping if needed
+      flexWrap: 'wrap',
     },
   },
   leftHeader: {
@@ -267,7 +271,7 @@ const useStyles = makeStyles((theme) => ({
     minHeight: 0,
   },
   mobileVideoGrid: {
-    display: 'none', // Hidden by default on desktop
+    display: 'none',
     [theme.breakpoints.down('md')]: {
       display: 'grid',
       gridTemplateColumns: '1fr 1fr',
@@ -336,6 +340,14 @@ const useStyles = makeStyles((theme) => ({
     borderRadius: 8,
     border: '1px dashed rgba(255,255,255,0.2)',
   },
+  loadingContainer: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100%',
+    flexDirection: 'column',
+    gap: theme.spacing(2),
+  },
 }));
 
 const LiveStreamingPage = () => {
@@ -343,42 +355,80 @@ const LiveStreamingPage = () => {
   const navigate = useNavigate();
   const [currentLayout, setCurrentLayout] = useState(1);
   const [focusedCameraIndex, setFocusedCameraIndex] = useState(0);
-  const [playing, setPlaying] = useState(false);
+  const [uniqueId, setUniqueId] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const { open, deviceId } = useSelector((state) => state.livestream);
   const device = useSelector((state) => state.devices.items[deviceId]);
-  if (!open || !deviceId) return null;
 
-  const handleStartAll = () => setPlaying(true);
-  const handleStopAll = () => setPlaying(false);
-  const handleBack = () => navigate(-1);
-  const handleSendCommand = async (payload) => {
+  const fetchUniqueId = async (devId) => {
     try {
-      const sendResponse = await fetch('/api/commands/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          deviceId,
-          type: 'liveStream',
-          description: 'Start Livestream',
-          attributes: payload?.attributes || {},
-        }),
-      });
-
-      if (!sendResponse.ok) throw new Error(await sendResponse.text());
-    } catch (err) {
-      console.error('❌ Error sending livestream command:', err);
+      const response = await fetch(`/api/devices/${devId}`);
+      if (!response.ok) {
+        throw Error('Failed to fetch device details');
+      }
+      const deviceData = await response.json();
+      return deviceData.uniqueId || devId;
+    } catch (error) {
+      console.error(`Error fetching uniqueId for device ${devId}:`, error);
+      return devId;
     }
   };
 
-  const videoSources = [
-    { id: 1, src: `rtsp://137.184.170.216:8554/${deviceId}_ch1`, title: 'Front Camera' },
-    { id: 2, src: `rtsp://137.184.170.216:8554/${deviceId}_ch2`, title: 'Left Camera' },
-    { id: 3, src: `rtsp://137.184.170.216:8554/${deviceId}_ch3`, title: 'Right Camera' },
-    { id: 4, src: `rtsp://137.184.170.216:8554/${deviceId}_ch4`, title: 'Rear Camera' },
-    { id: 5, src: `rtsp://137.184.170.216:8554/${deviceId}_ch5`, title: 'Top Camera' },
-    { id: 6, src: `rtsp://137.184.170.216:8554/${deviceId}_ch6`, title: 'Bottom Camera' },
-  ];
+  useEffect(() => {
+    const loadUniqueId = async () => {
+      if (deviceId) {
+        setLoading(true);
+        const id = await fetchUniqueId(deviceId);
+        setUniqueId(id);
+        setLoading(false);
+      }
+    };
+
+    loadUniqueId();
+  }, [deviceId]);
+
+  if (!open || !deviceId) return null;
+
+  const handleStartAll = () => console.log('Starting all streams');
+  const handleStopAll = () => console.log('Stopping all streams');
+  const handleLocation = () => navigate('/map');
+  const handleBack = () => navigate(-1);
+
+  const videoSources = uniqueId
+    ? [
+      {
+        id: 1,
+        src: `rtsp://137.184.170.216:8554/${uniqueId}_ch1/`,
+        title: 'Front Camera',
+      },
+      {
+        id: 2,
+        src: `rtsp://137.184.170.216:8554/${uniqueId}_ch2/`,
+        title: 'Left Camera',
+      },
+      {
+        id: 3,
+        src: `rtsp://137.184.170.216:8554/${uniqueId}_ch3/`,
+        title: 'Right Camera',
+      },
+      {
+        id: 4,
+        src: `rtsp://137.184.170.216:8554/${uniqueId}_ch4/`,
+        title: 'Rear Camera',
+      },
+      {
+        id: 5,
+        src: `rtsp://137.184.170.216:8554/${uniqueId}_ch5/`,
+        title: 'Top Camera',
+      },
+      {
+        id: 6,
+        src: `rtsp://137.184.170.216:8554/${uniqueId}_ch6/`,
+        title: 'Bottom Camera',
+      },
+    ]
+    : [];
 
   const totalSlots = Number(currentLayout);
 
@@ -403,6 +453,24 @@ const LiveStreamingPage = () => {
     setFocusedCameraIndex(index);
   };
   const isFocusEnabled = [3, 5, 6].includes(currentLayout);
+
+  if (loading) {
+    return (
+      <div className={classes.root}>
+        <div className={classes.header}>
+          <Typography variant="h6">Loading Live Stream...</Typography>
+        </div>
+        <div className={classes.content}>
+          <div className={classes.loadingContainer}>
+            <CircularProgress />
+            <Typography variant="body1" color="textSecondary">
+              Fetching device information...
+            </Typography>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={classes.root}>
@@ -461,6 +529,16 @@ const LiveStreamingPage = () => {
             >
               Stop
             </Button>
+            <Button
+              variant="text"
+              color="inherit"
+              startIcon={<LocationOn />}
+              onClick={handleLocation}
+              sx={{ mr: 1, display: { xs: 'none', sm: 'flex' } }}
+            >
+              Location
+            </Button>
+
             <IconButton
               color="inherit"
               onClick={handleBack}
@@ -482,7 +560,7 @@ const LiveStreamingPage = () => {
 
       <div className={classes.content}>
         <div className={`${classes.videoGrid} layout-${currentLayout}`}>
-          {filledVideos.map((video, index) => {
+          {filledVideos.map((video) => {
             const originalIndex = videoSources.findIndex(
               (v) => v.id === video.id,
             );
@@ -492,9 +570,6 @@ const LiveStreamingPage = () => {
                 key={video.id}
                 src={video.src}
                 title={video.title}
-                playing={playing}
-                index={index}
-                onSendCommand={handleSendCommand}
                 className={classes.videoContainer}
                 showLaunch={false}
                 showFocusIcon={isFocusEnabled}
@@ -511,19 +586,14 @@ const LiveStreamingPage = () => {
           )}
         </div>
 
-        {/* Mobile Layout */}
         <div className={classes.mobileView}>
-          {/* Main Video View */}
           <div className={classes.mainVideoContainer}>
-            {videoSources.map((video, index) => (
+            {videoSources.map((video) => (
               <VideoBlock
                 key={video.id}
                 src={video.src}
                 title={video.title}
                 showLaunch={false}
-                playing={playing}
-                index={index}
-                onSendCommand={handleSendCommand}
                 showFocusIcon
                 onFocus={() => handleMobileCameraSwitch(
                   videoSources.findIndex((v) => v.id === video.id),
@@ -532,7 +602,6 @@ const LiveStreamingPage = () => {
             ))}
           </div>
 
-          {/* Mobile 2x Grid Layout */}
           <div className={classes.mobileVideoGrid}>
             {videoSources.map((video, index) => (
               <VideoBlock
@@ -540,9 +609,6 @@ const LiveStreamingPage = () => {
                 src={video.src}
                 title={video.title}
                 showLaunch={false}
-                index={index}
-                onSendCommand={handleSendCommand}
-                playing={playing}
                 showFocusIcon
                 onFocus={() => handleMobileCameraSwitch(index)}
               />

@@ -133,29 +133,39 @@ const StatusCard = ({
   const dispatch = useDispatch();
   const t = useTranslation();
   const admin = useAdministrator();
+  const [commandSent, setCommandSent] = useState(false);
 
-  const handleLiveStreamOpen = async () => {
+  const handleLiveStreamOpen = useCatchCallback(async () => {
+    setCommandSent(true);
+
+    const payload = {
+      deviceId,
+      type: 'liveStream',
+      attributes: {
+        channels: [1, 2, 3, 4, 5, 6],
+        noQueue: false,
+      },
+    };
+
     try {
-      const sendResponse = await fetch('/api/commands/send', {
+      const response = await fetch('/api/commands/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          deviceId,
-          type: 'liveStream',
-          description: 'Start Livestream',
-        }),
+        body: JSON.stringify(payload),
       });
 
-      if (!sendResponse.ok) throw new Error(await sendResponse.text());
-
-      dispatch(livestreamActions.openLivestream(deviceId));
-    } catch (err) {
-      console.error('❌ Error sending livestream command:', err);
+      if (response.ok) {
+        dispatch(livestreamActions.openLivestream(deviceId));
+      } else {
+        setCommandSent(false);
+        throw Error(await response.text());
+      }
+    } catch (error) {
+      setCommandSent(false);
+      console.error('Failed to send livestream command:', error);
     }
-  };
-
+  }, [deviceId, dispatch, commandSent]);
   const deviceReadonly = useDeviceReadonly();
-
   const shareDisabled = useSelector(
     (state) => state.session.server.attributes.disableShare,
   );
@@ -324,7 +334,6 @@ const StatusCard = ({
                       disabled={disableActions}
                     >
                       <LiveTvIcon />
-                      {' '}
                     </IconButton>
                   </Tooltip>
                 ) : (

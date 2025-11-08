@@ -13,9 +13,7 @@ const VideoBlock = ({
   showLaunch,
   showFocusIcon,
   onFocus,
-  playing,
-  index,
-  onSendCommand,
+  onPlayCommand,
 }) => {
   const videoRef = useRef(null);
   const containerRef = useRef(null);
@@ -24,6 +22,8 @@ const VideoBlock = ({
   const [showControls, setShowControls] = useState(true);
   const [controlsTimeout, setControlsTimeout] = useState(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
+  const [hasError, setHasError] = useState(false);
+  const [streamLoaded, setStreamLoaded] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -42,20 +42,56 @@ const VideoBlock = ({
   const paddingY = 20 * controlScale;
   const paddingX = 14 * controlScale;
 
-  const handlePlayPause = () => {
-    if (!isPlaying && onSendCommand) {
-      const payload = {
-        attributes: {
-          channel: `ch_${index + 1}`,
-        },
-      };
-      onSendCommand(payload);
+  const handlePlayPause = async () => {
+    if (isPlaying) {
+      if (videoRef.current) {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      }
+      return;
     }
-    if (!isStarted) setIsStarted(true);
+
+    if (isStarted && videoRef.current?.readyState >= 2 && !hasError) {
+      try {
+        await videoRef.current.play();
+        setIsPlaying(true);
+      } catch (error) {
+        console.error('Error playing video:', error);
+        setHasError(true);
+      }
+      return;
+    }
+    if (!isStarted) {
+      setIsStarted(true);
+      const needsCommand = hasError
+                          || !videoRef.current?.readyState
+                          || videoRef.current.readyState < 2;
+
+      if (needsCommand && onPlayCommand) {
+        const success = await onPlayCommand();
+        if (!success) {
+          setIsStarted(false);
+          return;
+        }
+        await new Promise((resolve) => {
+          setTimeout(() => {
+            resolve();
+          }, 1000);
+        });
+      }
+    }
+
+    // Try to play the video
     if (videoRef.current) {
-      if (isPlaying) videoRef.current.pause();
-      else videoRef.current.play();
-      setIsPlaying(!isPlaying);
+      try {
+        await videoRef.current.play();
+        setIsPlaying(true);
+        setHasError(false);
+      } catch (error) {
+        console.error('Error playing video:', error);
+        setHasError(true);
+        setIsPlaying(false);
+      }
     }
   };
 
@@ -101,18 +137,21 @@ const VideoBlock = ({
     if (onFocus) onFocus();
   };
 
-  useEffect(() => {
-    if (!videoRef.current) return;
+  const handleVideoError = () => {
+    setHasError(true);
+    setIsPlaying(false);
+    setStreamLoaded(false);
+  };
 
-    if (playing) {
-      videoRef.current.src = src;
-      videoRef.current.play().catch((err) => console.warn('Play error', err));
-    } else {
-      videoRef.current.pause();
-      videoRef.current.removeAttribute('src');
-      videoRef.current.load();
-    }
-  }, [playing, src]);
+  const handleVideoCanPlay = () => {
+    setHasError(false);
+    setStreamLoaded(true);
+  };
+
+  const handleVideoPlaying = () => {
+    setStreamLoaded(true);
+    setHasError(false);
+  };
 
   return (
     <div
@@ -249,6 +288,9 @@ const VideoBlock = ({
             setIsPlaying(false);
             setShowControls(true);
           }}
+          onError={handleVideoError}
+          onCanPlay={handleVideoCanPlay}
+          onPlaying={handleVideoPlaying}
           onClick={handlePlayPause}
           controls={false}
           aria-label={title || 'Video player'}
@@ -260,6 +302,25 @@ const VideoBlock = ({
             label="English"
           />
         </video>
+
+        {hasError && isStarted && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              color: 'white',
+              backgroundColor: 'rgba(255, 0, 0, 0.3)',
+              padding: '10px',
+              borderRadius: '4px',
+              fontSize: '12px',
+              zIndex: 6,
+            }}
+          >
+            Stream not available
+          </div>
+        )}
 
         {(isStarted || showControls) && (
           <div
@@ -349,6 +410,7 @@ VideoBlock.propTypes = {
   showLaunch: PropTypes.bool,
   showFocusIcon: PropTypes.bool,
   onFocus: PropTypes.func,
+  onPlayCommand: PropTypes.func,
 };
 
 VideoBlock.defaultProps = {
@@ -357,6 +419,7 @@ VideoBlock.defaultProps = {
   showLaunch: false,
   showFocusIcon: false,
   onFocus: null,
+  onPlayCommand: null,
 };
 
 export default VideoBlock;
