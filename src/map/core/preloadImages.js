@@ -27,10 +27,12 @@ import tramSvg from '../../resources/images/icon/tram.svg';
 import truckSvg from '../../resources/images/icon/truck.svg';
 import vanSvg from '../../resources/images/icon/van.svg';
 import eventSvg from '../../resources/images/icon/event.svg';
+import dashcamSvg from '../../resources/images/icon/dashcam.svg';
 
 export const mapIcons = {
   animal: animalSvg,
   bicycle: bicycleSvg,
+  dashcam: dashcamSvg,
   boat: boatSvg,
   bus: busSvg,
   car: carSvg,

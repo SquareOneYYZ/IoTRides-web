@@ -8,7 +8,6 @@ import {
   Typography,
   Tooltip,
   CircularProgress,
-  Snackbar,
   Alert,
 } from '@mui/material';
 import makeStyles from '@mui/styles/makeStyles';
@@ -269,17 +268,6 @@ const LiveStreamCard = () => {
           </Card>
         </Draggable>
       </div>
-
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
     </>
   );
 };
