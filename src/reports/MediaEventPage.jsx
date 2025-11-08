@@ -1,6 +1,6 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   IconButton, CircularProgress, Typography, Box,
 } from '@mui/material';
@@ -286,7 +286,7 @@ const MediaEventPage = () => {
           url: mediaUrl,
         };
       });
-
+      dispatch(eventsActions.setMediaList(transformedMedia));
       setMediaBlocks(transformedMedia);
     } catch (error) {
       console.error('Error fetching media events:', error);
@@ -296,6 +296,13 @@ const MediaEventPage = () => {
     }
   });
 
+  const existingMediaList = useSelector((state) => state.events.mediaList);
+
+  useEffect(() => {
+    if (existingMediaList.length > 0) {
+      setMediaBlocks(existingMediaList);
+    }
+  }, [existingMediaList]);
   const handleSchedule = useCatch(async (deviceIds, groupIds, report) => {
     const reportConfig = { ...report, type: 'events' };
     const error = await scheduleReport(deviceIds, groupIds, reportConfig);

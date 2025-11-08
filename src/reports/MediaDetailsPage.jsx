@@ -13,10 +13,10 @@ import {
   Box,
   Alert,
   Paper,
+  Button,
 } from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
-import GpsFixedIcon from '@mui/icons-material/GpsFixed';
-import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
 import ImageIcon from '@mui/icons-material/Image';
 import PageLayout from '../common/components/PageLayout';
 import ReportsMenu from './components/ReportsMenu';
@@ -346,7 +346,15 @@ const MediaDetailsPage = () => {
           pb: 2,
         }}
       >
-        {/* Media Player Section - Top */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, m: 2 }}>
+          <Button
+            variant="outlined"
+            startIcon={<ArrowBackIcon />}
+            onClick={() => navigate(-1)}
+          >
+            Back
+          </Button>
+        </Box>
         <Paper
           sx={{
             backgroundColor: '#1e1e1e',

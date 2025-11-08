@@ -5,6 +5,7 @@ const { reducer, actions } = createSlice({
   initialState: {
     items: [],
     selectedEvent: null,
+    mediaList: [],
   },
   reducers: {
     add(state, action) {
@@ -19,6 +20,9 @@ const { reducer, actions } = createSlice({
     },
     setSelectedEvent(state, action) {
       state.selectedEvent = action.payload;
+    },
+    setMediaList(state, action) {
+      state.mediaList = action.payload;
     },
     clearSelectedEvent(state) {
       state.selectedEvent = null;
