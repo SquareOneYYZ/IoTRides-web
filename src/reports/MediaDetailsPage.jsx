@@ -2,41 +2,55 @@ import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
-  Table, TableBody, TableCell, TableHead, TableRow, IconButton,
-  CircularProgress, Typography, Box, Alert, Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  IconButton,
+  CircularProgress,
+  Typography,
+  Box,
+  Alert,
+  Paper,
 } from '@mui/material';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import GpsFixedIcon from '@mui/icons-material/GpsFixed';
+import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
+import ImageIcon from '@mui/icons-material/Image';
 import PageLayout from '../common/components/PageLayout';
 import ReportsMenu from './components/ReportsMenu';
 import useReportStyles from './common/useReportStyles';
+import { useTranslation } from '../common/components/LocalizationProvider';
+import { useAttributePreference } from '../common/util/preferences';
+import {
+  formatDistance,
+  formatSpeed,
+  formatNumericHours,
+} from '../common/util/formatter';
 import MapView from '../map/core/MapView';
 import MapGeofence from '../map/MapGeofence';
 import MapScale from '../map/MapScale';
-import MapMarkers from '../map/MapMarkers';
+import MapPositions from '../map/MapPositions';
 import MapCamera from '../map/MapCamera';
 import MapRoutePath from '../map/MapRoutePath';
-import { useCatch } from '../reactHelper';
+import MapMarkers from '../map/MapMarkers';
+import { useEffectAsync } from '../reactHelper';
 
 const MediaDetailsPage = () => {
   const classes = useReportStyles();
   const navigate = useNavigate();
+  const t = useTranslation();
   const selectedEvent = useSelector((state) => state.events.selectedEvent);
-  const [eventDetails, setEventDetails] = useState(null);
+  const distanceUnit = useAttributePreference('distanceUnit');
+  const speedUnit = useAttributePreference('speedUnit');
+  const [position, setPosition] = useState(null);
   const [route, setRoute] = useState(null);
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [mediaUrl, setMediaUrl] = useState('');
-
-  const columns = [
-    'startTime',
-    'endTime',
-    'distance',
-    'averageSpeed',
-    'maxSpeed',
-    'duration',
-  ];
+  const [selectedTrip, setSelectedTrip] = useState(null);
 
   const fetchUniqueId = async (deviceId) => {
     try {
@@ -51,10 +65,58 @@ const MediaDetailsPage = () => {
       return deviceId;
     }
   };
+  useEffectAsync(async () => {
+    if (selectedEvent && selectedEvent.positionId) {
+      try {
+        const response = await fetch(
+          `/api/positions?id=${selectedEvent.positionId}`,
+        );
+        if (response.ok) {
+          const positions = await response.json();
+          if (positions && positions.length > 0) {
+            setPosition(positions[0]);
+          }
+        } else {
+          console.error('Failed to fetch position');
+        }
+      } catch (error) {
+        console.error('Error fetching position:', error);
+      }
+    }
+  }, [selectedEvent]);
 
-  const fetchData = useCatch(async () => {
+  useEffectAsync(async () => {
+    if (selectedTrip) {
+      try {
+        const query = new URLSearchParams({
+          deviceId: selectedTrip.deviceId,
+          from: selectedTrip.startTime,
+          to: selectedTrip.endTime,
+        });
+        const response = await fetch(`/api/reports/route?${query.toString()}`, {
+          headers: { Accept: 'application/json' },
+        });
+        if (response.ok) {
+          const routeData = await response.json();
+          setRoute(routeData);
+        } else {
+          console.error('Failed to fetch route');
+          setRoute(null);
+        }
+      } catch (error) {
+        console.error('Error fetching route:', error);
+        setRoute(null);
+      }
+    } else {
+      setRoute(null);
+    }
+  }, [selectedTrip]);
+
+  useEffectAsync(async () => {
     if (!selectedEvent || !selectedEvent.id) {
-      setError('No media event selected. Please go back and select a media event.');
+      setError(
+        'No media event selected. Please go back and select a media event.',
+      );
       setLoading(false);
       return;
     }
@@ -63,83 +125,66 @@ const MediaDetailsPage = () => {
     setError(null);
 
     try {
-      const eventResponse = await fetch(`/api/events/${selectedEvent.id}`, {
-        headers: { Accept: 'application/json' },
-      });
-      if (!eventResponse.ok) {
-        throw new Error(`Failed to fetch event details: ${await eventResponse.text()}`);
-      }
-
-      const eventData = await eventResponse.json();
-      setEventDetails(eventData);
-      const deviceId = eventData.deviceId || selectedEvent.deviceId;
-
+      const { deviceId } = selectedEvent;
       const uniqueId = await fetchUniqueId(deviceId);
-
-      if (eventData.attributes?.file) {
-        const generatedUrl = `/api/media/${uniqueId}/${eventData.attributes.file}`;
+      if (selectedEvent.attributes?.file || selectedEvent.fileName) {
+        const fileName = selectedEvent.attributes?.file || selectedEvent.fileName;
+        const generatedUrl = `/api/media/${uniqueId}/${fileName}`;
         setMediaUrl(generatedUrl);
       }
-
-      const eventTime = new Date(eventData.eventTime || selectedEvent.eventTime);
-      const from = new Date(eventTime);
-      from.setHours(0, 0, 0, 0);
-      const to = new Date(eventTime);
-      to.setHours(23, 59, 59, 999);
+      const eventTime = new Date(selectedEvent.eventTime);
+      const year = eventTime.getUTCFullYear();
+      const month = eventTime.getUTCMonth();
+      const day = eventTime.getUTCDate();
+      const from = new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
+      const to = new Date(Date.UTC(year, month, day, 23, 59, 59, 999));
       const tripsQuery = new URLSearchParams({
         deviceId,
         from: from.toISOString(),
         to: to.toISOString(),
       });
 
-      const tripsResponse = await fetch(`/api/reports/trips?${tripsQuery.toString()}`, {
-        headers: { Accept: 'application/json' },
-      });
+      const tripsResponse = await fetch(
+        `/api/reports/trips?${tripsQuery.toString()}`,
+        {
+          headers: { Accept: 'application/json' },
+        },
+      );
 
       if (tripsResponse.ok) {
         const tripsData = await tripsResponse.json();
         setTrips(tripsData);
-
         if (tripsData.length > 0) {
-          const firstTrip = tripsData[0];
-          const routeQuery = new URLSearchParams({
-            deviceId,
-            from: firstTrip.startTime,
-            to: firstTrip.endTime,
-          });
-
-          const routeResponse = await fetch(`/api/reports/route?${routeQuery.toString()}`, {
-            headers: { Accept: 'application/json' },
-          });
-
-          if (routeResponse.ok) {
-            const routeData = await routeResponse.json();
-            setRoute(routeData);
-          }
+          console.log('Sample trip:', tripsData[0]);
         }
+      } else {
+        const errorText = await tripsResponse.text();
+        console.error(
+          'Failed to fetch trips:',
+          tripsResponse.status,
+          errorText,
+        );
+        setTrips([]);
       }
     } catch (err) {
+      console.error('Error loading data:', err);
       setError(err.message || 'Failed to load data');
     } finally {
       setLoading(false);
     }
-  });
-
-  useEffect(() => {
-    fetchData();
   }, [selectedEvent]);
 
-  const renderMediaContent = () => {
-    if (!selectedEvent && !mediaUrl) {
-      return <PlayCircleOutlineIcon sx={{ fontSize: 100, color: '#555' }} />;
+  useEffect(() => {
+    if (trips.length > 0 && !selectedTrip) {
+      setSelectedTrip(trips[0]);
     }
+  }, [trips]);
 
-    const mediaType = eventDetails?.attributes?.media || selectedEvent?.mediaType;
+  const renderMediaContent = () => {
+    const mediaType = selectedEvent?.mediaType || selectedEvent?.attributes?.media;
     const finalUrl = mediaUrl || selectedEvent?.url;
-    const isImage = mediaType === 'image' && finalUrl;
-    const isVideo = mediaType === 'video' && finalUrl;
 
-    if (isImage) {
+    if (mediaType === 'image' && finalUrl) {
       return (
         <img
           src={finalUrl}
@@ -149,11 +194,15 @@ const MediaDetailsPage = () => {
             height: '100%',
             objectFit: 'contain',
           }}
+          onError={(e) => {
+            console.error('Image failed to load:', finalUrl);
+            e.target.style.display = 'none';
+          }}
         />
       );
     }
 
-    if (isVideo) {
+    if (mediaType === 'video' && finalUrl) {
       return (
         <video
           src={finalUrl}
@@ -163,24 +212,59 @@ const MediaDetailsPage = () => {
             height: '100%',
             objectFit: 'contain',
           }}
+          onError={(e) => {
+            console.error('Video failed to load:', finalUrl);
+          }}
         >
           <track kind="captions" />
         </video>
       );
     }
 
-    return <PlayCircleOutlineIcon sx={{ fontSize: 100, color: '#555' }} />;
+    // Default icon
+    return mediaType === 'video' ? (
+      <PlayCircleOutlineIcon sx={{ fontSize: 100, color: '#555' }} />
+    ) : (
+      <ImageIcon sx={{ fontSize: 100, color: '#555' }} />
+    );
   };
 
-  const createMarkers = (route) => {
-    if (!route || route.length === 0) return [];
+  const createMarkers = () => {
+    if (!selectedTrip || !route || route.length === 0) return [];
+
     const first = route[0];
     const last = route[route.length - 1];
 
     return [
-      { latitude: first.latitude, longitude: first.longitude, image: 'start-success' },
-      { latitude: last.latitude, longitude: last.longitude, image: 'finish-error' },
+      {
+        latitude: first.latitude,
+        longitude: first.longitude,
+        image: 'start-success',
+      },
+      {
+        latitude: last.latitude,
+        longitude: last.longitude,
+        image: 'finish-error',
+      },
     ];
+  };
+
+  const formatValue = (trip, key) => {
+    const value = trip[key];
+    switch (key) {
+      case 'startTime':
+      case 'endTime':
+        return value ? new Date(value).toLocaleTimeString() : '-';
+      case 'distance':
+        return formatDistance(value, distanceUnit, t);
+      case 'averageSpeed':
+      case 'maxSpeed':
+        return value > 0 ? formatSpeed(value, speedUnit, t) : '-';
+      case 'duration':
+        return formatNumericHours(value, t);
+      default:
+        return value || '-';
+    }
   };
 
   const eventDate = selectedEvent?.eventTime
@@ -193,7 +277,10 @@ const MediaDetailsPage = () => {
 
   if (loading) {
     return (
-      <PageLayout menu={<ReportsMenu />} breadcrumbs={['reportTitle', 'reportMediaDetails']}>
+      <PageLayout
+        menu={<ReportsMenu />}
+        breadcrumbs={['reportTitle', 'reportMediaDetails']}
+      >
         <Box
           sx={{
             display: 'flex',
@@ -215,7 +302,10 @@ const MediaDetailsPage = () => {
 
   if (error) {
     return (
-      <PageLayout menu={<ReportsMenu />} breadcrumbs={['reportTitle', 'reportMediaDetails']}>
+      <PageLayout
+        menu={<ReportsMenu />}
+        breadcrumbs={['reportTitle', 'reportMediaDetails']}
+      >
         <Box sx={{ p: 3 }}>
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}
@@ -233,119 +323,172 @@ const MediaDetailsPage = () => {
     );
   }
 
+  const columns = [
+    { key: 'startTime', label: 'Start Time' },
+    { key: 'endTime', label: 'End Time' },
+    { key: 'distance', label: 'Distance' },
+    { key: 'averageSpeed', label: 'Avg Speed' },
+    { key: 'maxSpeed', label: 'Max Speed' },
+    { key: 'duration', label: 'Duration' },
+  ];
+
   return (
-    <PageLayout menu={<ReportsMenu />} breadcrumbs={['reportTitle', 'reportMediaDetails']}>
-      <div className={classes.container}>
-        <div className={classes.containerMain} style={{ padding: '16px' }}>
-          <Paper
+    <PageLayout
+      menu={<ReportsMenu />}
+      breadcrumbs={['reportTitle', 'reportMediaDetails']}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%',
+          overflow: 'auto',
+          pb: 2,
+        }}
+      >
+        {/* Media Player Section - Top */}
+        <Paper
+          sx={{
+            backgroundColor: '#1e1e1e',
+            borderRadius: 2,
+            aspectRatio: { xs: '16/9', md: '21/9' },
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            position: 'relative',
+            overflow: 'hidden',
+            m: 2,
+            flexShrink: 0,
+          }}
+        >
+          {renderMediaContent()}
+          <Box
             sx={{
-              backgroundColor: '#1e1e1e',
-              borderRadius: 2,
-              aspectRatio: '16/9',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              position: 'relative',
-              overflow: 'hidden',
-              mb: 2,
+              position: 'absolute',
+              bottom: 10,
+              left: 10,
+              bgcolor: 'rgba(0,0,0,0.7)',
+              color: '#fff',
+              px: 1.5,
+              py: 0.5,
+              borderRadius: 1,
+              fontSize: { xs: 12, md: 14 },
             }}
           >
-            {renderMediaContent()}
-            <Box
-              sx={{
-                position: 'absolute',
-                bottom: 10,
-                left: 10,
-                bgcolor: 'rgba(0,0,0,0.7)',
-                color: '#fff',
-                px: 1.5,
-                py: 0.5,
-                borderRadius: 1,
-                fontSize: 14,
-              }}
-            >
-              {selectedEvent?.fileName || eventDetails?.attributes?.file || 'Media File'}
-            </Box>
-            <Box
-              sx={{
-                position: 'absolute',
-                bottom: 10,
-                right: 10,
-                bgcolor: 'rgba(0,0,0,0.7)',
-                color: '#fff',
-                px: 1.5,
-                py: 0.5,
-                borderRadius: 1,
-                fontSize: 12,
-              }}
-            >
-              {eventDateTime}
-            </Box>
-          </Paper>
+            {selectedEvent?.fileName
+              || selectedEvent?.attributes?.file
+              || 'Media File'}
+          </Box>
+          <Box
+            sx={{
+              position: 'absolute',
+              bottom: 10,
+              right: 10,
+              bgcolor: 'rgba(0,0,0,0.7)',
+              color: '#fff',
+              px: 1.5,
+              py: 0.5,
+              borderRadius: 1,
+              fontSize: { xs: 10, md: 12 },
+            }}
+          >
+            {eventDateTime}
+          </Box>
+        </Paper>
 
-          <Paper sx={{ height: 500, position: 'relative', overflow: 'hidden', borderRadius: 2, mb: 2 }}>
-            <MapView>
-              <MapGeofence />
-              {route && route.length > 0 && (
+        {/* Map Section - Middle */}
+        <Paper
+          sx={{
+            height: { xs: 300, sm: 400, md: 500 },
+            position: 'relative',
+            overflow: 'hidden',
+            borderRadius: 2,
+            mx: 2,
+            mb: 2,
+            flexShrink: 0,
+          }}
+        >
+          <MapView>
+            <MapGeofence />
+            {selectedTrip && route && route.length > 0 && (
               <>
                 <MapRoutePath positions={route} />
-                <MapMarkers markers={createMarkers(route)} />
+                <MapMarkers markers={createMarkers()} />
                 <MapCamera positions={route} />
               </>
-              )}
-            </MapView>
-            <MapScale />
-          </Paper>
+            )}
+            {!selectedTrip && position && (
+              <>
+                <MapPositions positions={[position]} titleField="fixTime" />
+                <MapCamera
+                  latitude={position.latitude}
+                  longitude={position.longitude}
+                />
+              </>
+            )}
+          </MapView>
+          <MapScale />
+        </Paper>
 
-          <Paper sx={{ p: 2, borderRadius: 2 }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>
+        {/* Trips Table Section - Bottom */}
+        <Paper
+          sx={{
+            mx: 2,
+            mb: 2,
+            borderRadius: 2,
+            flexShrink: 0,
+          }}
+        >
+          <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+            <Typography variant="h6">
               Trips on
-              {' '}
               {eventDate}
             </Typography>
+          </Box>
 
-            {trips.length === 0 ? (
-              <Box sx={{ p: 3, textAlign: 'center' }}>
-                <Typography variant="body1" color="text.secondary">
-                  No trips found for this day.
-                </Typography>
-              </Box>
-            ) : (
-              <Box sx={{ overflowX: 'auto' }}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell className={classes.columnAction} />
+          {trips.length === 0 ? (
+            <Box sx={{ p: 3, textAlign: 'center' }}>
+              <Typography variant="body1" color="text.secondary">
+                No trips found for this day.
+              </Typography>
+            </Box>
+          ) : (
+            <Box sx={{ overflowX: 'auto' }}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell className={classes.columnAction} />
+                    {columns.map((col) => (
+                      <TableCell key={col.key}>{col.label}</TableCell>
+                    ))}
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {trips.map((trip) => (
+                    <TableRow
+                      key={trip.startPositionId}
+                      hover
+                      selected={
+                        selectedTrip?.startPositionId === trip.startPositionId
+                      }
+                    >
+                      <TableCell
+                        className={classes.columnAction}
+                        padding="none"
+                      />
                       {columns.map((col) => (
-                        <TableCell key={col}>{col}</TableCell>
+                        <TableCell key={col.key}>
+                          {formatValue(trip, col.key)}
+                        </TableCell>
                       ))}
                     </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {trips.map((trip) => (
-                      <TableRow key={trip.startPositionId}>
-                        <TableCell className={classes.columnAction} padding="none">
-                          <IconButton size="small">
-                            <GpsFixedIcon fontSize="small" />
-                          </IconButton>
-                        </TableCell>
-                        {columns.map((col) => {
-                          const isTimeColumn = col.includes('Time');
-                          const value = trip[col];
-                          const displayValue = isTimeColumn && value
-                            ? new Date(value).toLocaleString()
-                            : value || '-';
-                          return <TableCell key={col}>{displayValue}</TableCell>;
-                        })}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </Box>
-            )}
-          </Paper>
-        </div>
-      </div>
+                  ))}
+                </TableBody>
+              </Table>
+            </Box>
+          )}
+        </Paper>
+      </Box>
     </PageLayout>
   );
 };

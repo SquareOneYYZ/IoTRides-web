@@ -8,15 +8,16 @@ import LaunchIcon from '@mui/icons-material/Launch';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import ImageIcon from '@mui/icons-material/Image';
+import CloseIcon from '@mui/icons-material/Close';
 import PageLayout from '../common/components/PageLayout';
 import ReportsMenu from './components/ReportsMenu';
 import ReportFilter from './components/ReportFilter';
 import useReportStyles from './common/useReportStyles';
-import { useCatch } from '../reactHelper';
+import { useCatch, useEffectAsync } from '../reactHelper';
 import scheduleReport from './common/scheduleReport';
 import { eventsActions } from '../store/events';
 
-const MediaBlock = ({ media, onLaunch }) => {
+const MediaBlock = ({ media, onLaunch, isSelected, onSelect }) => {
   const ref = useRef(null);
 
   const toggleFullscreen = () => {
@@ -52,6 +53,7 @@ const MediaBlock = ({ media, onLaunch }) => {
   return (
     <Box
       ref={ref}
+      onClick={() => onLaunch(media)}
       sx={{
         backgroundColor: '#1e1e1e',
         borderRadius: 2,
@@ -61,9 +63,12 @@ const MediaBlock = ({ media, onLaunch }) => {
         alignItems: 'center',
         justifyContent: 'center',
         overflow: 'hidden',
-        transition: 'transform 0.2s',
+        transition: 'transform 0.2s, box-shadow 0.2s',
+        cursor: 'pointer',
+        border: isSelected ? '3px solid #1976d2' : 'none',
         '&:hover': {
           transform: 'scale(1.02)',
+          boxShadow: 4,
         },
       }}
     >
@@ -102,7 +107,10 @@ const MediaBlock = ({ media, onLaunch }) => {
               backgroundColor: 'rgba(0, 0, 0, 0.7)',
             },
           }}
-          onClick={toggleFullscreen}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleFullscreen();
+          }}
         >
           <FullscreenIcon fontSize="small" />
         </IconButton>
@@ -116,7 +124,10 @@ const MediaBlock = ({ media, onLaunch }) => {
               backgroundColor: 'rgba(0, 0, 0, 0.7)',
             },
           }}
-          onClick={() => onLaunch(media)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onLaunch(media);
+          }}
         >
           <LaunchIcon fontSize="small" />
         </IconButton>
@@ -166,6 +177,35 @@ const MediaEventPage = () => {
 
   const [mediaBlocks, setMediaBlocks] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [position, setPosition] = useState(null);
+
+  useEffectAsync(async () => {
+    if (selectedItem && selectedItem.positionId) {
+      try {
+        const response = await fetch(
+          `/api/positions?id=${selectedItem.positionId}`,
+          {
+            headers: { Accept: 'application/json' },
+          },
+        );
+        if (response.ok) {
+          const positions = await response.json();
+          if (positions && positions.length > 0) {
+            setPosition(positions[0]);
+          }
+        } else {
+          console.error('Failed to fetch position');
+          setPosition(null);
+        }
+      } catch (error) {
+        console.error('Error fetching position:', error);
+        setPosition(null);
+      }
+    } else {
+      setPosition(null);
+    }
+  }, [selectedItem]);
 
   const fetchUniqueId = async (deviceId) => {
     try {
@@ -180,6 +220,7 @@ const MediaEventPage = () => {
       return deviceId;
     }
   };
+
   const handleSubmit = useCatch(async ({ deviceId, from, to, type }) => {
     const query = new URLSearchParams({ deviceId, from, to });
 
@@ -189,7 +230,9 @@ const MediaEventPage = () => {
     }
 
     if (type === 'mail') {
-      const response = await fetch(`/api/reports/events/mail?${query.toString()}`);
+      const response = await fetch(
+        `/api/reports/events/mail?${query.toString()}`,
+      );
       if (!response.ok) {
         throw Error(await response.text());
       }
@@ -208,21 +251,29 @@ const MediaEventPage = () => {
 
       const events = await response.json();
       const mediaEvents = events.filter((event) => event.type === 'media');
+      if (mediaEvents.length === 0) {
+        setMediaBlocks([]);
+        setLoading(false);
+        return;
+      }
+
       const uniqueIdMap = new Map();
-      const uniqueDeviceIds = [...new Set(mediaEvents.map((event) => event.deviceId))];
+      const uniqueDeviceIds = [
+        ...new Set(mediaEvents.map((event) => event.deviceId)),
+      ];
+
       await Promise.all(
         uniqueDeviceIds.map(async (devId) => {
           const uniqueId = await fetchUniqueId(devId);
           uniqueIdMap.set(devId, uniqueId);
         }),
       );
+
       const transformedMedia = mediaEvents.map((event) => {
         const uniqueId = uniqueIdMap.get(event.deviceId);
         const mediaUrl = event.attributes?.file
           ? `/api/media/${uniqueId}/${event.attributes.file}`
           : '';
-
-        // console.log('Media URL generated:', mediaUrl);
 
         return {
           id: event.id,
@@ -237,6 +288,9 @@ const MediaEventPage = () => {
       });
 
       setMediaBlocks(transformedMedia);
+    } catch (error) {
+      console.error('Error fetching media events:', error);
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -258,17 +312,24 @@ const MediaEventPage = () => {
     navigate('/reports/media/details');
   };
 
+  const handleSelect = (media) => {
+    setSelectedItem(selectedItem?.id === media.id ? null : media);
+  };
+
   return (
-    <PageLayout menu={<ReportsMenu />} breadcrumbs={['reportTitle', 'reportCombined']}>
-      <Box className={classes.container}>
-        <Box className={classes.containerMain}>
-          <Box className={classes.header}>
+    <PageLayout
+      menu={<ReportsMenu />}
+      breadcrumbs={['reportTitle', 'reportCombined']}
+    >
+      <div className={classes.container}>
+        <div className={classes.containerMain}>
+          <div className={classes.header}>
             <ReportFilter
               handleSubmit={handleSubmit}
               handleSchedule={handleSchedule}
               loading={loading}
             />
-          </Box>
+          </div>
 
           {loading && <LoadingState />}
 
@@ -294,12 +355,18 @@ const MediaEventPage = () => {
               }}
             >
               {mediaBlocks.map((media) => (
-                <MediaBlock key={media.id} media={media} onLaunch={handleLaunch} />
+                <MediaBlock
+                  key={media.id}
+                  media={media}
+                  onLaunch={handleLaunch}
+                  isSelected={selectedItem?.id === media.id}
+                  onSelect={() => handleSelect(media)}
+                />
               ))}
             </Box>
           )}
-        </Box>
-      </Box>
+        </div>
+      </div>
     </PageLayout>
   );
 };
