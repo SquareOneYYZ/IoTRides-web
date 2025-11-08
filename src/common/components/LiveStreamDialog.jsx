@@ -119,14 +119,12 @@ const LiveStreamCard = () => {
     }
   };
 
-  // Send livestream command with rate limiting
   const sendChannelCommand = useCallback(async (channels) => {
     const channelKey = channels.join(',');
     const now = Date.now();
     const lastTime = lastCommandTime[channelKey] || 0;
     const timeDiff = (now - lastTime) / 1000;
 
-    // Check if 15 seconds have passed
     if (timeDiff < 15) {
       const remainingTime = Math.ceil(15 - timeDiff);
       setSnackbar({
@@ -158,7 +156,6 @@ const LiveStreamCard = () => {
         throw Error(await response.text());
       }
 
-      // Update last command time
       setLastCommandTime((prev) => ({
         ...prev,
         [channelKey]: now,
@@ -183,8 +180,6 @@ const LiveStreamCard = () => {
         setLoading(true);
         const id = await fetchUniqueId(deviceId);
         setUniqueId(id);
-
-        // Send initial command for all 4 channels when dialog opens
         await sendChannelCommand([1, 2, 3, 4]);
 
         setLoading(false);
@@ -213,62 +208,60 @@ const LiveStreamCard = () => {
   ] : [];
 
   return (
-    <>
-      <div
-        style={{
-          pointerEvents: 'auto',
-          position: 'fixed',
-          zIndex: 10,
-          left: '82%',
-          bottom: '1.7rem',
-          transform: 'translateX(-50%)',
-        }}
-        className={classes.responsiveContainer}
+    <div
+      style={{
+        pointerEvents: 'auto',
+        position: 'fixed',
+        zIndex: 10,
+        left: '82%',
+        bottom: '1.7rem',
+        transform: 'translateX(-50%)',
+      }}
+      className={classes.responsiveContainer}
+    >
+      <Draggable
+        handle={`.${classes.header}`}
+        disabled={window.innerWidth <= 600}
       >
-        <Draggable
-          handle={`.${classes.header}`}
-          disabled={window.innerWidth <= 600}
-        >
-          <Card elevation={5} className={classes.card}>
-            <div className={classes.header}>
-              <Typography variant="body2" color="textSecondary">
-                Live Stream -
-                {' '}
-                {device?.name || `Device ${deviceId}`}
-              </Typography>
-              <CardActions className={classes.actions}>
-                <Tooltip title="Close Stream">
-                  <IconButton onClick={handleClose}>
-                    <CloseIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              </CardActions>
-            </div>
+        <Card elevation={5} className={classes.card}>
+          <div className={classes.header}>
+            <Typography variant="body2" color="textSecondary">
+              Live Stream -
+              {' '}
+              {device?.name || `Device ${deviceId}`}
+            </Typography>
+            <CardActions className={classes.actions}>
+              <Tooltip title="Close Stream">
+                <IconButton onClick={handleClose}>
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </CardActions>
+          </div>
 
-            {loading ? (
-              <div className={classes.loadingContainer}>
-                <CircularProgress />
-              </div>
-            ) : (
-              <div className={classes.content}>
-                {cameraStreams.map((video) => (
-                  <VideoBlock
-                    key={video.title}
-                    title={video.title}
-                    src={video.src}
-                    className={classes.videoBlock}
-                    showLaunch
-                    showFocusIcon
-                    onFocus={() => sendChannelCommand([video.channel])}
-                    onPlayCommand={() => sendChannelCommand([video.channel])}
-                  />
-                ))}
-              </div>
-            )}
-          </Card>
-        </Draggable>
-      </div>
-    </>
+          {loading ? (
+            <div className={classes.loadingContainer}>
+              <CircularProgress />
+            </div>
+          ) : (
+            <div className={classes.content}>
+              {cameraStreams.map((video) => (
+                <VideoBlock
+                  key={video.title}
+                  title={video.title}
+                  src={video.src}
+                  className={classes.videoBlock}
+                  showLaunch
+                  showFocusIcon
+                  onFocus={() => sendChannelCommand([video.channel])}
+                  onPlayCommand={() => sendChannelCommand([video.channel])}
+                />
+              ))}
+            </div>
+          )}
+        </Card>
+      </Draggable>
+    </div>
   );
 };
 
