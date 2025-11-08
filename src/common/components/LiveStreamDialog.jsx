@@ -164,14 +164,6 @@ const LiveStreamCard = () => {
         ...prev,
         [channelKey]: now,
       }));
-
-      setSnackbar({
-        open: true,
-        message: `Command sent for channel(s): ${channels.join(', ')}`,
-        severity: 'success',
-      });
-
-      console.log(`Livestream command sent for channels: [${channels.join(', ')}]`);
       return true;
     } catch (error) {
       console.error('Failed to send livestream command:', error);
