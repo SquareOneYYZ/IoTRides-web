@@ -10,6 +10,7 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import RouteIcon from '@mui/icons-material/Route';
 import EventRepeatIcon from '@mui/icons-material/EventRepeat';
+import PermMediaIcon from '@mui/icons-material/PermMedia';
 import NotesIcon from '@mui/icons-material/Notes';
 import ReplayCircleFilledIcon from '@mui/icons-material/ReplayCircleFilled';
 import { useLocation } from 'react-router-dom';
@@ -44,6 +45,12 @@ const ReportsMenu = () => {
           link="/reports/event"
           icon={<NotificationsActiveIcon />}
           selected={location.pathname === '/reports/event'}
+        />
+        <MenuItem
+          title={t('reportMedia')}
+          link="/reports/media"
+          icon={<PermMediaIcon />}
+          selected={location.pathname === '/reports/media'}
         />
         <MenuItem
           title={t('reportTrips')}
