@@ -128,11 +128,11 @@ const useStyles = makeStyles((theme) => ({
       top: 25,
       width: 2,
       height: '100%',
-      backgroundColor: '#bbb', // line color
+      backgroundColor: '#bbb',
       zIndex: 0,
     },
     '&:last-child::before': {
-      display: 'none', // hide line after last item
+      display: 'none',
     },
   },
 
@@ -176,24 +176,10 @@ const ReplayMediaPage = () => {
   const [openMedia, setOpenMedia] = useState(null);
   const [startLocation, setStartLocation] = useState('');
   const [endLocation, setEndLocation] = useState('');
-
-  // Mock media timeline - replace with actual API call
-  const mediaTimeline = [
-    { id: 1, thumb: 'https://picsum.photos/id/1015/120/80', full: 'https://picsum.photos/id/1015/800/500', time: '10:00 AM' },
-    { id: 2, thumb: 'https://picsum.photos/id/1016/120/80', full: 'https://picsum.photos/id/1016/800/500', time: '10:05 AM' },
-    { id: 3, thumb: 'https://picsum.photos/id/1018/120/80', full: 'https://picsum.photos/id/1018/800/500', time: '10:10 AM' },
-    { id: 4, thumb: 'https://picsum.photos/id/1020/120/80', full: 'https://picsum.photos/id/1020/800/500', time: '10:15 AM' },
-    { id: 5, thumb: 'https://picsum.photos/id/1021/120/80', full: 'https://picsum.photos/id/1021/800/500', time: '10:20 AM' },
-    { id: 6, thumb: 'https://picsum.photos/id/1022/120/80', full: 'https://picsum.photos/id/1022/800/500', time: '10:25 AM' },
-    { id: 7, thumb: 'https://picsum.photos/id/1023/120/80', full: 'https://picsum.photos/id/1023/800/500', time: '10:30 AM' },
-    { id: 8, thumb: 'https://picsum.photos/id/1024/120/80', full: 'https://picsum.photos/id/1024/800/500', time: '10:35 AM' },
-    { id: 9, thumb: 'https://picsum.photos/id/1025/120/80', full: 'https://picsum.photos/id/1025/800/500', time: '10:40 AM' },
-    { id: 10, thumb: 'https://picsum.photos/id/1026/120/80', full: 'https://picsum.photos/id/1026/800/500', time: '10:45 AM' },
-  ];
+  const [mediaTimeline, setMediaTimeline] = useState([]);
 
   const deviceName = selectedDeviceId && devices[selectedDeviceId]?.name;
 
-  // Fetch location names using reverse geocoding
   const fetchLocationName = async (latitude, longitude) => {
     try {
       const response = await fetch(
@@ -207,6 +193,41 @@ const ReplayMediaPage = () => {
       console.error('Geocoding error:', error);
     }
     return `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+  };
+
+  const fetchMediaEvents = async (deviceId, from, to) => {
+    try {
+      const query = new URLSearchParams({ deviceId, from, to });
+      const response = await fetch(`/api/reports/events?${query.toString()}`);
+      if (response.ok) {
+        const events = await response.json();
+
+        // Filter events by type 'media'
+        const mediaEvents = events.filter((event) => event.type === 'media');
+
+        // Transform media events to timeline format
+        const timeline = mediaEvents.map((event, index) => ({
+          id: event.id || index,
+          thumb: event.attributes?.thumbnailUrl || event.attributes?.mediaUrl,
+          full: event.attributes?.mediaUrl,
+          time: new Date(event.eventTime || event.serverTime).toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+          }),
+          eventTime: event.eventTime || event.serverTime,
+          rawEvent: event,
+        }));
+
+        setMediaTimeline(timeline);
+      } else {
+        console.error('Failed to fetch media events:', await response.text());
+        setMediaTimeline([]);
+      }
+    } catch (error) {
+      console.error('Error fetching media events:', error);
+      setMediaTimeline([]);
+    }
   };
 
   const handleSubmit = useCatch(async ({ deviceId, from, to }) => {
@@ -235,6 +256,9 @@ const ReplayMediaPage = () => {
           );
           setStartLocation(startLoc);
           setEndLocation(endLoc);
+
+          // Fetch media events
+          await fetchMediaEvents(deviceId, from, to);
         } else {
           throw Error(t('sharedNoData'));
         }
@@ -370,9 +394,19 @@ const ReplayMediaPage = () => {
               <Box className={classes.timelineItem}>
                 <Box className={classes.marker}>B</Box>
                 <Box>
-                  <Typography fontWeight="bold">End: 43.3796, -79.8377</Typography>
+                  <Typography fontWeight="bold">
+                    End:
+                    {endLocation || `${positions[positions.length - 1]?.latitude.toFixed(4)}, ${positions[positions.length - 1]?.longitude.toFixed(4)}`}
+                  </Typography>
                   <Typography variant="caption" color="textSecondary">
-                    Aug 29, 8:22 PM GMT+5:30
+                    {positions[positions.length - 1] && new Date(positions[positions.length - 1].fixTime).toLocaleString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: 'numeric',
+                      minute: '2-digit',
+                      hour12: true,
+                      timeZoneName: 'short',
+                    })}
                   </Typography>
                 </Box>
               </Box>
@@ -380,9 +414,19 @@ const ReplayMediaPage = () => {
               <Box className={classes.timelineItem}>
                 <Box className={classes.marker}>A</Box>
                 <Box>
-                  <Typography fontWeight="bold">Start: 41.9791, -87.8778</Typography>
+                  <Typography fontWeight="bold">
+                    Start:
+                    {startLocation || `${positions[0]?.latitude.toFixed(4)}, ${positions[0]?.longitude.toFixed(4)}`}
+                  </Typography>
                   <Typography variant="caption" color="textSecondary">
-                    Aug 19, 10:53 PM GMT+5:30
+                    {positions[0] && new Date(positions[0].fixTime).toLocaleString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: 'numeric',
+                      minute: '2-digit',
+                      hour12: true,
+                      timeZoneName: 'short',
+                    })}
                   </Typography>
                 </Box>
               </Box>
@@ -430,20 +474,22 @@ const ReplayMediaPage = () => {
           </Paper>
         </div>
 
-        <Paper elevation={8} className={classes.mediaBar}>
-          {mediaTimeline.map((item) => (
-            <Box
-              key={item.id}
-              onClick={() => setOpenMedia(item)}
-              className={`${classes.thumb} ${openMedia?.id === item.id ? classes.thumbSelected : ''}`}
-            >
-              <img src={item.thumb} alt="thumb" width={120} height={80} style={{ display: 'block' }} />
-              <Typography align="center" variant="caption" sx={{ fontSize: '0.65rem', p: 0.5 }}>
-                {item.time}
-              </Typography>
-            </Box>
-          ))}
-        </Paper>
+        {mediaTimeline.length > 0 && (
+          <Paper elevation={8} className={classes.mediaBar}>
+            {mediaTimeline.map((item) => (
+              <Box
+                key={item.id}
+                onClick={() => setOpenMedia(item)}
+                className={`${classes.thumb} ${openMedia?.id === item.id ? classes.thumbSelected : ''}`}
+              >
+                <img src={item.thumb} alt="thumb" width={120} height={80} style={{ display: 'block' }} />
+                <Typography align="center" variant="caption" sx={{ fontSize: '0.65rem', p: 0.5 }}>
+                  {item.time}
+                </Typography>
+              </Box>
+            ))}
+          </Paper>
+        )}
 
         <Dialog open={!!openMedia} onClose={() => setOpenMedia(null)} maxWidth="md">
           {openMedia && (
