@@ -399,32 +399,32 @@ const LiveStreamingPage = () => {
     ? [
       {
         id: 1,
-        src: `rtsp://137.184.170.216:8554/${uniqueId}_ch1/`,
+        src: `http://143.110.213.79:8889/${uniqueId}_ch1/`,
         title: 'Front Camera',
       },
       {
         id: 2,
-        src: `rtsp://137.184.170.216:8554/${uniqueId}_ch2/`,
+        src: `http://143.110.213.79:8889/${uniqueId}_ch2/`,
         title: 'Left Camera',
       },
       {
         id: 3,
-        src: `rtsp://137.184.170.216:8554/${uniqueId}_ch3/`,
+        src: `http://143.110.213.79:8889/${uniqueId}_ch3/`,
         title: 'Right Camera',
       },
       {
         id: 4,
-        src: `rtsp://137.184.170.216:8554/${uniqueId}_ch4/`,
+        src: `http://143.110.213.79:8889/${uniqueId}_ch4/`,
         title: 'Rear Camera',
       },
       {
         id: 5,
-        src: `rtsp://137.184.170.216:8554/${uniqueId}_ch5/`,
+        src: `http://143.110.213.79:8889/${uniqueId}_ch5/`,
         title: 'Top Camera',
       },
       {
         id: 6,
-        src: `rtsp://137.184.170.216:8554/${uniqueId}_ch6/`,
+        src: `http://143.110.213.79:8889/${uniqueId}_ch6/`,
         title: 'Bottom Camera',
       },
     ]
