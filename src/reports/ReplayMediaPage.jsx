@@ -1,5 +1,5 @@
 import React, {
-  useState, useEffect, useRef, useCallback,
+  useState, useEffect, useRef, useCallback, useMemo,
 } from 'react';
 import {
   IconButton,
@@ -152,6 +152,7 @@ const ReplayMediaPage = () => {
   const classes = useStyles();
   const reportClasses = useReportStyles();
   const timerRef = useRef();
+  const abortControllerRef = useRef(null);
 
   const devices = useSelector((state) => state.devices.items);
   const defaultDeviceId = useSelector((state) => state.devices.selectedId);
@@ -172,112 +173,139 @@ const ReplayMediaPage = () => {
   const [mediaTimeline, setMediaTimeline] = useState([]);
   const [showCard, setShowCard] = useState(false);
 
-  const deviceName = selectedDeviceId && devices[selectedDeviceId]?.name;
+  const deviceName = useMemo(
+    () => selectedDeviceId && devices[selectedDeviceId]?.name,
+    [selectedDeviceId, devices],
+  );
 
-  const fetchLocationName = async (latitude, longitude) => {
+  const fetchLocationName = useCallback(async (latitude, longitude, signal) => {
     try {
       const response = await fetch(
         `/api/server/geocode?latitude=${latitude}&longitude=${longitude}`,
+        { signal },
       );
       if (response.ok) {
         const data = await response.json();
         return data.address || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
       }
     } catch (error) {
-      console.error('Geocoding error:', error);
+      if (error.name === 'AbortError') {
+        console.log('Geocoding request aborted');
+      } else {
+        console.error('Geocoding error:', error);
+      }
     }
     return `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-  };
-
-  const fetchMediaEvents = async (deviceId, from, to) => {
-    try {
-      const query = new URLSearchParams({ deviceId, from, to });
-      const response = await fetch(`/api/reports/events?${query.toString()}`);
-      if (response.ok) {
-        const events = await response.json();
-
-        // Filter events by type 'media'
-        const mediaEvents = events.filter((event) => event.type === 'media');
-
-        // Transform media events to timeline format
-        const timeline = mediaEvents.map((event, index) => ({
-          id: event.id || index,
-          thumb: event.attributes?.thumbnailUrl || event.attributes?.mediaUrl,
-          full: event.attributes?.mediaUrl,
-          time: new Date(event.eventTime || event.serverTime).toLocaleTimeString('en-US', {
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true,
-          }),
-          eventTime: event.eventTime || event.serverTime,
-          rawEvent: event,
-        }));
-
-        setMediaTimeline(timeline);
-      } else {
-        console.error('Failed to fetch media events:', await response.text());
-        setMediaTimeline([]);
-      }
-    } catch (error) {
-      console.error('Error fetching media events:', error);
-      setMediaTimeline([]);
-    }
-  };
+  }, []);
 
   const onPointClick = useCallback(
     (_, clickedIndex) => {
       setIndex(clickedIndex);
+      setAnimationProgress(0);
     },
-    [setIndex],
+    [],
   );
 
   const onMarkerClick = useCallback(
     (positionId) => {
       setShowCard(!!positionId);
     },
-    [setShowCard],
+    [],
   );
 
   const handleSubmit = useCatch(async ({ deviceId, from, to }) => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+    const { signal } = abortControllerRef.current;
+
     setLoading(true);
     setSelectedDeviceId(deviceId);
     setFrom(from);
     setTo(to);
+    setIndex(0);
+    setAnimationProgress(0);
+    setPlaying(false);
+
     const query = new URLSearchParams({ deviceId, from, to });
+    const queryString = query.toString();
 
     try {
-      const response = await fetch(`/api/positions?${query.toString()}`);
-      if (response.ok) {
-        setIndex(0);
-        const positions = await response.json();
-        setPositions(positions);
+      const [positionsRes, eventsRes] = await Promise.all([
+        fetch(`/api/positions?${queryString}`, { signal }),
+        fetch(`/api/reports/events?${queryString}`, {
+          headers: { Accept: 'application/json' },
+          signal,
+        }),
+      ]);
 
-        if (positions.length > 0) {
-          // Fetch start and end locations
-          const startLoc = await fetchLocationName(
-            positions[0].latitude,
-            positions[0].longitude,
-          );
-          const endLoc = await fetchLocationName(
-            positions[positions.length - 1].latitude,
-            positions[positions.length - 1].longitude,
-          );
-          setStartLocation(startLoc);
-          setEndLocation(endLoc);
-
-          // Fetch media events
-          await fetchMediaEvents(deviceId, from, to);
-        } else {
-          throw Error(t('sharedNoData'));
-        }
-      } else {
-        throw Error(await response.text());
+      if (!positionsRes.ok) {
+        throw new Error(await positionsRes.text());
       }
+      if (!eventsRes.ok) {
+        throw new Error(await eventsRes.text());
+      }
+
+      const [positions, allEvents] = await Promise.all([
+        positionsRes.json(),
+        eventsRes.json(),
+      ]);
+
+      if (positions.length === 0) {
+        throw new Error(t('sharedNoData'));
+      }
+
+      setPositions(positions);
+
+      const [startLoc, endLoc] = await Promise.all([
+        fetchLocationName(positions[0].latitude, positions[0].longitude, signal),
+        fetchLocationName(
+          positions[positions.length - 1].latitude,
+          positions[positions.length - 1].longitude,
+          signal,
+        ),
+      ]);
+
+      setStartLocation(startLoc);
+      setEndLocation(endLoc);
+
+      const mediaEvents = allEvents.filter((e) => e.type === 'media');
+      const timeline = mediaEvents.map((event, idx) => ({
+        id: event.id || idx,
+        thumb: event.attributes?.thumbnailUrl || event.attributes?.mediaUrl,
+        full: event.attributes?.mediaUrl,
+        time: new Date(event.eventTime || event.serverTime).toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true,
+        }),
+        eventTime: event.eventTime || event.serverTime,
+        rawEvent: event,
+      }));
+
+      setMediaTimeline(timeline);
+
+      console.log('✅ Data loaded:', {
+        positions: positions.length,
+        mediaEvents: timeline.length,
+      });
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        console.log('Request aborted');
+        return;
+      }
+      console.error('Error in handleSubmit:', err);
+      setPositions([]);
+      setMediaTimeline([]);
+      setStartLocation('');
+      setEndLocation('');
     } finally {
       setLoading(false);
     }
   });
 
+  // Optimized animation with cleanup
   useEffect(() => {
     if (playing && positions.length > 0) {
       timerRef.current = setInterval(() => {
@@ -288,7 +316,7 @@ const ReplayMediaPage = () => {
               const nextIndex = prevIndex + 1;
               if (nextIndex >= positions.length - 1) {
                 setPlaying(false);
-                return nextIndex;
+                return positions.length - 1;
               }
               return nextIndex;
             });
@@ -297,44 +325,118 @@ const ReplayMediaPage = () => {
           return newProgress;
         });
       }, 16);
-    } else {
+    } else if (timerRef.current) {
       clearInterval(timerRef.current);
     }
-    return () => clearInterval(timerRef.current);
-  }, [playing, positions, speed]);
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [playing, positions.length, speed]);
 
   useEffect(() => {
-    if (positions.length > 0 && index < positions.length - 1) {
-      const currentPos = positions[index];
-      const nextPos = positions[index + 1];
+    if (positions.length === 0) {
+      setSmoothPosition(null);
+      return;
+    }
 
-      if (currentPos && nextPos) {
-        const interpolatedPosition = {
-          ...currentPos,
-          latitude:
-            currentPos.latitude
-            + (nextPos.latitude - currentPos.latitude) * animationProgress,
-          longitude:
-            currentPos.longitude
-            + (nextPos.longitude - currentPos.longitude) * animationProgress,
-          speed:
-            currentPos.speed
-            + (nextPos.speed - currentPos.speed) * animationProgress,
-          course:
-            currentPos.course
-            + (nextPos.course - currentPos.course) * animationProgress,
-        };
-        setSmoothPosition(interpolatedPosition);
-      }
-    } else if (positions.length > 0 && index < positions.length) {
-      setSmoothPosition(positions[index]);
+    if (index >= positions.length) {
+      setSmoothPosition(positions[positions.length - 1]);
+      return;
+    }
+
+    const currentPos = positions[index];
+
+    if (index < positions.length - 1 && animationProgress > 0) {
+      const nextPos = positions[index + 1];
+      const t = animationProgress;
+
+      const interpolatedPosition = {
+        ...currentPos,
+        latitude: currentPos.latitude + (nextPos.latitude - currentPos.latitude) * t,
+        longitude: currentPos.longitude + (nextPos.longitude - currentPos.longitude) * t,
+        speed: currentPos.speed + (nextPos.speed - currentPos.speed) * t,
+        course: currentPos.course + (nextPos.course - currentPos.course) * t,
+      };
+      setSmoothPosition(interpolatedPosition);
+    } else {
+      setSmoothPosition(currentPos);
     }
   }, [positions, index, animationProgress]);
 
-  const handleDownload = () => {
+  useEffect(() => () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+  }, []);
+
+  const handleDownload = useCallback(() => {
     const query = new URLSearchParams({ deviceId: selectedDeviceId, from, to });
     window.location.assign(`/api/positions/kml?${query.toString()}`);
-  };
+  }, [selectedDeviceId, from, to]);
+
+  const handleClose = useCallback(() => {
+    setPositions([]);
+    setMediaTimeline([]);
+    setStartLocation('');
+    setEndLocation('');
+    setIndex(0);
+    setAnimationProgress(0);
+    setPlaying(false);
+    setShowCard(false);
+    setOpenMedia(null);
+  }, []);
+
+  const handleStepBackward = useCallback(() => {
+    setIndex((i) => Math.max(0, i - 1));
+    setAnimationProgress(0);
+  }, []);
+
+  const handleStepForward = useCallback(() => {
+    setIndex((i) => Math.min(i + 1, positions.length - 1));
+    setAnimationProgress(0);
+  }, [positions.length]);
+
+  const handleSliderChange = useCallback((_, value) => {
+    setIndex(value);
+    setAnimationProgress(0);
+    setPlaying(false);
+  }, []);
+
+  const togglePlayPause = useCallback(() => {
+    setPlaying((prev) => !prev);
+  }, []);
+
+  const handleMediaClick = useCallback((item) => {
+    setOpenMedia(item);
+  }, []);
+
+  const handleCloseMedia = useCallback(() => {
+    setOpenMedia(null);
+  }, []);
+
+  const handleCloseCard = useCallback(() => {
+    setShowCard(false);
+  }, []);
+
+  const currentPosition = useMemo(
+    () => positions[index],
+    [positions, index],
+  );
+
+  const firstPosition = useMemo(
+    () => positions[0],
+    [positions],
+  );
+
+  const lastPosition = useMemo(
+    () => positions[positions.length - 1],
+    [positions],
+  );
 
   if (positions.length === 0) {
     return (
@@ -394,7 +496,7 @@ const ReplayMediaPage = () => {
               <IconButton onClick={handleDownload}>
                 <DownloadIcon />
               </IconButton>
-              <IconButton onClick={() => setPositions([])}>
+              <IconButton onClick={handleClose}>
                 <CloseIcon />
               </IconButton>
             </Toolbar>
@@ -402,8 +504,8 @@ const ReplayMediaPage = () => {
 
           <Paper className={classes.sidebarContent}>
             <Typography variant="subtitle1" fontWeight="bold">
-              {positions[index]
-                ? formatTime(positions[index].fixTime, 'seconds')
+              {currentPosition
+                ? formatTime(currentPosition.fixTime, 'seconds')
                 : '--'}
             </Typography>
 
@@ -414,10 +516,10 @@ const ReplayMediaPage = () => {
                   <Typography fontWeight="bold">
                     End:
                     {' '}
-                    {endLocation || `${positions[positions.length - 1]?.latitude.toFixed(4)}, ${positions[positions.length - 1]?.longitude.toFixed(4)}`}
+                    {endLocation || (lastPosition ? `${lastPosition.latitude.toFixed(4)}, ${lastPosition.longitude.toFixed(4)}` : '--')}
                   </Typography>
                   <Typography variant="caption" color="textSecondary">
-                    {positions[positions.length - 1] && formatTime(positions[positions.length - 1].fixTime, 'seconds')}
+                    {lastPosition && formatTime(lastPosition.fixTime, 'seconds')}
                   </Typography>
                 </Box>
               </Box>
@@ -428,10 +530,10 @@ const ReplayMediaPage = () => {
                   <Typography fontWeight="bold">
                     Start:
                     {' '}
-                    {startLocation || `${positions[0]?.latitude.toFixed(4)}, ${positions[0]?.longitude.toFixed(4)}`}
+                    {startLocation || (firstPosition ? `${firstPosition.latitude.toFixed(4)}, ${firstPosition.longitude.toFixed(4)}` : '--')}
                   </Typography>
                   <Typography variant="caption" color="textSecondary">
-                    {positions[0] && formatTime(positions[0].fixTime, 'seconds')}
+                    {firstPosition && formatTime(firstPosition.fixTime, 'seconds')}
                   </Typography>
                 </Box>
               </Box>
@@ -442,12 +544,12 @@ const ReplayMediaPage = () => {
               step={null}
               marks={positions.map((_, i) => ({ value: i }))}
               value={index}
-              onChange={(_, i) => setIndex(i)}
+              onChange={handleSliderChange}
             />
 
             <div className={classes.controls}>
               <IconButton
-                onClick={() => setIndex((i) => Math.max(0, i - 1))}
+                onClick={handleStepBackward}
                 disabled={playing || index <= 0}
                 size="small"
               >
@@ -455,14 +557,14 @@ const ReplayMediaPage = () => {
               </IconButton>
 
               <IconButton
-                onClick={() => setPlaying(!playing)}
-                disabled={index >= positions.length - 1}
+                onClick={togglePlayPause}
+                disabled={index >= positions.length - 1 && !playing}
               >
                 {playing ? <PauseIcon /> : <PlayArrowIcon />}
               </IconButton>
 
               <IconButton
-                onClick={() => setIndex((i) => Math.min(i + 1, positions.length - 1))}
+                onClick={handleStepForward}
                 disabled={playing || index >= positions.length - 1}
                 size="small"
               >
@@ -485,7 +587,7 @@ const ReplayMediaPage = () => {
             {mediaTimeline.map((item) => (
               <Box
                 key={item.id}
-                onClick={() => setOpenMedia(item)}
+                onClick={() => handleMediaClick(item)}
                 className={`${classes.thumb} ${openMedia?.id === item.id ? classes.thumbSelected : ''}`}
               >
                 <img src={item.thumb} alt="thumb" width={120} height={80} style={{ display: 'block' }} />
@@ -497,17 +599,17 @@ const ReplayMediaPage = () => {
           </Paper>
         )}
 
-        <Dialog open={!!openMedia} onClose={() => setOpenMedia(null)} maxWidth="md">
+        <Dialog open={!!openMedia} onClose={handleCloseMedia} maxWidth="md">
           {openMedia && (
             <img src={openMedia.full} alt="preview" style={{ width: '100%', height: 'auto' }} />
           )}
         </Dialog>
 
-        {showCard && index < positions.length && (
+        {showCard && currentPosition && (
           <StatusCard
             deviceId={selectedDeviceId}
-            position={positions[index]}
-            onClose={() => setShowCard(false)}
+            position={currentPosition}
+            onClose={handleCloseCard}
             disableActions
           />
         )}
