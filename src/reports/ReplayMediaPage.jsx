@@ -9,11 +9,6 @@ import {
   Typography,
   Slider,
   Dialog,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
 } from '@mui/material';
 import makeStyles from '@mui/styles/makeStyles';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -26,10 +21,12 @@ import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import MapView from '../map/core/MapView';
 import MapRoutePath from '../map/MapRoutePath';
+import MapRoutePoints from '../map/MapRoutePoints';
 import MapPositions from '../map/MapPositions';
 import MapGeofence from '../map/MapGeofence';
 import MapCamera from '../map/MapCamera';
 import MapScale from '../map/MapScale';
+import StatusCard from '../common/components/StatusCard';
 import { formatTime } from '../common/util/formatter';
 import ReportFilter from './components/ReportFilter';
 import { useTranslation } from '../common/components/LocalizationProvider';
@@ -107,7 +104,6 @@ const useStyles = makeStyles((theme) => ({
   thumbSelected: {
     border: `2px solid ${theme.palette.primary.main}`,
   },
-
   timelineContainer: {
     display: 'flex',
     flexDirection: 'column',
@@ -115,7 +111,6 @@ const useStyles = makeStyles((theme) => ({
     marginLeft: 20,
     paddingLeft: 20,
   },
-
   timelineItem: {
     display: 'flex',
     alignItems: 'flex-start',
@@ -135,7 +130,6 @@ const useStyles = makeStyles((theme) => ({
       display: 'none',
     },
   },
-
   marker: {
     width: 24,
     height: 24,
@@ -150,7 +144,6 @@ const useStyles = makeStyles((theme) => ({
     marginRight: 12,
     zIndex: 1,
   },
-
 }));
 
 const ReplayMediaPage = () => {
@@ -177,6 +170,7 @@ const ReplayMediaPage = () => {
   const [startLocation, setStartLocation] = useState('');
   const [endLocation, setEndLocation] = useState('');
   const [mediaTimeline, setMediaTimeline] = useState([]);
+  const [showCard, setShowCard] = useState(false);
 
   const deviceName = selectedDeviceId && devices[selectedDeviceId]?.name;
 
@@ -230,6 +224,20 @@ const ReplayMediaPage = () => {
     }
   };
 
+  const onPointClick = useCallback(
+    (_, clickedIndex) => {
+      setIndex(clickedIndex);
+    },
+    [setIndex],
+  );
+
+  const onMarkerClick = useCallback(
+    (positionId) => {
+      setShowCard(!!positionId);
+    },
+    [setShowCard],
+  );
+
   const handleSubmit = useCatch(async ({ deviceId, from, to }) => {
     setLoading(true);
     setSelectedDeviceId(deviceId);
@@ -276,13 +284,13 @@ const ReplayMediaPage = () => {
         setAnimationProgress((progress) => {
           const newProgress = progress + 0.02 * speed;
           if (newProgress >= 1) {
-            setIndex((prev) => {
-              const next = prev + 1;
-              if (next >= positions.length - 1) {
+            setIndex((prevIndex) => {
+              const nextIndex = prevIndex + 1;
+              if (nextIndex >= positions.length - 1) {
                 setPlaying(false);
-                return next;
+                return nextIndex;
               }
-              return next;
+              return nextIndex;
             });
             return 0;
           }
@@ -297,15 +305,26 @@ const ReplayMediaPage = () => {
 
   useEffect(() => {
     if (positions.length > 0 && index < positions.length - 1) {
-      const cur = positions[index];
-      const next = positions[index + 1];
-      if (cur && next) {
-        const interp = {
-          ...cur,
-          latitude: cur.latitude + (next.latitude - cur.latitude) * animationProgress,
-          longitude: cur.longitude + (next.longitude - cur.longitude) * animationProgress,
+      const currentPos = positions[index];
+      const nextPos = positions[index + 1];
+
+      if (currentPos && nextPos) {
+        const interpolatedPosition = {
+          ...currentPos,
+          latitude:
+            currentPos.latitude
+            + (nextPos.latitude - currentPos.latitude) * animationProgress,
+          longitude:
+            currentPos.longitude
+            + (nextPos.longitude - currentPos.longitude) * animationProgress,
+          speed:
+            currentPos.speed
+            + (nextPos.speed - currentPos.speed) * animationProgress,
+          course:
+            currentPos.course
+            + (nextPos.course - currentPos.course) * animationProgress,
         };
-        setSmoothPosition(interp);
+        setSmoothPosition(interpolatedPosition);
       }
     } else if (positions.length > 0 && index < positions.length) {
       setSmoothPosition(positions[index]);
@@ -349,8 +368,13 @@ const ReplayMediaPage = () => {
           <MapView>
             <MapGeofence />
             <MapRoutePath positions={positions} />
+            <MapRoutePoints positions={positions} onClick={onPointClick} />
             {smoothPosition && (
-              <MapPositions positions={[smoothPosition]} titleField="fixTime" />
+              <MapPositions
+                positions={[smoothPosition]}
+                onClick={onMarkerClick}
+                titleField="fixTime"
+              />
             )}
           </MapView>
           <MapCamera positions={positions} />
@@ -379,14 +403,7 @@ const ReplayMediaPage = () => {
           <Paper className={classes.sidebarContent}>
             <Typography variant="subtitle1" fontWeight="bold">
               {positions[index]
-                ? new Date(positions[index].fixTime).toLocaleString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                  hour: 'numeric',
-                  minute: '2-digit',
-                  hour12: true,
-                  timeZoneName: 'short',
-                })
+                ? formatTime(positions[index].fixTime, 'seconds')
                 : '--'}
             </Typography>
 
@@ -396,17 +413,11 @@ const ReplayMediaPage = () => {
                 <Box>
                   <Typography fontWeight="bold">
                     End:
+                    {' '}
                     {endLocation || `${positions[positions.length - 1]?.latitude.toFixed(4)}, ${positions[positions.length - 1]?.longitude.toFixed(4)}`}
                   </Typography>
                   <Typography variant="caption" color="textSecondary">
-                    {positions[positions.length - 1] && new Date(positions[positions.length - 1].fixTime).toLocaleString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      hour: 'numeric',
-                      minute: '2-digit',
-                      hour12: true,
-                      timeZoneName: 'short',
-                    })}
+                    {positions[positions.length - 1] && formatTime(positions[positions.length - 1].fixTime, 'seconds')}
                   </Typography>
                 </Box>
               </Box>
@@ -416,17 +427,11 @@ const ReplayMediaPage = () => {
                 <Box>
                   <Typography fontWeight="bold">
                     Start:
+                    {' '}
                     {startLocation || `${positions[0]?.latitude.toFixed(4)}, ${positions[0]?.longitude.toFixed(4)}`}
                   </Typography>
                   <Typography variant="caption" color="textSecondary">
-                    {positions[0] && new Date(positions[0].fixTime).toLocaleString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      hour: 'numeric',
-                      minute: '2-digit',
-                      hour12: true,
-                      timeZoneName: 'short',
-                    })}
+                    {positions[0] && formatTime(positions[0].fixTime, 'seconds')}
                   </Typography>
                 </Box>
               </Box>
@@ -468,6 +473,7 @@ const ReplayMediaPage = () => {
                 {index + 1}
                 {' '}
                 /
+                {' '}
                 {positions.length}
               </Typography>
             </div>
@@ -496,6 +502,15 @@ const ReplayMediaPage = () => {
             <img src={openMedia.full} alt="preview" style={{ width: '100%', height: 'auto' }} />
           )}
         </Dialog>
+
+        {showCard && index < positions.length && (
+          <StatusCard
+            deviceId={selectedDeviceId}
+            position={positions[index]}
+            onClose={() => setShowCard(false)}
+            disableActions
+          />
+        )}
       </div>
     </PageLayout>
   );
