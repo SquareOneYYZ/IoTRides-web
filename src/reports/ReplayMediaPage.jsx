@@ -1,5 +1,9 @@
 import React, {
-  useState, useEffect, useRef, useCallback, useMemo,
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
 } from 'react';
 import {
   IconButton,
@@ -36,8 +40,16 @@ import ReportsMenu from './components/ReportsMenu';
 import useReportStyles from './common/useReportStyles';
 
 const useStyles = makeStyles((theme) => ({
-  container: { height: '100%', display: 'flex', flexDirection: 'column' },
-  mapContainer: { flexGrow: 1, display: 'flex', position: 'relative' },
+  container: {
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  mapContainer: {
+    flexGrow: 1,
+    display: 'flex',
+    position: 'relative',
+  },
   sidebar: {
     display: 'flex',
     gap: 6,
@@ -48,25 +60,46 @@ const useStyles = makeStyles((theme) => ({
     top: theme.spacing(2),
     width: 380,
     maxHeight: 'calc(100vh - 32px)',
+    [theme.breakpoints.down('md')]: {
+      width: 320,
+      right: theme.spacing(1),
+      top: theme.spacing(1),
+      maxHeight: 'calc(100vh - 16px)',
+    },
+    [theme.breakpoints.down('sm')]: {
+      width: '100%',
+      right: 10,
+      top: 25,
+      maxHeight: '40vh',
+      padding: theme.spacing(5),
+      gap: 4,
+    },
   },
   sidebarContent: {
     padding: theme.spacing(2),
     display: 'flex',
     flexDirection: 'column',
     gap: theme.spacing(2),
+    [theme.breakpoints.down('sm')]: {
+      padding: theme.spacing(1.5),
+      gap: theme.spacing(1.5),
+    },
   },
   controls: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: theme.spacing(1),
+    [theme.breakpoints.down('sm')]: {
+      gap: theme.spacing(0.5),
+    },
   },
   mediaBar: {
     position: 'fixed',
-    bottom: theme.spacing(2),
-    left: '50%',
+    bottom: theme.spacing(10),
+    left: '60%',
     transform: 'translateX(-50%)',
-    zIndex: 5,
+    zIndex: 1,
     display: 'flex',
     height: 80,
     padding: theme.spacing(1),
@@ -77,6 +110,21 @@ const useStyles = makeStyles((theme) => ({
     overflowX: 'auto',
     overflowY: 'hidden',
     boxShadow: theme.shadows[6],
+    [theme.breakpoints.down('md')]: {
+      left: '50%',
+      bottom: theme.spacing(2),
+      maxWidth: '95vw',
+      height: 70,
+    },
+    // Mobile
+    [theme.breakpoints.down('sm')]: {
+      left: '50%',
+      bottom: theme.spacing(20),
+      maxWidth: '95vw',
+      height: 65,
+      padding: theme.spacing(0.5),
+      gap: theme.spacing(0.25),
+    },
   },
   thumb: {
     cursor: 'pointer',
@@ -85,9 +133,35 @@ const useStyles = makeStyles((theme) => ({
     border: '2px solid transparent',
     transition: 'border 0.2s',
     flexShrink: 0,
-    '&:hover': { border: `2px solid ${theme.palette.primary.main}` },
+    '&:hover': {
+      border: `2px solid ${theme.palette.primary.main}`,
+    },
+    // Mobile - smaller thumbs
+    [theme.breakpoints.down('sm')]: {
+      borderRadius: 2,
+      border: '1px solid transparent',
+      '&:hover': {
+        border: `1px solid ${theme.palette.primary.main}`,
+      },
+    },
   },
-  thumbSelected: { border: `2px solid ${theme.palette.primary.main}` },
+  thumbSelected: {
+    border: `2px solid ${theme.palette.primary.main}`,
+    [theme.breakpoints.down('sm')]: {
+      border: `1px solid ${theme.palette.primary.main}`,
+    },
+  },
+  // New classes for responsive elements
+  toolbarTitle: {
+    [theme.breakpoints.down('sm')]: {
+      fontSize: '0.9rem',
+    },
+  },
+  dialogContent: {
+    [theme.breakpoints.down('sm')]: {
+      padding: 0,
+    },
+  },
 }));
 
 const ReplayMediaPage = () => {
@@ -125,15 +199,97 @@ const ReplayMediaPage = () => {
 
   const fetchLocationName = useCallback(async (latitude, longitude, signal) => {
     try {
-      const res = await fetch(`/api/server/geocode?latitude=${latitude}&longitude=${longitude}`, { signal });
+      const res = await fetch(
+        `/api/server/geocode?latitude=${latitude}&longitude=${longitude}`,
+        { signal },
+      );
       if (res.ok) {
         const data = await res.json();
-        return data.address || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+        return (
+          data.address || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
+        );
       }
     } catch {
       return `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
     }
     return `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+  }, []);
+
+  const mockMediaData = [
+    {
+      id: 1,
+      thumb: 'https://picsum.photos/seed/media1/120/80',
+      full: 'https://picsum.photos/seed/media1/800/600',
+      time: '10:05 AM',
+      eventTime: '2024-01-15T10:05:00Z',
+    },
+    {
+      id: 2,
+      thumb: 'https://picsum.photos/seed/media2/120/80',
+      full: 'https://picsum.photos/seed/media2/800/600',
+      time: '10:12 AM',
+      eventTime: '2024-01-15T10:12:00Z',
+    },
+    {
+      id: 3,
+      thumb: 'https://picsum.photos/seed/media3/120/80',
+      full: 'https://picsum.photos/seed/media3/800/600',
+      time: '10:18 AM',
+      eventTime: '2024-01-15T10:18:00Z',
+    },
+    {
+      id: 4,
+      thumb: 'https://picsum.photos/seed/media4/120/80',
+      full: 'https://picsum.photos/seed/media4/800/600',
+      time: '10:25 AM',
+      eventTime: '2024-01-15T10:25:00Z',
+    },
+    {
+      id: 5,
+      thumb: 'https://picsum.photos/seed/media5/120/80',
+      full: 'https://picsum.photos/seed/media5/800/600',
+      time: '10:33 AM',
+      eventTime: '2024-01-15T10:33:00Z',
+    },
+    {
+      id: 6,
+      thumb: 'https://picsum.photos/seed/media6/120/80',
+      full: 'https://picsum.photos/seed/media6/800/600',
+      time: '10:41 AM',
+      eventTime: '2024-01-15T10:41:00Z',
+    },
+    {
+      id: 7,
+      thumb: 'https://picsum.photos/seed/media7/120/80',
+      full: 'https://picsum.photos/seed/media7/800/600',
+      time: '10:48 AM',
+      eventTime: '2024-01-15T10:48:00Z',
+    },
+    {
+      id: 8,
+      thumb: 'https://picsum.photos/seed/media8/120/80',
+      full: 'https://picsum.photos/seed/media8/800/600',
+      time: '10:56 AM',
+      eventTime: '2024-01-15T10:56:00Z',
+    },
+    {
+      id: 9,
+      thumb: 'https://picsum.photos/seed/media9/120/80',
+      full: 'https://picsum.photos/seed/media9/800/600',
+      time: '11:03 AM',
+      eventTime: '2024-01-15T11:03:00Z',
+    },
+    {
+      id: 10,
+      thumb: 'https://picsum.photos/seed/media10/120/80',
+      full: 'https://picsum.photos/seed/media10/800/600',
+      time: '11:11 AM',
+      eventTime: '2024-01-15T11:11:00Z',
+    },
+  ];
+
+  useEffect(() => {
+    setMediaTimeline(mockMediaData);
   }, []);
 
   const handleSubmit = useCatch(async ({ deviceId, from, to }) => {
@@ -153,20 +309,34 @@ const ReplayMediaPage = () => {
       const query = new URLSearchParams({ deviceId, from, to }).toString();
       const [positionsRes, eventsRes] = await Promise.all([
         fetch(`/api/positions?${query}`, { signal }),
-        fetch(`/api/reports/events?${query}`, { headers: { Accept: 'application/json' }, signal }),
+        fetch(`/api/reports/events?${query}`, {
+          headers: { Accept: 'application/json' },
+          signal,
+        }),
       ]);
 
       if (!positionsRes.ok) throw new Error(await positionsRes.text());
       if (!eventsRes.ok) throw new Error(await eventsRes.text());
 
-      const [positionsData, allEvents] = await Promise.all([positionsRes.json(), eventsRes.json()]);
+      const [positionsData, allEvents] = await Promise.all([
+        positionsRes.json(),
+        eventsRes.json(),
+      ]);
       if (!positionsData.length) throw new Error(t('sharedNoData'));
 
       setPositions(positionsData);
 
       const [startLoc, endLoc] = await Promise.all([
-        fetchLocationName(positionsData[0].latitude, positionsData[0].longitude, signal),
-        fetchLocationName(positionsData[positionsData.length - 1].latitude, positionsData[positionsData.length - 1].longitude, signal),
+        fetchLocationName(
+          positionsData[0].latitude,
+          positionsData[0].longitude,
+          signal,
+        ),
+        fetchLocationName(
+          positionsData[positionsData.length - 1].latitude,
+          positionsData[positionsData.length - 1].longitude,
+          signal,
+        ),
       ]);
       setStartLocation(startLoc);
       setEndLocation(endLoc);
@@ -181,7 +351,9 @@ const ReplayMediaPage = () => {
           id: event.id || idx,
           thumb: fullUrl,
           full: fullUrl,
-          time: new Date(event.eventTime || event.serverTime).toLocaleTimeString('en-US', {
+          time: new Date(
+            event.eventTime || event.serverTime,
+          ).toLocaleTimeString('en-US', {
             hour: 'numeric',
             minute: '2-digit',
             hour12: true,
@@ -190,7 +362,7 @@ const ReplayMediaPage = () => {
         };
       });
 
-      setMediaTimeline(timeline);
+      // setMediaTimeline(mockMediaData);
     } catch (err) {
       if (err.name !== 'AbortError') {
         console.error('Error loading replay data:', err);
@@ -267,11 +439,19 @@ const ReplayMediaPage = () => {
 
   if (!positions.length) {
     return (
-      <PageLayout menu={<ReportsMenu />} breadcrumbs={['reportTitle', 'reportReplay']}>
+      <PageLayout
+        menu={<ReportsMenu />}
+        breadcrumbs={['reportTitle', 'reportReplay']}
+      >
         <div className={reportClasses.container}>
           <div className={reportClasses.containerMain}>
             <div className={reportClasses.header}>
-              <ReportFilter handleSubmit={handleSubmit} fullScreen showOnly loading={loading} />
+              <ReportFilter
+                handleSubmit={handleSubmit}
+                fullScreen
+                showOnly
+                loading={loading}
+              />
             </div>
           </div>
         </div>
@@ -280,14 +460,19 @@ const ReplayMediaPage = () => {
   }
 
   return (
-    <PageLayout menu={<ReportsMenu />} breadcrumbs={['reportTitle', 'reportReplay']}>
+    <PageLayout
+      menu={<ReportsMenu />}
+      breadcrumbs={['reportTitle', 'reportReplay']}
+    >
       <div className={classes.container}>
         <div className={classes.mapContainer}>
           <MapView>
             <MapGeofence />
             <MapRoutePath positions={positions} />
             <MapRoutePoints positions={positions} />
-            {smoothPosition && <MapPositions positions={[smoothPosition]} titleField="fixTime" />}
+            {smoothPosition && (
+              <MapPositions positions={[smoothPosition]} titleField="fixTime" />
+            )}
           </MapView>
           <MapCamera positions={positions} />
           <MapScale />
@@ -296,39 +481,65 @@ const ReplayMediaPage = () => {
         <div className={classes.sidebar}>
           <Paper elevation={4}>
             <Toolbar>
-              <Typography variant="subtitle1" fontWeight="bold" sx={{ flexGrow: 1 }}>
+              <Typography
+                variant="subtitle1"
+                fontWeight="bold"
+                sx={{ flexGrow: 1 }}
+              >
                 {t('reportReplay')}
                 {' '}
                 -
                 {deviceName || t('sharedDevice')}
               </Typography>
-              <IconButton onClick={handleDownload}><DownloadIcon /></IconButton>
-              <IconButton onClick={handleClose}><CloseIcon /></IconButton>
+              <IconButton onClick={handleDownload}>
+                <DownloadIcon />
+              </IconButton>
+              <IconButton onClick={handleClose}>
+                <CloseIcon />
+              </IconButton>
             </Toolbar>
           </Paper>
 
           <Paper className={classes.sidebarContent}>
             <Typography variant="subtitle1" fontWeight="bold">
-              {currentPosition ? formatTime(currentPosition.fixTime, 'seconds') : '--'}
+              {currentPosition
+                ? formatTime(currentPosition.fixTime, 'seconds')
+                : '--'}
             </Typography>
             <Slider
               max={positions.length - 1}
               value={index}
-              onChange={(_, v) => { setIndex(v); setAnimationProgress(0); setPlaying(false); }}
+              onChange={(_, v) => {
+                setIndex(v);
+                setAnimationProgress(0);
+                setPlaying(false);
+              }}
               step={null}
               marks={positions.map((_, i) => ({ value: i }))}
             />
             <Box className={classes.controls}>
-              <IconButton onClick={() => setIndex((i) => Math.max(0, i - 1))} disabled={playing || index <= 0}><FastRewindIcon /></IconButton>
-              <IconButton onClick={() => setPlaying((p) => !p)} disabled={index >= positions.length - 1 && !playing}>
+              <IconButton
+                onClick={() => setIndex((i) => Math.max(0, i - 1))}
+                disabled={playing || index <= 0}
+              >
+                <FastRewindIcon />
+              </IconButton>
+              <IconButton
+                onClick={() => setPlaying((p) => !p)}
+                disabled={index >= positions.length - 1 && !playing}
+              >
                 {playing ? <PauseIcon /> : <PlayArrowIcon />}
               </IconButton>
-              <IconButton onClick={() => setIndex((i) => Math.min(i + 1, positions.length - 1))} disabled={playing || index >= positions.length - 1}><FastForwardIcon /></IconButton>
+              <IconButton
+                onClick={() => setIndex((i) => Math.min(i + 1, positions.length - 1))}
+                disabled={playing || index >= positions.length - 1}
+              >
+                <FastForwardIcon />
+              </IconButton>
               <Typography variant="caption">
                 {index + 1}
                 {' '}
                 /
-                {' '}
                 {positions.length}
               </Typography>
             </Box>
@@ -341,10 +552,22 @@ const ReplayMediaPage = () => {
               <Box
                 key={item.id}
                 onClick={() => setOpenMedia(item)}
-                className={`${classes.thumb} ${openMedia?.id === item.id ? classes.thumbSelected : ''}`}
+                className={`${classes.thumb} ${
+                  openMedia?.id === item.id ? classes.thumbSelected : ''
+                }`}
               >
-                <img src={item.thumb} alt="thumb" width={120} height={80} style={{ display: 'block' }} />
-                <Typography align="center" variant="caption" sx={{ fontSize: '0.65rem', p: 0.5 }}>
+                <img
+                  src={item.thumb}
+                  alt="thumb"
+                  width={120}
+                  height={80}
+                  style={{ display: 'block' }}
+                />
+                <Typography
+                  align="center"
+                  variant="caption"
+                  sx={{ fontSize: '0.65rem', p: 0.5 }}
+                >
                   {item.time}
                 </Typography>
               </Box>
@@ -352,8 +575,18 @@ const ReplayMediaPage = () => {
           </Paper>
         )}
 
-        <Dialog open={!!openMedia} onClose={() => setOpenMedia(null)} maxWidth="md">
-          {openMedia && <img src={openMedia.full} alt="preview" style={{ width: '100%', height: 'auto' }} />}
+        <Dialog
+          open={!!openMedia}
+          onClose={() => setOpenMedia(null)}
+          maxWidth="md"
+        >
+          {openMedia && (
+            <img
+              src={openMedia.full}
+              alt="preview"
+              style={{ width: '100%', height: 'auto' }}
+            />
+          )}
         </Dialog>
 
         {showCard && currentPosition && (
