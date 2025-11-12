@@ -97,19 +97,27 @@ const useStyles = makeStyles((theme) => ({
   mediaBar: {
     position: 'fixed',
     bottom: theme.spacing(10),
-    left: '60%',
+    left: '60.5%',
     transform: 'translateX(-50%)',
     zIndex: 1,
     display: 'flex',
-    height: 80,
+    height: 110,
     padding: theme.spacing(1),
     gap: theme.spacing(0.5),
     background: theme.palette.background.paper,
     borderRadius: theme.shape.borderRadius,
-    maxWidth: '90vw',
+    maxWidth: '78vw',
     overflowX: 'auto',
     overflowY: 'hidden',
     boxShadow: theme.shadows[6],
+    scrollbarWidth: 'thin', // Firefox
+    scrollbarColor: `${theme.palette.action.hover} transparent`, // Firefox
+    '&::-webkit-scrollbar': {
+      height: 6, // Thin scrollbar
+    },
+    '&::-webkit-scrollbar-track': {
+      background: 'transparent',
+    },
     [theme.breakpoints.down('md')]: {
       left: '50%',
       bottom: theme.spacing(2),
@@ -215,83 +223,6 @@ const ReplayMediaPage = () => {
     return `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
   }, []);
 
-  const mockMediaData = [
-    {
-      id: 1,
-      thumb: 'https://picsum.photos/seed/media1/120/80',
-      full: 'https://picsum.photos/seed/media1/800/600',
-      time: '10:05 AM',
-      eventTime: '2024-01-15T10:05:00Z',
-    },
-    {
-      id: 2,
-      thumb: 'https://picsum.photos/seed/media2/120/80',
-      full: 'https://picsum.photos/seed/media2/800/600',
-      time: '10:12 AM',
-      eventTime: '2024-01-15T10:12:00Z',
-    },
-    {
-      id: 3,
-      thumb: 'https://picsum.photos/seed/media3/120/80',
-      full: 'https://picsum.photos/seed/media3/800/600',
-      time: '10:18 AM',
-      eventTime: '2024-01-15T10:18:00Z',
-    },
-    {
-      id: 4,
-      thumb: 'https://picsum.photos/seed/media4/120/80',
-      full: 'https://picsum.photos/seed/media4/800/600',
-      time: '10:25 AM',
-      eventTime: '2024-01-15T10:25:00Z',
-    },
-    {
-      id: 5,
-      thumb: 'https://picsum.photos/seed/media5/120/80',
-      full: 'https://picsum.photos/seed/media5/800/600',
-      time: '10:33 AM',
-      eventTime: '2024-01-15T10:33:00Z',
-    },
-    {
-      id: 6,
-      thumb: 'https://picsum.photos/seed/media6/120/80',
-      full: 'https://picsum.photos/seed/media6/800/600',
-      time: '10:41 AM',
-      eventTime: '2024-01-15T10:41:00Z',
-    },
-    {
-      id: 7,
-      thumb: 'https://picsum.photos/seed/media7/120/80',
-      full: 'https://picsum.photos/seed/media7/800/600',
-      time: '10:48 AM',
-      eventTime: '2024-01-15T10:48:00Z',
-    },
-    {
-      id: 8,
-      thumb: 'https://picsum.photos/seed/media8/120/80',
-      full: 'https://picsum.photos/seed/media8/800/600',
-      time: '10:56 AM',
-      eventTime: '2024-01-15T10:56:00Z',
-    },
-    {
-      id: 9,
-      thumb: 'https://picsum.photos/seed/media9/120/80',
-      full: 'https://picsum.photos/seed/media9/800/600',
-      time: '11:03 AM',
-      eventTime: '2024-01-15T11:03:00Z',
-    },
-    {
-      id: 10,
-      thumb: 'https://picsum.photos/seed/media10/120/80',
-      full: 'https://picsum.photos/seed/media10/800/600',
-      time: '11:11 AM',
-      eventTime: '2024-01-15T11:11:00Z',
-    },
-  ];
-
-  useEffect(() => {
-    setMediaTimeline(mockMediaData);
-  }, []);
-
   const handleSubmit = useCatch(async ({ deviceId, from, to }) => {
     if (abortControllerRef.current) abortControllerRef.current.abort();
     abortControllerRef.current = new AbortController();
@@ -362,7 +293,7 @@ const ReplayMediaPage = () => {
         };
       });
 
-      // setMediaTimeline(mockMediaData);
+      setMediaTimeline(timeline);
     } catch (err) {
       if (err.name !== 'AbortError') {
         console.error('Error loading replay data:', err);
