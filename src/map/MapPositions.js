@@ -42,8 +42,7 @@ const MapPositions = ({
         showDirection = position.course > 0;
         break;
       default:
-        showDirection =
-          selectedPositionId === position.id && position.course > 0;
+        showDirection = selectedPositionId === position.id && position.course > 0;
         break;
     }
     return {
@@ -220,11 +219,9 @@ const MapPositions = ({
         type: 'FeatureCollection',
         features: positions
           .filter((it) => devices.hasOwnProperty(it.deviceId))
-          .filter((it) =>
-            source === id
-              ? it.deviceId !== selectedDeviceId
-              : it.deviceId === selectedDeviceId,
-          )
+          .filter((it) => (source === id
+            ? it.deviceId !== selectedDeviceId
+            : it.deviceId === selectedDeviceId))
           .map((position) => ({
             type: 'Feature',
             geometry: {
