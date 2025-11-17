@@ -1,7 +1,7 @@
 import { batch } from 'react-redux';
 
-const threshold = 3;
-const interval = 1500;
+const THRESHOLD = 3;
+const INTERVAL = 1500;
 const EXPIRE_TIME = 15000;
 
 export default () => (next) => {
@@ -11,44 +11,55 @@ export default () => (next) => {
 
   const deviceLastUpdate = {};
 
-  setInterval(() => {
+  const timer = setInterval(() => {
     const now = Date.now();
 
     Object.keys(deviceLastUpdate).forEach((deviceId) => {
       if (now - deviceLastUpdate[deviceId] > EXPIRE_TIME) {
-        next({
-          type: 'devices/expire',
-          id: deviceId,
-        });
-
+        next({ type: 'devices/expire', id: deviceId });
         delete deviceLastUpdate[deviceId];
       }
     });
 
     if (throttle) {
-      if (buffer.length < threshold) {
+      if (buffer.length < THRESHOLD) {
         throttle = false;
       }
-      batch(() => buffer.splice(0, buffer.length).forEach((action) => next(action)));
+
+      if (buffer.length > 0) {
+        batch(() => {
+          for (let i = 0; i < buffer.length; i += 1) {
+            next(buffer[i]);
+          }
+          buffer.length = 0;
+        });
+      }
     } else {
-      if (counter > threshold) {
+      if (counter > THRESHOLD) {
         throttle = true;
       }
       counter = 0;
     }
-  }, interval);
+  }, INTERVAL);
 
+  const unsubscribeCleanup = () => clearInterval(timer);
+
+  unsubscribeCleanup();
   return (action) => {
     if (action.type === 'devices/update') {
-      const deviceId = action.payload?.id;
-      if (deviceId) deviceLastUpdate[deviceId] = Date.now();
+      const id = action.payload?.id;
+      if (id) deviceLastUpdate[id] = Date.now();
     }
 
-    if (action.type === 'devices/update' || action.type === 'positions/update') {
+    if (
+      action.type === 'devices/update'
+      || action.type === 'positions/update'
+    ) {
       if (throttle) {
-        buffer.push(action);
+        if (buffer.length < 2000) buffer.push(action);
         return null;
       }
+
       counter += 1;
       return next(action);
     }
