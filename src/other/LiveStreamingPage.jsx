@@ -511,7 +511,7 @@ const LiveStreamingPage = () => {
 
         <div className={classes.rightHeader}>
           <div className={classes.controls}>
-            {/* <Button
+            <Button
               variant="contained"
               color="success"
               startIcon={<PlayArrow />}
@@ -519,8 +519,8 @@ const LiveStreamingPage = () => {
               sx={{ mr: 1 }}
             >
               Start
-            </Button> */}
-            {/* <Button
+            </Button>
+            <Button
               variant="outlined"
               color="inherit"
               startIcon={<Stop />}
@@ -528,8 +528,8 @@ const LiveStreamingPage = () => {
               sx={{ mr: 1 }}
             >
               Stop
-            </Button> */}
-            {/* <Button
+            </Button>
+            <Button
               variant="text"
               color="inherit"
               startIcon={<LocationOn />}
@@ -537,7 +537,7 @@ const LiveStreamingPage = () => {
               sx={{ mr: 1, display: { xs: 'none', sm: 'flex' } }}
             >
               Location
-            </Button> */}
+            </Button>
 
             <IconButton
               color="inherit"
