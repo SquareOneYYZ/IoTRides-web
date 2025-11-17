@@ -399,32 +399,32 @@ const LiveStreamingPage = () => {
     ? [
       {
         id: 1,
-        src: `http://143.110.213.79:8889/${uniqueId}_ch1/`,
+        src: `https://staging.streaming.iotrides.com:8889/${uniqueId}_ch1/`,
         title: 'Front Camera',
       },
       {
         id: 2,
-        src: `http://143.110.213.79:8889/${uniqueId}_ch2/`,
+        src: `https://staging.streaming.iotrides.com:8889/${uniqueId}_ch2/`,
         title: 'Left Camera',
       },
       {
         id: 3,
-        src: `http://143.110.213.79:8889/${uniqueId}_ch3/`,
+        src: `https://staging.streaming.iotrides.com:8889/${uniqueId}_ch3/`,
         title: 'Right Camera',
       },
       {
         id: 4,
-        src: `http://143.110.213.79:8889/${uniqueId}_ch4/`,
+        src: `https://staging.streaming.iotrides.com:8889/${uniqueId}_ch4/`,
         title: 'Rear Camera',
       },
       {
         id: 5,
-        src: `http://143.110.213.79:8889/${uniqueId}_ch5/`,
+        src: `https://staging.streaming.iotrides.com:8889/${uniqueId}_ch5/`,
         title: 'Top Camera',
       },
       {
         id: 6,
-        src: `http://143.110.213.79:8889/${uniqueId}_ch6/`,
+        src: `https://staging.streaming.iotrides.com:8889/${uniqueId}_ch6/`,
         title: 'Bottom Camera',
       },
     ]

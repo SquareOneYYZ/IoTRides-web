@@ -201,10 +201,10 @@ const LiveStreamCard = () => {
   };
 
   const cameraStreams = uniqueId ? [
-    { title: 'Front Camera', src: `http://143.110.213.79:8889/${uniqueId}_ch1/`, channel: 1 },
-    { title: 'Left Camera', src: `http://143.110.213.79:8889/${uniqueId}_ch2/`, channel: 2 },
-    { title: 'Right Camera', src: `http://143.110.213.79:8889/${uniqueId}_ch3/`, channel: 3 },
-    { title: 'Rear Camera', src: `http://143.110.213.79:8889/${uniqueId}_ch4/`, channel: 4 },
+    { title: 'Front Camera', src: `https://staging.streaming.iotrides.com:8889/${uniqueId}_ch1/`, channel: 1 },
+    { title: 'Left Camera', src: `https://staging.streaming.iotrides.com:8889/${uniqueId}_ch2/`, channel: 2 },
+    { title: 'Right Camera', src: `https://staging.streaming.iotrides.com:8889/${uniqueId}_ch3/`, channel: 3 },
+    { title: 'Rear Camera', src: `https://staging.streaming.iotrides.com:8889/${uniqueId}_ch4/`, channel: 4 },
   ] : [];
 
   return (

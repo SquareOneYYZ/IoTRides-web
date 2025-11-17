@@ -274,34 +274,45 @@ const VideoBlock = ({
           </Tooltip>
         )}
 
-        <video
-          ref={videoRef}
-          src={src}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={handlePlayPause}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              handlePlayPause();
+            }
+          }}
           style={{
             width: '100%',
             height: '100%',
-            display: 'block',
-            objectFit: 'contain',
-            visibility: isStarted ? 'visible' : 'hidden',
+            cursor: 'pointer',
+            position: 'relative',
           }}
-          onEnded={() => {
-            setIsPlaying(false);
-            setShowControls(true);
-          }}
-          onError={handleVideoError}
-          onCanPlay={handleVideoCanPlay}
-          onPlaying={handleVideoPlaying}
-          onClick={handlePlayPause}
-          controls={false}
-          aria-label={title || 'Video player'}
+          aria-label={isPlaying ? 'Pause video' : 'Play video'}
         >
-          <track
-            kind="captions"
-            src="captions.vtt"
-            srcLang="en"
-            label="English"
+          <iframe
+            ref={videoRef}
+            src={src}
+            title={title || 'Video player'}
+            style={{
+              width: '100%',
+              height: '100%',
+              display: 'block',
+              border: 'none',
+              visibility: isStarted ? 'visible' : 'hidden',
+              pointerEvents: 'none',
+            }}
+            allow="autoplay; fullscreen"
+            tabIndex={-1}
+            onLoad={() => {
+              setStreamLoaded(true);
+              setHasError(false);
+            }}
+            onError={handleVideoError}
           />
-        </video>
+        </div>
 
         {hasError && isStarted && (
           <div
