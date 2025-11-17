@@ -6,6 +6,8 @@ import { useNavigate } from 'react-router-dom';
 import LaunchIcon from '@mui/icons-material/Launch';
 import { Tooltip } from '@mui/material';
 
+// WHEP logic removed — video replaced with iframe
+
 const VideoBlock = ({
   src,
   className,
@@ -13,18 +15,15 @@ const VideoBlock = ({
   showLaunch,
   showFocusIcon,
   onFocus,
-  onPlayCommand,
 }) => {
-  const videoRef = useRef(null);
   const containerRef = useRef(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isStarted, setIsStarted] = useState(false);
+  const navigate = useNavigate();
+
   const [showControls, setShowControls] = useState(true);
   const [controlsTimeout, setControlsTimeout] = useState(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
-  const [hasError, setHasError] = useState(false);
-  const [streamLoaded, setStreamLoaded] = useState(false);
-  const navigate = useNavigate();
+  const [isStarted, setIsStarted] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
     const observer = new ResizeObserver((entries) => {
@@ -42,57 +41,9 @@ const VideoBlock = ({
   const paddingY = 20 * controlScale;
   const paddingX = 14 * controlScale;
 
-  const handlePlayPause = async () => {
-    if (isPlaying) {
-      if (videoRef.current) {
-        videoRef.current.pause();
-        setIsPlaying(false);
-      }
-      return;
-    }
-
-    if (isStarted && videoRef.current?.readyState >= 2 && !hasError) {
-      try {
-        await videoRef.current.play();
-        setIsPlaying(true);
-      } catch (error) {
-        console.error('Error playing video:', error);
-        setHasError(true);
-      }
-      return;
-    }
-    if (!isStarted) {
-      setIsStarted(true);
-      const needsCommand = hasError
-                          || !videoRef.current?.readyState
-                          || videoRef.current.readyState < 2;
-
-      if (needsCommand && onPlayCommand) {
-        const success = await onPlayCommand();
-        if (!success) {
-          setIsStarted(false);
-          return;
-        }
-        await new Promise((resolve) => {
-          setTimeout(() => {
-            resolve();
-          }, 1000);
-        });
-      }
-    }
-
-    // Try to play the video
-    if (videoRef.current) {
-      try {
-        await videoRef.current.play();
-        setIsPlaying(true);
-        setHasError(false);
-      } catch (error) {
-        console.error('Error playing video:', error);
-        setHasError(true);
-        setIsPlaying(false);
-      }
-    }
+  const handlePlayPause = () => {
+    setIsStarted(true);
+    setIsPlaying(!isPlaying);
   };
 
   const handleFullscreen = async () => {
@@ -103,10 +54,6 @@ const VideoBlock = ({
         await document.exitFullscreen();
       } else if (element.requestFullscreen) {
         await element.requestFullscreen();
-      } else if (element.webkitRequestFullscreen) {
-        element.webkitRequestFullscreen();
-      } else if (element.msRequestFullscreen) {
-        element.msRequestFullscreen();
       }
     } catch (err) {
       console.error('Fullscreen error:', err);
@@ -128,153 +75,24 @@ const VideoBlock = ({
     if (isPlaying && isStarted) setShowControls(false);
   };
 
-  const handleLaunch = () => {
-    navigate('/livestream');
-  };
+  const handleLaunch = () => navigate('/livestream');
 
   const handleFocusClick = (e) => {
     e.stopPropagation();
     if (onFocus) onFocus();
   };
 
-  const handleVideoError = () => {
-    setHasError(true);
-    setIsPlaying(false);
-    setStreamLoaded(false);
-  };
-
-  const handleVideoCanPlay = () => {
-    setHasError(false);
-    setStreamLoaded(true);
-  };
-
-  const handleVideoPlaying = () => {
-    setStreamLoaded(true);
-    setHasError(false);
-  };
-
   return (
     <div
       ref={containerRef}
       className={className}
-      style={{
-        position: 'relative',
-        width: '100%',
-        height: '100%',
-        backgroundColor: '#000',
-      }}
+      style={{ position: 'relative', width: '100%', height: '100%', backgroundColor: '#000' }}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
     >
-      <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-        {!isStarted && (
-          <div
-            aria-label={title || 'Video player'}
-            role="button"
-            tabIndex={0}
-            onClick={handlePlayPause}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                handlePlayPause();
-              }
-            }}
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: 'rgba(0, 0, 0, 0.5)',
-              cursor: 'pointer',
-              zIndex: 5,
-            }}
-          >
-            <div
-              style={{
-                width: `${70 * controlScale}px`,
-                height: `${70 * controlScale}px`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'all 0.3s ease',
-              }}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width={48 * controlScale}
-                height={48 * controlScale}
-                viewBox="0 0 24 24"
-                fill="white"
-                opacity="0.85"
-              >
-                <path d="M12 2a7 7 0 0 0-7 7c0 3.07 1.99 5.64 4.74 6.57l-.74 2.43h-2a1 1 0 0 0 0 2h12a1 1 0 1 0 0-2h-2l-.74-2.43A7 7 0 0 0 19 9a7 7 0 0 0-7-7zm0 2a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 12c.7 0 1.39.1 2.05.29l.58 1.71h-5.26l.58-1.71c.66-.19 1.35-.29 2.05-.29z" />
-              </svg>
-            </div>
-          </div>
-        )}
-
-        {showLaunch && (
-          <Tooltip title="Open Livestream">
-            <LaunchIcon
-              onClick={handleLaunch}
-              aria-label="Open Livestream"
-              role="button"
-              tabIndex={0}
-              style={{
-                position: 'absolute',
-                top: `${12 * controlScale}px`,
-                right: `${12 * controlScale}px`,
-                color: 'white',
-                fontSize: `${25 * controlScale}px`,
-                zIndex: 15,
-                cursor: 'pointer',
-                opacity: 0.85,
-                transition: 'opacity 0.2s ease',
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.opacity = 1)}
-              onMouseLeave={(e) => (e.currentTarget.style.opacity = 0.85)}
-            />
-          </Tooltip>
-        )}
-
-        {!showLaunch && showFocusIcon && (
-          <Tooltip title="Focus this camera">
-            <ZoomOutMap
-              onClick={handleFocusClick}
-              aria-label="Focus camera"
-              role="button"
-              tabIndex={0}
-              style={{
-                position: 'absolute',
-                top: `${12 * controlScale}px`,
-                right: `${12 * controlScale}px`,
-                color: 'white',
-                fontSize: `${25 * controlScale}px`,
-                zIndex: 15,
-                cursor: 'pointer',
-                opacity: 0.85,
-                transition: 'all 0.2s ease',
-                backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                borderRadius: '4px',
-                padding: '4px',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.opacity = 1;
-                e.currentTarget.style.transform = 'scale(1.1)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.opacity = 0.85;
-                e.currentTarget.style.transform = 'scale(1)';
-              }}
-            />
-          </Tooltip>
-        )}
-
+      {!isStarted && (
         <div
+          aria-label={title || 'Video player'}
           role="button"
           tabIndex={0}
           onClick={handlePlayPause}
@@ -285,131 +103,112 @@ const VideoBlock = ({
             }
           }}
           style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
             width: '100%',
             height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
             cursor: 'pointer',
-            position: 'relative',
+            zIndex: 5,
           }}
-          aria-label={isPlaying ? 'Pause video' : 'Play video'}
         >
-          <iframe
-            ref={videoRef}
-            src={src}
-            title={title || 'Video player'}
-            style={{
-              width: '100%',
-              height: '100%',
-              display: 'block',
-              border: 'none',
-              visibility: isStarted ? 'visible' : 'hidden',
-              pointerEvents: 'none',
-            }}
-            allow="autoplay; fullscreen"
-            tabIndex={-1}
-            onLoad={() => {
-              setStreamLoaded(true);
-              setHasError(false);
-            }}
-            onError={handleVideoError}
-          />
+          <PlayArrow sx={{ fontSize: iconSize * 1.5, color: 'white' }} />
         </div>
+      )}
 
-        {hasError && isStarted && (
-          <div
+      {showLaunch && (
+        <Tooltip title="Open Livestream">
+          <LaunchIcon
+            onClick={handleLaunch}
             style={{
               position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
+              top: `${12 * controlScale}px`,
+              right: `${12 * controlScale}px`,
               color: 'white',
-              backgroundColor: 'rgba(255, 0, 0, 0.3)',
-              padding: '10px',
-              borderRadius: '4px',
-              fontSize: '12px',
-              zIndex: 6,
+              fontSize: `${25 * controlScale}px`,
+              zIndex: 15,
+              cursor: 'pointer',
+              opacity: 0.85,
             }}
-          >
-            Stream not available
-          </div>
-        )}
+          />
+        </Tooltip>
+      )}
 
-        {(isStarted || showControls) && (
-          <div
+      {!showLaunch && showFocusIcon && (
+        <Tooltip title="Focus this camera">
+          <ZoomOutMap
+            onClick={handleFocusClick}
             style={{
               position: 'absolute',
-              bottom: 0,
-              left: 0,
-              height: `${10 * controlScale}%`,
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              backgroundColor: 'rgba(0, 0, 0, 0.7)',
-              padding: `${paddingY}px ${paddingX}px`,
-              gap: `${12 * controlScale}px`,
-              opacity: showControls ? 1 : 0,
-              transition: 'opacity 0.3s ease',
-              pointerEvents: 'auto',
-              zIndex: 10,
+              top: `${12 * controlScale}px`,
+              right: `${12 * controlScale}px`,
+              color: 'white',
+              fontSize: `${25 * controlScale}px`,
+              zIndex: 15,
+              cursor: 'pointer',
+              opacity: 0.85,
+              backgroundColor: 'rgba(0,0,0,0.5)',
+              borderRadius: '4px',
+              padding: '4px',
             }}
-            onMouseEnter={() => setShowControls(true)}
+          />
+        </Tooltip>
+      )}
+
+      <iframe
+        src={src}
+        title={title}
+        style={{
+          width: '100%',
+          height: '100%',
+          border: 'none',
+          display: isStarted ? 'block' : 'none',
+        }}
+        allow="autoplay; fullscreen"
+      />
+
+      {(isStarted || showControls) && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            height: `${10 * controlScale}%`,
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            padding: `${paddingY}px ${paddingX}px`,
+            gap: `${12 * controlScale}px`,
+            opacity: showControls ? 1 : 0,
+            transition: 'opacity 0.3s ease',
+            zIndex: 10,
+          }}
+        >
+          <button
+            type="button"
+            onClick={handlePlayPause}
+            style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}
           >
-            <button
-              type="button"
-              aria-label={isPlaying ? 'Pause' : 'Play'}
-              onClick={handlePlayPause}
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                padding: `${1 * controlScale}px`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-                transition: 'transform 0.2s ease',
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.1)')}
-              onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-            >
-              {isPlaying ? (
-                <Tooltip title="Pause">
-                  <PauseIcon sx={{ fontSize: iconSize }} />
-                </Tooltip>
-              ) : (
-                <Tooltip title="Play">
-                  <PlayArrow sx={{ fontSize: iconSize }} />
-                </Tooltip>
-              )}
-            </button>
+            {isPlaying ? <PauseIcon sx={{ fontSize: iconSize }} /> : <PlayArrow sx={{ fontSize: iconSize }} />}
+          </button>
 
-            <div style={{ flex: 1 }} />
+          <div style={{ flex: 1 }} />
 
-            <button
-              type="button"
-              aria-label="Fullscreen"
-              onClick={handleFullscreen}
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                padding: `${1 * controlScale}px`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-                transition: 'transform 0.2s ease',
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.1)')}
-              onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-            >
-              <Tooltip title="Full screen">
-                <Fullscreen sx={{ fontSize: iconSize }} />
-              </Tooltip>
-            </button>
-          </div>
-        )}
-      </div>
+          <button
+            type="button"
+            onClick={handleFullscreen}
+            style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}
+          >
+            <Fullscreen sx={{ fontSize: iconSize }} />
+          </button>
+        </div>
+      )}
     </div>
   );
 };
@@ -421,7 +220,6 @@ VideoBlock.propTypes = {
   showLaunch: PropTypes.bool,
   showFocusIcon: PropTypes.bool,
   onFocus: PropTypes.func,
-  onPlayCommand: PropTypes.func,
 };
 
 VideoBlock.defaultProps = {
@@ -430,7 +228,6 @@ VideoBlock.defaultProps = {
   showLaunch: false,
   showFocusIcon: false,
   onFocus: null,
-  onPlayCommand: null,
 };
 
 export default VideoBlock;
