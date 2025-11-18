@@ -1,12 +1,16 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, {
+  useRef, useState, useEffect, useCallback,
+} from 'react';
 import { Fullscreen, PlayArrow, ZoomOutMap } from '@mui/icons-material';
 import PauseIcon from '@mui/icons-material/Pause';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import LaunchIcon from '@mui/icons-material/Launch';
 import { Tooltip } from '@mui/material';
+import { useDispatch } from 'react-redux';
+import { useCatchCallback } from '../../reactHelper';
 
-// WHEP logic removed — video replaced with iframe
+const COMMAND_COOLDOWN_MS = 15000;
 
 const VideoBlock = ({
   src,
@@ -15,15 +19,19 @@ const VideoBlock = ({
   showLaunch,
   showFocusIcon,
   onFocus,
+  deviceId,
+  channelId,
 }) => {
   const containerRef = useRef(null);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const [showControls, setShowControls] = useState(true);
   const [controlsTimeout, setControlsTimeout] = useState(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [isStarted, setIsStarted] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [lastCommandTime, setLastCommandTime] = useState(0);
 
   useEffect(() => {
     const observer = new ResizeObserver((entries) => {
@@ -40,10 +48,48 @@ const VideoBlock = ({
   const iconSize = 30 * controlScale;
   const paddingY = 20 * controlScale;
   const paddingX = 14 * controlScale;
+  const sendLiveStreamCommand = useCatchCallback(async () => {
+    const currentTime = Date.now();
+
+    if (currentTime - lastCommandTime < COMMAND_COOLDOWN_MS) {
+      const remainingTime = Math.ceil((COMMAND_COOLDOWN_MS - (currentTime - lastCommandTime)) / 1000);
+      setIsStarted(true);
+      setIsPlaying(true);
+      return;
+    }
+    const payload = {
+      deviceId,
+      type: 'liveStream',
+      attributes: {
+        channels: [channelId],
+        noQueue: false,
+      },
+    };
+
+    try {
+      const response = await fetch('/api/commands/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        setLastCommandTime(currentTime);
+      } else {
+        throw Error(await response.text());
+      }
+    } catch (error) {
+      console.error('Failed to send livestream command:', error);
+    }
+  }, [deviceId, channelId, lastCommandTime, dispatch]);
 
   const handlePlayPause = () => {
+    const newIsPlaying = !isPlaying;
+    if (!isStarted && newIsPlaying) {
+      sendLiveStreamCommand();
+    }
     setIsStarted(true);
-    setIsPlaying(!isPlaying);
+    setIsPlaying(newIsPlaying);
   };
 
   const handleFullscreen = async () => {
@@ -79,7 +125,7 @@ const VideoBlock = ({
 
   const handleFocusClick = (e) => {
     e.stopPropagation();
-    if (onFocus) onFocus();
+    if (onFocus) onFocus(channelId);
   };
 
   return (
@@ -220,6 +266,8 @@ VideoBlock.propTypes = {
   showLaunch: PropTypes.bool,
   showFocusIcon: PropTypes.bool,
   onFocus: PropTypes.func,
+  deviceId: PropTypes.number.isRequired,
+  channelId: PropTypes.number.isRequired,
 };
 
 VideoBlock.defaultProps = {

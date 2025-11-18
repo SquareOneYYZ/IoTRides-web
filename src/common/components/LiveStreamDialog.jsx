@@ -253,6 +253,8 @@ const LiveStreamCard = () => {
                   className={classes.videoBlock}
                   showLaunch
                   showFocusIcon
+                  deviceId={deviceId}
+                  channelId={video.channel}
                   onFocus={() => sendChannelCommand([video.channel])}
                   onPlayCommand={() => sendChannelCommand([video.channel])}
                 />
