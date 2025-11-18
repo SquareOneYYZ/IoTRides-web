@@ -13,7 +13,7 @@ export default () => (next) => {
 
   const timer = setInterval(() => {
     const now = Date.now();
-
+    console.log('throttleMiddleware');
     Object.keys(deviceLastUpdate).forEach((deviceId) => {
       if (now - deviceLastUpdate[deviceId] > EXPIRE_TIME) {
         next({ type: 'devices/expire', id: deviceId });
