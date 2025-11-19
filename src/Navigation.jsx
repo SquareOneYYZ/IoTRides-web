@@ -18,6 +18,7 @@ import OrganizationsPage from './settings/OrganizationsPage';
 import OrganizationPage from './settings/OrganizationPage';
 import PositionPage from './other/PositionPage';
 import NetworkPage from './other/NetworkPage';
+import LiveStreamingPage from './other/LiveStreamingPage';
 import EventReportPage from './reports/EventReportPage';
 import ReplayPage from './other/ReplayPage';
 import TripReportPage from './reports/TripReportPage';
@@ -62,6 +63,9 @@ import EmulatorPage from './other/EmulatorPage';
 import Loader from './common/components/Loader';
 import { generateLoginToken } from './common/components/NativeInterface';
 import { useLocalization } from './common/components/LocalizationProvider';
+import ReplayMediaPage from './reports/ReplayMediaPage';
+import MediaEventPage from './reports/MediaEventPage';
+import MediaDetailsPage from './reports/MediaDetailsPage';
 
 const Navigation = () => {
   const navigate = useNavigate();
@@ -123,6 +127,7 @@ const Navigation = () => {
         <Route path="network/:positionId" element={<NetworkPage />} />
         <Route path="event/:id" element={<EventPage />} />
         <Route path="replay" element={<ReplayPage />} />
+        <Route path="livestream" element={<LiveStreamingPage />} />
         <Route path="geofences" element={<GeofencesPage />} />
         <Route path="emulator" element={<EmulatorPage />} />
 
@@ -187,9 +192,12 @@ const Navigation = () => {
           <Route path="chart" element={<ChartReportPage />} />
           <Route path="event" element={<EventReportPage />} />
           <Route path="route" element={<RouteReportPage />} />
+          <Route path="media" element={<MediaEventPage />} />
+          <Route path="media/details" element={<MediaDetailsPage />} />
           <Route path="stop" element={<StopReportPage />} />
           <Route path="summary" element={<SummaryReportPage />} />
           <Route path="trip" element={<TripReportPage />} />
+          <Route path="replay-media" element={<ReplayMediaPage />} />
           <Route path="scheduled" element={<ScheduledPage />} />
           <Route path="statistics" element={<StatisticsPage />} />
           <Route path="logs" element={<LogsPage />} />
