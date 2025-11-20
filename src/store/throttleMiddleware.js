@@ -1,7 +1,7 @@
 import { batch } from 'react-redux';
 
-const threshold = 50;
-const interval = 500;
+const threshold = 200;  // Increased from 50 - allow more actions before throttling
+const interval = 1000;  // Increased from 500ms - check less frequently
 
 export default () => (next) => {
   const buffer = [];

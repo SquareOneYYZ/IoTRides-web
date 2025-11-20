@@ -49,7 +49,7 @@ export const getFilteredPositions = createSelector(
     if (!filterMap) return positions;
 
     return filteredDevices
-      .map((device) => getPositions[device.id])
+      .map((device) => positions.find((p) => p.deviceId === device.id))
       .filter(Boolean);
   },
 );

@@ -75,7 +75,8 @@ const MapPositions = ({
       if (sourceId === id && position.deviceId === selectedDeviceId) return;
       if (sourceId === selected && position.deviceId !== selectedDeviceId) return;
 
-      const cacheKey = `${position.deviceId}-${position.fixTime}-${position.latitude}-${position.longitude}-${selectedPositionId}`;
+      // Exclude fixTime from cache key - only re-create feature if position actually moved
+      const cacheKey = `${position.deviceId}-${position.latitude.toFixed(6)}-${position.longitude.toFixed(6)}-${selectedPositionId}-${position.course}`;
 
       if (!featureCache.current.has(cacheKey)) {
         featureCache.current.set(cacheKey, {
@@ -91,8 +92,9 @@ const MapPositions = ({
       features.push(featureCache.current.get(cacheKey));
     });
 
-    if (featureCache.current.size > 5000) {
-      const keysToDelete = Array.from(featureCache.current.keys()).slice(0, 1000);
+    // With 2000+ devices, keep cache tighter to avoid memory bloat
+    if (featureCache.current.size > 3000) {
+      const keysToDelete = Array.from(featureCache.current.keys()).slice(0, 1500);
       keysToDelete.forEach((key) => featureCache.current.delete(key));
     }
 
