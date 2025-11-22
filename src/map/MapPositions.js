@@ -1,4 +1,6 @@
-import { useId, useCallback, useEffect } from 'react';
+import {
+  useId, useCallback, useEffect, useRef, useState,
+} from 'react';
 import { useSelector } from 'react-redux';
 import { useMediaQuery } from '@mui/material';
 import { useTheme } from '@mui/styles';
@@ -8,6 +10,7 @@ import { mapIconKey } from './core/preloadImages';
 import { useAttributePreference } from '../common/util/preferences';
 import { useCatchCallback } from '../reactHelper';
 import { findFonts } from './core/mapUtil';
+import usePositionWorker from '../main/usePositionWorker';
 
 const MapPositions = ({
   positions,
@@ -31,8 +34,43 @@ const MapPositions = ({
   const mapCluster = useAttributePreference('mapCluster', true);
   const directionType = useAttributePreference('mapDirection', 'selected');
 
-  const createFeature = (devices, position, selectedPositionId) => {
+  const rafId = useRef(null);
+  const [mapBounds, setMapBounds] = useState(null);
+
+  const { processPositions } = usePositionWorker();
+
+  useEffect(() => {
+    const updateBounds = () => {
+      const bounds = map.getBounds();
+      setMapBounds({
+        north: bounds.getNorth(),
+        south: bounds.getSouth(),
+        east: bounds.getEast(),
+        west: bounds.getWest(),
+      });
+    };
+
+    updateBounds();
+    map.on('moveend', updateBounds);
+    map.on('zoomend', updateBounds);
+
+    return () => {
+      map.off('moveend', updateBounds);
+      map.off('zoomend', updateBounds);
+    };
+  }, []);
+
+  const getPrecision = useCallback(() => {
+    const zoom = map.getZoom();
+    if (zoom >= 14) return 6;
+    if (zoom >= 10) return 5;
+    return 4;
+  }, []);
+
+  const createFeature = useCallback((position) => {
     const device = devices[position.deviceId];
+    if (!device) return null;
+
     let showDirection;
     switch (directionType) {
       case 'none':
@@ -42,23 +80,42 @@ const MapPositions = ({
         showDirection = position.course > 0;
         break;
       default:
-        showDirection = selectedPositionId === position.id && position.course > 0;
+        showDirection = selectedPosition?.id === position.id && position.course > 0;
         break;
     }
+
     return {
       id: position.id,
       deviceId: position.deviceId,
       name: device.name,
       fixTime: formatTime(position.fixTime, 'seconds'),
-      tollName: 'Event Location',
       category: mapIconKey(device.category),
       color: showStatus
-        ? position.attributes.color || getStatusColor(device.status)
+        ? position.attributes?.color || getStatusColor(device.status)
         : 'neutral',
       rotation: position.course,
       direction: showDirection,
     };
-  };
+  }, [devices, directionType, selectedPosition, showStatus]);
+
+  const createSelectedFeatures = useCallback((positions) => {
+    if (!selectedDeviceId) return [];
+
+    const selectedPos = positions.find((p) => p.deviceId === selectedDeviceId);
+    if (!selectedPos || !devices[selectedDeviceId]) return [];
+
+    const props = createFeature(selectedPos);
+    if (!props) return [];
+
+    return [{
+      type: 'Feature',
+      geometry: {
+        type: 'Point',
+        coordinates: [selectedPos.longitude, selectedPos.latitude],
+      },
+      properties: props,
+    }];
+  }, [selectedDeviceId, devices, createFeature]);
 
   const onMouseEnter = () => {
     map.getCanvas().style.cursor = 'pointer';
@@ -107,10 +164,7 @@ const MapPositions = ({
   useEffect(() => {
     map.addSource(id, {
       type: 'geojson',
-      data: {
-        type: 'FeatureCollection',
-        features: [],
-      },
+      data: { type: 'FeatureCollection', features: [] },
       cluster: mapCluster,
       clusterMaxZoom: 14,
       clusterRadius: 50,
@@ -118,10 +172,7 @@ const MapPositions = ({
 
     map.addSource(selected, {
       type: 'geojson',
-      data: {
-        type: 'FeatureCollection',
-        features: [],
-      },
+      data: { type: 'FeatureCollection', features: [] },
     });
 
     [id, selected].forEach((source) => {
@@ -186,6 +237,10 @@ const MapPositions = ({
     map.on('click', onMapClick);
 
     return () => {
+      if (rafId.current) {
+        cancelAnimationFrame(rafId.current);
+      }
+
       map.off('mouseenter', clusters, onMouseEnter);
       map.off('mouseleave', clusters, onMouseLeave);
       map.off('click', clusters, onClusterClick);
@@ -214,38 +269,45 @@ const MapPositions = ({
   }, [mapCluster, clusters, onMarkerClick, onClusterClick]);
 
   useEffect(() => {
-    [id, selected].forEach((source) => {
-      map.getSource(source)?.setData({
+    function cleanup() {
+      if (rafId.current) {
+        cancelAnimationFrame(rafId.current);
+      }
+    }
+
+    if (!positions?.length) {
+      return cleanup;
+    }
+
+    cleanup();
+
+    rafId.current = requestAnimationFrame(() => {
+      processPositions(
+        {
+          positions,
+          devices,
+          selectedDeviceId,
+          selectedPositionId: selectedPosition?.id,
+          bounds: mapBounds,
+          precision: getPrecision(),
+        },
+        (features) => {
+          map.getSource(id)?.setData({
+            type: 'FeatureCollection',
+            features,
+          });
+        },
+      );
+
+      const selectedFeatures = createSelectedFeatures(positions);
+      map.getSource(selected)?.setData({
         type: 'FeatureCollection',
-        features: positions
-          .filter((it) => devices.hasOwnProperty(it.deviceId))
-          .filter((it) => (source === id
-            ? it.deviceId !== selectedDeviceId
-            : it.deviceId === selectedDeviceId))
-          .map((position) => ({
-            type: 'Feature',
-            geometry: {
-              type: 'Point',
-              coordinates: [position.longitude, position.latitude],
-            },
-            properties: createFeature(
-              devices,
-              position,
-              selectedPosition && selectedPosition.id,
-            ),
-          })),
+        features: selectedFeatures,
       });
     });
-  }, [
-    mapCluster,
-    clusters,
-    onMarkerClick,
-    onClusterClick,
-    devices,
-    positions,
-    selectedPosition,
-    selectedDeviceId,
-  ]);
+
+    return cleanup;
+  }, [positions, devices, selectedPosition, selectedDeviceId, mapBounds, processPositions, getPrecision, createSelectedFeatures, id, selected]);
   return null;
 };
 

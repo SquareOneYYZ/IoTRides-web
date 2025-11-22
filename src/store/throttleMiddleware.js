@@ -1,7 +1,7 @@
 import { batch } from 'react-redux';
 
-const threshold = 3;
-const interval = 1500;
+const threshold = 200;
+const interval = 1000;
 
 export default () => (next) => {
   const buffer = [];
@@ -13,11 +13,7 @@ export default () => (next) => {
       if (buffer.length < threshold) {
         throttle = false;
       }
-      if (buffer.length > 0) {
-        const latest = buffer[buffer.length - 1];
-        buffer.length = 0;
-        batch(() => next(latest));
-      }
+      batch(() => buffer.splice(0, buffer.length).forEach((action) => next(action)));
     } else {
       if (counter > threshold) {
         throttle = true;
