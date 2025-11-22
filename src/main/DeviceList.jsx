@@ -39,7 +39,6 @@ const DeviceList = ({ devices }) => {
     const response = await fetch('/api/devices');
     if (response.ok) {
       dispatch(devicesActions.refresh(await response.json()));
-      console.log('Failed to fetch devices list');
     } else {
       throw Error(await response.text());
     }
