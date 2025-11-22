@@ -1,5 +1,5 @@
 import {
-  useId, useCallback, useEffect, useRef,
+  useId, useCallback, useEffect, useRef, useState,
 } from 'react';
 import { useSelector } from 'react-redux';
 import { useMediaQuery } from '@mui/material';
@@ -10,6 +10,7 @@ import { mapIconKey } from './core/preloadImages';
 import { useAttributePreference } from '../common/util/preferences';
 import { useCatchCallback } from '../reactHelper';
 import { findFonts } from './core/mapUtil';
+import usePositionWorker from '../main/usePositionWorker';
 
 const MapPositions = ({
   positions,
@@ -33,12 +34,43 @@ const MapPositions = ({
   const mapCluster = useAttributePreference('mapCluster', true);
   const directionType = useAttributePreference('mapDirection', 'selected');
 
-  const featureCache = useRef(new Map());
-  const pendingUpdate = useRef(null);
   const rafId = useRef(null);
+  const [mapBounds, setMapBounds] = useState(null);
 
-  const createFeature = (devices, position, selectedPositionId) => {
+  const { processPositions } = usePositionWorker();
+
+  useEffect(() => {
+    const updateBounds = () => {
+      const bounds = map.getBounds();
+      setMapBounds({
+        north: bounds.getNorth(),
+        south: bounds.getSouth(),
+        east: bounds.getEast(),
+        west: bounds.getWest(),
+      });
+    };
+
+    updateBounds();
+    map.on('moveend', updateBounds);
+    map.on('zoomend', updateBounds);
+
+    return () => {
+      map.off('moveend', updateBounds);
+      map.off('zoomend', updateBounds);
+    };
+  }, []);
+
+  const getPrecision = useCallback(() => {
+    const zoom = map.getZoom();
+    if (zoom >= 14) return 6;
+    if (zoom >= 10) return 5;
+    return 4;
+  }, []);
+
+  const createFeature = useCallback((position) => {
     const device = devices[position.deviceId];
+    if (!device) return null;
+
     let showDirection;
     switch (directionType) {
       case 'none':
@@ -48,58 +80,42 @@ const MapPositions = ({
         showDirection = position.course > 0;
         break;
       default:
-        showDirection = selectedPositionId === position.id && position.course > 0;
+        showDirection = selectedPosition?.id === position.id && position.course > 0;
         break;
     }
+
     return {
       id: position.id,
       deviceId: position.deviceId,
       name: device.name,
       fixTime: formatTime(position.fixTime, 'seconds'),
-      tollName: 'Event Location',
       category: mapIconKey(device.category),
       color: showStatus
-        ? position.attributes.color || getStatusColor(device.status)
+        ? position.attributes?.color || getStatusColor(device.status)
         : 'neutral',
       rotation: position.course,
       direction: showDirection,
     };
-  };
+  }, [devices, directionType, selectedPosition, showStatus]);
 
-  const createMemoizedFeatures = useCallback((positions, devices, selectedDeviceId, selectedPositionId, sourceId) => {
-    const features = [];
+  const createSelectedFeatures = useCallback((positions) => {
+    if (!selectedDeviceId) return [];
 
-    positions.forEach((position) => {
-      if (!devices.hasOwnProperty(position.deviceId)) return;
+    const selectedPos = positions.find((p) => p.deviceId === selectedDeviceId);
+    if (!selectedPos || !devices[selectedDeviceId]) return [];
 
-      if (sourceId === id && position.deviceId === selectedDeviceId) return;
-      if (sourceId === selected && position.deviceId !== selectedDeviceId) return;
+    const props = createFeature(selectedPos);
+    if (!props) return [];
 
-      // Exclude fixTime from cache key - only re-create feature if position actually moved
-      const cacheKey = `${position.deviceId}-${position.latitude.toFixed(6)}-${position.longitude.toFixed(6)}-${selectedPositionId}-${position.course}`;
-
-      if (!featureCache.current.has(cacheKey)) {
-        featureCache.current.set(cacheKey, {
-          type: 'Feature',
-          geometry: {
-            type: 'Point',
-            coordinates: [position.longitude, position.latitude],
-          },
-          properties: createFeature(devices, position, selectedPositionId),
-        });
-      }
-
-      features.push(featureCache.current.get(cacheKey));
-    });
-
-    // With 2000+ devices, keep cache tighter to avoid memory bloat
-    if (featureCache.current.size > 3000) {
-      const keysToDelete = Array.from(featureCache.current.keys()).slice(0, 1500);
-      keysToDelete.forEach((key) => featureCache.current.delete(key));
-    }
-
-    return features;
-  }, [id, selected, showStatus, directionType]);
+    return [{
+      type: 'Feature',
+      geometry: {
+        type: 'Point',
+        coordinates: [selectedPos.longitude, selectedPos.latitude],
+      },
+      properties: props,
+    }];
+  }, [selectedDeviceId, devices, createFeature]);
 
   const onMouseEnter = () => {
     map.getCanvas().style.cursor = 'pointer';
@@ -148,10 +164,7 @@ const MapPositions = ({
   useEffect(() => {
     map.addSource(id, {
       type: 'geojson',
-      data: {
-        type: 'FeatureCollection',
-        features: [],
-      },
+      data: { type: 'FeatureCollection', features: [] },
       cluster: mapCluster,
       clusterMaxZoom: 14,
       clusterRadius: 50,
@@ -159,10 +172,7 @@ const MapPositions = ({
 
     map.addSource(selected, {
       type: 'geojson',
-      data: {
-        type: 'FeatureCollection',
-        features: [],
-      },
+      data: { type: 'FeatureCollection', features: [] },
     });
 
     [id, selected].forEach((source) => {
@@ -259,44 +269,45 @@ const MapPositions = ({
   }, [mapCluster, clusters, onMarkerClick, onClusterClick]);
 
   useEffect(() => {
-    if (rafId.current) {
-      cancelAnimationFrame(rafId.current);
-    }
-
-    pendingUpdate.current = {
-      positions,
-      devices,
-      selectedDeviceId,
-      selectedPositionId: selectedPosition?.id,
-    };
-    rafId.current = requestAnimationFrame(() => {
-      const update = pendingUpdate.current;
-      if (!update) return;
-      [id, selected].forEach((source) => {
-        const features = createMemoizedFeatures(
-          update.positions,
-          update.devices,
-          update.selectedDeviceId,
-          update.selectedPositionId,
-          source,
-        );
-
-        map.getSource(source)?.setData({
-          type: 'FeatureCollection',
-          features,
-        });
-      });
-
-      pendingUpdate.current = null;
-    });
-
-    return () => {
+    function cleanup() {
       if (rafId.current) {
         cancelAnimationFrame(rafId.current);
       }
-    };
-  }, [positions, devices, selectedPosition, selectedDeviceId, createMemoizedFeatures]);
+    }
 
+    if (!positions?.length) {
+      return cleanup;
+    }
+
+    cleanup();
+
+    rafId.current = requestAnimationFrame(() => {
+      processPositions(
+        {
+          positions,
+          devices,
+          selectedDeviceId,
+          selectedPositionId: selectedPosition?.id,
+          bounds: mapBounds,
+          precision: getPrecision(),
+        },
+        (features) => {
+          map.getSource(id)?.setData({
+            type: 'FeatureCollection',
+            features,
+          });
+        },
+      );
+
+      const selectedFeatures = createSelectedFeatures(positions);
+      map.getSource(selected)?.setData({
+        type: 'FeatureCollection',
+        features: selectedFeatures,
+      });
+    });
+
+    return cleanup;
+  }, [positions, devices, selectedPosition, selectedDeviceId, mapBounds, processPositions, getPrecision, createSelectedFeatures, id, selected]);
   return null;
 };
 
