@@ -10,9 +10,10 @@ import { devicesActions, reportsActions } from '../../store';
 import SplitButton from '../../common/components/SplitButton';
 import SelectField from '../../common/components/SelectField';
 import { useRestriction } from '../../common/util/permissions';
+import { useEffectAsync } from '../../reactHelper';
 
 const ReportFilter = ({
-  children, handleSubmit, handleSchedule, showOnly, ignoreDevice, multiDevice, includeGroups, loading,
+  children, handleSubmit, handleSchedule, showOnly, ignoreDevice, multiDevice, includeGroups, loading, showLast24Hours,
 }) => {
   const classes = useReportStyles();
   const dispatch = useDispatch();
@@ -73,8 +74,13 @@ const ReportFilter = ({
           selectedTo = dayjs().subtract(1, 'month').endOf('month');
           break;
         default:
-          selectedFrom = dayjs(from, 'YYYY-MM-DDTHH:mm');
-          selectedTo = dayjs(to, 'YYYY-MM-DDTHH:mm');
+          if (showLast24Hours) {
+            selectedFrom = dayjs().subtract(24, 'hours');
+            selectedTo = dayjs();
+          } else {
+            selectedFrom = dayjs(from, 'YYYY-MM-DDTHH:mm');
+            selectedTo = dayjs(to, 'YYYY-MM-DDTHH:mm');
+          }
           break;
       }
 
@@ -89,6 +95,14 @@ const ReportFilter = ({
       });
     }
   };
+
+  React.useEffect(() => {
+    if (showLast24Hours) {
+      dispatch(reportsActions.updatePeriod('custom'));
+      dispatch(reportsActions.updateFrom(dayjs().subtract(24, 'hours').format('YYYY-MM-DDTHH:mm')));
+      dispatch(reportsActions.updateTo(dayjs().format('YYYY-MM-DDTHH:mm')));
+    }
+  }, [showLast24Hours, dispatch]);
 
   return (
     <div className={classes.filter}>
@@ -121,7 +135,7 @@ const ReportFilter = ({
           <div className={classes.filterItem}>
             <FormControl fullWidth>
               <InputLabel>{t('reportPeriod')}</InputLabel>
-              <Select label={t('reportPeriod')} value={period} onChange={(e) => dispatch(reportsActions.updatePeriod(e.target.value))}>
+              <Select label={t('reportPeriod')} value={period} onChange={(e) => dispatch(reportsActions.updatePeriod(e.target.value))} disabled={showLast24Hours}>
                 <MenuItem value="today">{t('reportToday')}</MenuItem>
                 <MenuItem value="yesterday">{t('reportYesterday')}</MenuItem>
                 <MenuItem value="thisWeek">{t('reportThisWeek')}</MenuItem>
@@ -140,6 +154,7 @@ const ReportFilter = ({
                 value={from}
                 onChange={(e) => dispatch(reportsActions.updateFrom(e.target.value))}
                 fullWidth
+                disabled={showLast24Hours}
               />
             </div>
           )}
@@ -151,6 +166,7 @@ const ReportFilter = ({
                 value={to}
                 onChange={(e) => dispatch(reportsActions.updateTo(e.target.value))}
                 fullWidth
+                disabled={showLast24Hours}
               />
             </div>
           )}
