@@ -180,7 +180,7 @@ const ReportFilter = ({
               <InputLabel>{t('reportPeriod')}</InputLabel>
               <Select
                 label={t('reportPeriod')}
-                value={period}
+                value={showLast24Hours ? 'custom' : period}
                 onChange={(e) => dispatch(reportsActions.updatePeriod(e.target.value))}
                 disabled={showLast24Hours}
               >
