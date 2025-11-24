@@ -372,12 +372,13 @@ const ReplayMediaPage = () => {
     return (
       <PageLayout
         menu={<ReportsMenu />}
-        breadcrumbs={['reportTitle', 'reportReplay']}
+        breadcrumbs={['reportTitle', 'reportReplayMedia']}
       >
         <div className={reportClasses.container}>
           <div className={reportClasses.containerMain}>
             <div className={reportClasses.header}>
               <ReportFilter
+                showLast24Hours
                 handleSubmit={handleSubmit}
                 fullScreen
                 showOnly

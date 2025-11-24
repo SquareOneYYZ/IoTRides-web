@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  FormControl, InputLabel, Select, MenuItem, Button, TextField, Typography,
+  FormControl, InputLabel, Select, MenuItem, Button, TextField, Typography, Grid,
 } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
 import dayjs from 'dayjs';
@@ -10,10 +10,10 @@ import { devicesActions, reportsActions } from '../../store';
 import SplitButton from '../../common/components/SplitButton';
 import SelectField from '../../common/components/SelectField';
 import { useRestriction } from '../../common/util/permissions';
-import { useEffectAsync } from '../../reactHelper';
 
 const ReportFilter = ({
-  children, handleSubmit, handleSchedule, showOnly, ignoreDevice, multiDevice, includeGroups, loading, showLast24Hours,
+  children, handleSubmit, handleSchedule, showOnly, ignoreDevice, multiDevice,
+  includeGroups, loading, showLast24Hours,
 }) => {
   const classes = useReportStyles();
   const dispatch = useDispatch();
@@ -30,13 +30,38 @@ const ReportFilter = ({
   const period = useSelector((state) => state.reports.period);
   const from = useSelector((state) => state.reports.from);
   const to = useSelector((state) => state.reports.to);
-  const [button, setButton] = useState('json');
 
+  const [button, setButton] = useState('json');
   const [description, setDescription] = useState();
   const [calendarId, setCalendarId] = useState();
 
+  const [selectedDate, setSelectedDate] = useState('');
+  const [fromTime, setFromTime] = useState('');
+  const [toTime, setToTime] = useState('');
+  const [timeRangeValid, setTimeRangeValid] = useState(false);
+
   const scheduleDisabled = button === 'schedule' && (!description || !calendarId);
-  const disabled = (!ignoreDevice && !deviceId && !deviceIds.length && !groupIds.length) || scheduleDisabled || loading;
+  const deviceMissing = (!ignoreDevice && !deviceId && !deviceIds.length && !groupIds.length);
+  const baseDisabled = deviceMissing || scheduleDisabled || loading;
+
+  useEffect(() => {
+    if (!showLast24Hours) {
+      setTimeRangeValid(true);
+      return;
+    }
+    if (!selectedDate || !fromTime || !toTime) {
+      setTimeRangeValid(false);
+      return;
+    }
+    const start = dayjs(`${selectedDate}T${fromTime}`);
+    const end = dayjs(`${selectedDate}T${toTime}`);
+    setTimeRangeValid(end.isAfter(start));
+  }, [selectedDate, fromTime, toTime, showLast24Hours]);
+
+  const notifyError = (msg) => {
+    // TODO: replace with your snackbar dispatch
+    console.error('SNACKBAR ERROR:', msg);
+  };
 
   const handleClick = (type) => {
     if (type === 'schedule') {
@@ -45,9 +70,31 @@ const ReportFilter = ({
         calendarId,
         attributes: {},
       });
+      return;
+    }
+
+    let selectedFrom;
+    let selectedTo;
+
+    if (showLast24Hours) {
+      // Use local state for date/time selection
+      if (!selectedDate || !fromTime || !toTime) {
+        notifyError(t('reportSelectDateAndTime') || 'Please select date, from time and to time');
+        return;
+      }
+      selectedFrom = dayjs(`${selectedDate}T${fromTime}`);
+      selectedTo = dayjs(`${selectedDate}T${toTime}`);
+
+      if (!selectedFrom.isValid() || !selectedTo.isValid()) {
+        notifyError(t('reportInvalidDateOrTime') || 'Invalid date/time');
+        return;
+      }
+      if (!selectedTo.isAfter(selectedFrom)) {
+        notifyError(t('End time must be after start time') || 'End time must be after start time');
+        return;
+      }
     } else {
-      let selectedFrom;
-      let selectedTo;
+      // Original behavior - use Redux state
       switch (period) {
         case 'today':
           selectedFrom = dayjs().startOf('day');
@@ -74,35 +121,28 @@ const ReportFilter = ({
           selectedTo = dayjs().subtract(1, 'month').endOf('month');
           break;
         default:
-          if (showLast24Hours) {
-            selectedFrom = dayjs().subtract(24, 'hours');
-            selectedTo = dayjs();
-          } else {
-            selectedFrom = dayjs(from, 'YYYY-MM-DDTHH:mm');
-            selectedTo = dayjs(to, 'YYYY-MM-DDTHH:mm');
-          }
+          selectedFrom = from ? dayjs(from, 'YYYY-MM-DDTHH:mm') : null;
+          selectedTo = to ? dayjs(to, 'YYYY-MM-DDTHH:mm') : null;
           break;
       }
-
-      handleSubmit({
-        deviceId,
-        deviceIds,
-        groupIds,
-        from: selectedFrom.toISOString(),
-        to: selectedTo.toISOString(),
-        calendarId,
-        type,
-      });
     }
+
+    if (!selectedFrom || !selectedTo || !selectedFrom.isValid() || !selectedTo.isValid()) {
+      return;
+    }
+
+    handleSubmit({
+      deviceId,
+      deviceIds,
+      groupIds,
+      from: selectedFrom.toISOString(),
+      to: selectedTo.toISOString(),
+      calendarId,
+      type,
+    });
   };
 
-  React.useEffect(() => {
-    if (showLast24Hours) {
-      dispatch(reportsActions.updatePeriod('custom'));
-      dispatch(reportsActions.updateFrom(dayjs().subtract(24, 'hours').format('YYYY-MM-DDTHH:mm')));
-      dispatch(reportsActions.updateTo(dayjs().format('YYYY-MM-DDTHH:mm')));
-    }
-  }, [showLast24Hours, dispatch]);
+  const finalDisabled = showLast24Hours ? (baseDisabled || !timeRangeValid) : baseDisabled;
 
   return (
     <div className={classes.filter}>
@@ -118,6 +158,8 @@ const ReportFilter = ({
           />
         </div>
       )}
+
+      {/* Groups */}
       {includeGroups && (
         <div className={classes.filterItem}>
           <SelectField
@@ -130,12 +172,18 @@ const ReportFilter = ({
           />
         </div>
       )}
+
       {button !== 'schedule' ? (
         <>
           <div className={classes.filterItem}>
             <FormControl fullWidth>
               <InputLabel>{t('reportPeriod')}</InputLabel>
-              <Select label={t('reportPeriod')} value={period} onChange={(e) => dispatch(reportsActions.updatePeriod(e.target.value))} disabled={showLast24Hours}>
+              <Select
+                label={t('reportPeriod')}
+                value={period}
+                onChange={(e) => dispatch(reportsActions.updatePeriod(e.target.value))}
+                disabled={showLast24Hours}
+              >
                 <MenuItem value="today">{t('reportToday')}</MenuItem>
                 <MenuItem value="yesterday">{t('reportYesterday')}</MenuItem>
                 <MenuItem value="thisWeek">{t('reportThisWeek')}</MenuItem>
@@ -146,29 +194,69 @@ const ReportFilter = ({
               </Select>
             </FormControl>
           </div>
-          {period === 'custom' && (
-            <div className={classes.filterItem}>
-              <TextField
-                label={t('reportFrom')}
-                type="datetime-local"
-                value={from}
-                onChange={(e) => dispatch(reportsActions.updateFrom(e.target.value))}
-                fullWidth
-                disabled={showLast24Hours}
-              />
-            </div>
-          )}
-          {period === 'custom' && (
-            <div className={classes.filterItem}>
-              <TextField
-                label={t('reportTo')}
-                type="datetime-local"
-                value={to}
-                onChange={(e) => dispatch(reportsActions.updateTo(e.target.value))}
-                fullWidth
-                disabled={showLast24Hours}
-              />
-            </div>
+
+          {showLast24Hours ? (
+            <>
+              <div className={classes.filterItem}>
+                <TextField
+                  label={t('reportDate') || 'Date'}
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  fullWidth
+                  InputLabelProps={{ shrink: true }}
+                />
+              </div>
+
+              <div className={classes.filterItem}>
+                <TextField
+                  label={t('reportFrom')}
+                  type="time"
+                  value={fromTime}
+                  onChange={(e) => setFromTime(e.target.value)}
+                  fullWidth
+                  InputLabelProps={{ shrink: true }}
+                />
+              </div>
+
+              <div className={classes.filterItem}>
+                <TextField
+                  label={t('reportTo')}
+                  type="time"
+                  value={toTime}
+                  onChange={(e) => setToTime(e.target.value)}
+                  fullWidth
+                  InputLabelProps={{ shrink: true }}
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              {period === 'custom' && (
+              <div className={classes.filterItem}>
+                <TextField
+                  label={t('reportFrom')}
+                  type="datetime-local"
+                  value={from}
+                  onChange={(e) => dispatch(reportsActions.updateFrom(e.target.value))}
+                  fullWidth
+                  InputLabelProps={{ shrink: true }}
+                />
+              </div>
+              )}
+              {period === 'custom' && (
+              <div className={classes.filterItem}>
+                <TextField
+                  label={t('reportTo')}
+                  type="datetime-local"
+                  value={to}
+                  onChange={(e) => dispatch(reportsActions.updateTo(e.target.value))}
+                  fullWidth
+                  InputLabelProps={{ shrink: true }}
+                />
+              </div>
+              )}
+            </>
           )}
         </>
       ) : (
@@ -176,15 +264,16 @@ const ReportFilter = ({
           <div className={classes.filterItem}>
             <TextField
               value={description || ''}
-              onChange={(event) => setDescription(event.target.value)}
+              onChange={(e) => setDescription(e.target.value)}
               label={t('sharedDescription')}
               fullWidth
             />
           </div>
+
           <div className={classes.filterItem}>
             <SelectField
               value={calendarId}
-              onChange={(event) => setCalendarId(Number(event.target.value))}
+              onChange={(e) => setCalendarId(Number(e.target.value))}
               endpoint="/api/calendars"
               label={t('sharedCalendar')}
               fullWidth
@@ -192,14 +281,16 @@ const ReportFilter = ({
           </div>
         </>
       )}
+
       {children}
+
       <div className={classes.filterItem}>
         {showOnly ? (
           <Button
             fullWidth
             variant="outlined"
             color="secondary"
-            disabled={disabled}
+            disabled={finalDisabled}
             onClick={() => handleClick('json')}
           >
             <Typography variant="button" noWrap>{t(loading ? 'sharedLoading' : 'reportShow')}</Typography>
@@ -209,7 +300,7 @@ const ReportFilter = ({
             fullWidth
             variant="outlined"
             color="secondary"
-            disabled={disabled}
+            disabled={finalDisabled}
             onClick={handleClick}
             selected={button}
             setSelected={(value) => setButton(value)}

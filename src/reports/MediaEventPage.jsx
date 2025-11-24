@@ -326,7 +326,7 @@ const MediaEventPage = () => {
   return (
     <PageLayout
       menu={<ReportsMenu />}
-      breadcrumbs={['reportTitle', 'reportCombined']}
+      breadcrumbs={['reportTitle', 'reportMedia']}
     >
       <div className={classes.container}>
         <div className={classes.containerMain}>
@@ -340,10 +340,6 @@ const MediaEventPage = () => {
           </div>
 
           {loading && <LoadingState />}
-
-          {!loading && mediaBlocks.length === 0 && (
-            <EmptyState message='No media events found. Please select filters and click "Show" to search.' />
-          )}
 
           {!loading && mediaBlocks.length > 0 && (
             <Box
