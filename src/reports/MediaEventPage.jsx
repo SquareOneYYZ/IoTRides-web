@@ -136,22 +136,6 @@ const MediaBlock = ({ media, onLaunch, isSelected, onSelect }) => {
   );
 };
 
-const EmptyState = ({ message }) => (
-  <Box
-    sx={{
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      minHeight: 400,
-      padding: 3,
-    }}
-  >
-    <Typography variant="h6" color="text.secondary">
-      {message}
-    </Typography>
-  </Box>
-);
-
 const LoadingState = () => (
   <Box
     sx={{
@@ -282,7 +266,7 @@ const MediaEventPage = () => {
           eventTime: event.eventTime,
           positionId: event.positionId,
           mediaType: event.attributes?.media || 'unknown',
-          fileName: event.attributes?.file || '',
+          fileName: event.attributes?.alarmName || event.attributes?.file,
           url: mediaUrl,
         };
       });
@@ -303,6 +287,7 @@ const MediaEventPage = () => {
       setMediaBlocks(existingMediaList);
     }
   }, [existingMediaList]);
+
   const handleSchedule = useCatch(async (deviceIds, groupIds, report) => {
     const reportConfig = { ...report, type: 'events' };
     const error = await scheduleReport(deviceIds, groupIds, reportConfig);
