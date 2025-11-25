@@ -253,11 +253,25 @@ const MediaEventPage = () => {
         }),
       );
 
+      const alarmLookup = new Map();
+      events.forEach((ev) => {
+        if (ev.attributes?.alarmId) {
+          alarmLookup.set(String(ev.attributes.alarmId), ev);
+        }
+      });
+
       const transformedMedia = mediaEvents.map((event) => {
         const uniqueId = uniqueIdMap.get(event.deviceId);
-        const mediaUrl = event.attributes?.file
-          ? `/api/media/${uniqueId}/${event.attributes.file}`
-          : '';
+        const fileId = event.attributes?.file;
+        const mediaUrl = fileId ? `/api/media/${uniqueId}/${fileId}` : '';
+
+        let mediaTitle = null;
+        if (fileId && alarmLookup.has(String(fileId))) {
+          const match = alarmLookup.get(String(fileId));
+          mediaTitle = match.attributes?.alarmName
+      || match.type
+      || `Alarm ${fileId}`;
+        }
 
         return {
           id: event.id,
@@ -266,10 +280,16 @@ const MediaEventPage = () => {
           eventTime: event.eventTime,
           positionId: event.positionId,
           mediaType: event.attributes?.media || 'unknown',
-          fileName: event.attributes?.alarmName || event.attributes?.file,
+
+          fileName:
+      event.attributes?.alarmName
+      || event.attributes?.file
+      || mediaTitle,
+
           url: mediaUrl,
         };
       });
+
       dispatch(eventsActions.setMediaList(transformedMedia));
       setMediaBlocks(transformedMedia);
     } catch (error) {
