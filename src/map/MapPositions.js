@@ -1,4 +1,4 @@
-import {
+import React, {
   useId, useCallback, useEffect, useRef, useState,
 } from 'react';
 import { useSelector } from 'react-redux';
@@ -11,6 +11,7 @@ import { useAttributePreference } from '../common/util/preferences';
 import { useCatchCallback } from '../reactHelper';
 import { findFonts } from './core/mapUtil';
 import usePositionWorker from '../main/usePositionWorker';
+import MapLoadingIndicator from './MapLoadingIndicator.jsx';
 
 const MapPositions = ({
   positions,
@@ -36,8 +37,10 @@ const MapPositions = ({
 
   const rafId = useRef(null);
   const [mapBounds, setMapBounds] = useState(null);
+  const hasInitiallyLoaded = useRef(false);
+  const [showLoadingIndicator, setShowLoadingIndicator] = useState(false);
 
-  const { processPositions } = usePositionWorker();
+  const { processPositions, isLoading, progress } = usePositionWorker();
 
   useEffect(() => {
     const updateBounds = () => {
@@ -281,6 +284,12 @@ const MapPositions = ({
 
     cleanup();
 
+    // Only show loading indicator on initial load (not on subsequent updates)
+    const isInitialLoad = !hasInitiallyLoaded.current;
+    if (isInitialLoad) {
+      setShowLoadingIndicator(true);
+    }
+
     rafId.current = requestAnimationFrame(() => {
       processPositions(
         {
@@ -297,6 +306,7 @@ const MapPositions = ({
             features,
           });
         },
+        !isInitialLoad, // Skip progressive loading for updates after initial load
       );
 
       const selectedFeatures = createSelectedFeatures(positions);
@@ -308,6 +318,24 @@ const MapPositions = ({
 
     return cleanup;
   }, [positions, devices, selectedPosition, selectedDeviceId, mapBounds, processPositions, getPrecision, createSelectedFeatures, id, selected]);
+
+  // Track when loading completes
+  useEffect(() => {
+    if (!isLoading && progress === 100 && showLoadingIndicator) {
+      hasInitiallyLoaded.current = true;
+      setShowLoadingIndicator(false);
+    }
+  }, [isLoading, progress, showLoadingIndicator]);
+
+  // Only render loading indicator during initial load
+  if (showLoadingIndicator && isLoading && progress < 100) {
+    return React.createElement(MapLoadingIndicator, {
+      isLoading,
+      progress,
+      positionCount: positions?.length || 0,
+    });
+  }
+
   return null;
 };
 
