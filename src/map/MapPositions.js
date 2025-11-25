@@ -11,7 +11,7 @@ import { useAttributePreference } from '../common/util/preferences';
 import { useCatchCallback } from '../reactHelper';
 import { findFonts } from './core/mapUtil';
 import usePositionWorker from '../main/usePositionWorker';
-import MapLoadingIndicator from './MapLoadingIndicator.jsx';
+import MapLoadingIndicator from './MapLoadingIndicator';
 
 const MapPositions = ({
   positions,
@@ -189,7 +189,7 @@ const MapPositions = ({
           'icon-size': iconScale,
           'icon-allow-overlap': true,
           'text-field': `{${titleField || 'name'}}`,
-          'text-allow-overlap': true,
+          'text-allow-overlap': false,
           'text-anchor': 'bottom',
           'text-offset': [0, -2 * iconScale],
           'text-font': findFonts(map),

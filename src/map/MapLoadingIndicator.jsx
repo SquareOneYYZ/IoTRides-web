@@ -20,12 +20,20 @@ const MapLoadingIndicator = ({ isLoading, progress, positionCount }) => {
       }}
     >
       <Typography variant="body2" align="center" gutterBottom>
-        Loading markers... {progress}%
+        Loading markers...
+        {' '}
+        {progress}
+        %
       </Typography>
       <LinearProgress variant="determinate" value={progress} />
       {positionCount > 0 && (
         <Typography variant="caption" align="center" display="block" sx={{ mt: 1, opacity: 0.7 }}>
-          {Math.round((progress / 100) * positionCount)} / {positionCount} devices
+          {Math.round((progress / 100) * positionCount)}
+          {' '}
+          /
+          {positionCount}
+          {' '}
+          devices
         </Typography>
       )}
     </Box>

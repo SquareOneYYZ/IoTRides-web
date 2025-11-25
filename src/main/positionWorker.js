@@ -91,8 +91,8 @@ const createFeatures = (positions, devices, selectedDeviceId, selectedPositionId
 };
 
 // Progressive chunk processing
-const CHUNK_SIZE = 150;  // Process 150 positions at a time
-const CHUNK_DELAY = 8;   // 8ms delay between chunks (~120fps)
+const CHUNK_SIZE = 150; // Process 150 positions at a time
+const CHUNK_DELAY = 8; // 8ms delay between chunks (~120fps)
 
 let processingController = null;
 

@@ -59,9 +59,9 @@ export const useViewportPriority = (positions, devices) => {
 export const useViewportProgressiveLoad = (
   positions,
   devices,
-  visibleChunkSize = 500,  // Load all visible at once
+  visibleChunkSize = 500, // Load all visible at once
   nonVisibleChunkSize = 100, // Load non-visible in smaller chunks
-  chunkDelay = 16
+  chunkDelay = 16,
 ) => {
   const [loadedPositions, setLoadedPositions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);

@@ -6,19 +6,18 @@ import { useState, useEffect, useRef } from 'react';
  * @param {number} chunkSize - Items per chunk (default: 200)
  * @param {number} chunkDelay - Delay between chunks in ms (default: 16ms ~= 60fps)
  */
-export const useProgressiveLoad = (data, chunkSize = 200, chunkDelay = 16) => {
+
+const useProgressiveLoad = (data, chunkSize = 200, chunkDelay = 16) => {
   const [loadedData, setLoadedData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
+
   const loadingRef = useRef(false);
   const timeoutRef = useRef(null);
 
   useEffect(() => {
-    // Reset if data changes
     if (loadingRef.current) {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
       loadingRef.current = false;
     }
 
@@ -26,30 +25,33 @@ export const useProgressiveLoad = (data, chunkSize = 200, chunkDelay = 16) => {
       setLoadedData([]);
       setProgress(0);
       setIsLoading(false);
-      return;
+      return undefined;
     }
 
-    // If data is small enough, load all at once
     if (data.length <= chunkSize) {
       setLoadedData(data);
       setProgress(100);
       setIsLoading(false);
-      return;
+      return undefined;
     }
-
-    // Progressive loading for large datasets
     setIsLoading(true);
     loadingRef.current = true;
+
     let currentIndex = 0;
 
     const loadNextChunk = () => {
-      if (!loadingRef.current) return;
+      if (!loadingRef.current) return undefined;
 
       const chunk = data.slice(currentIndex, currentIndex + chunkSize);
       currentIndex += chunkSize;
 
       setLoadedData((prev) => [...prev, ...chunk]);
-      const progressPercent = Math.min(100, Math.round((currentIndex / data.length) * 100));
+
+      const progressPercent = Math.min(
+        100,
+        Math.round((currentIndex / data.length) * 100),
+      );
+
       setProgress(progressPercent);
 
       if (currentIndex < data.length) {
@@ -58,20 +60,21 @@ export const useProgressiveLoad = (data, chunkSize = 200, chunkDelay = 16) => {
         setIsLoading(false);
         loadingRef.current = false;
       }
+
+      return undefined;
     };
 
-    // Start loading
     setLoadedData([]);
     setProgress(0);
     loadNextChunk();
 
     return () => {
       loadingRef.current = false;
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, [data, chunkSize, chunkDelay]);
 
   return { loadedData, isLoading, progress };
 };
+
+export default useProgressiveLoad;
