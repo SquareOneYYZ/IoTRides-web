@@ -90,20 +90,67 @@ const createFeatures = (positions, devices, selectedDeviceId, selectedPositionId
   return features;
 };
 
-onmessage = (e) => {
-  const { type, payload } = e.data;
+// Progressive chunk processing
+const CHUNK_SIZE = 150;  // Process 150 positions at a time
+const CHUNK_DELAY = 8;   // 8ms delay between chunks (~120fps)
 
-  if (type === 'PROCESS_POSITIONS') {
-    const { positions, devices, selectedDeviceId, selectedPositionId, bounds, precision } = payload;
+let processingController = null;
 
-    const visible = bounds
-      ? positions.filter((p) => isInBounds(p, bounds, 0.1))
-      : positions;
+const processInChunks = (positions, devices, selectedDeviceId, selectedPositionId, bounds, precision) => {
+  // Cancel any ongoing processing
+  if (processingController) {
+    clearTimeout(processingController.timeoutId);
+  }
 
-    const changed = getChangedPositions(visible, precision);
+  const visible = bounds
+    ? positions.filter((p) => isInBounds(p, bounds, 0.1))
+    : positions;
+
+  // Separate visible positions into viewport and non-viewport
+  const inViewport = [];
+  const outViewport = [];
+
+  if (bounds) {
+    visible.forEach((p) => {
+      if (isInBounds(p, bounds, 0)) {
+        inViewport.push(p);
+      } else {
+        outViewport.push(p);
+      }
+    });
+  } else {
+    inViewport.push(...visible);
+  }
+
+  // Prioritize viewport positions
+  const sortedPositions = [...inViewport, ...outViewport];
+  const changed = getChangedPositions(sortedPositions, precision);
+
+  let processedCount = 0;
+  const totalToProcess = sortedPositions.length;
+
+  const processChunk = () => {
+    const chunk = sortedPositions.slice(processedCount, processedCount + CHUNK_SIZE);
+
+    if (chunk.length === 0) {
+      // Processing complete
+      processingController = null;
+      postMessage({
+        type: 'PROCESSING_COMPLETE',
+        payload: {
+          stats: {
+            total: positions.length,
+            visible: visible.length,
+            processed: processedCount,
+            cached: featureCache.size,
+          },
+        },
+      });
+      return;
+    }
 
     const features = createFeatures(
-      visible,
+      chunk,
       devices,
       selectedDeviceId,
       selectedPositionId,
@@ -111,18 +158,83 @@ onmessage = (e) => {
       changed,
     );
 
+    processedCount += chunk.length;
+    const progress = Math.round((processedCount / totalToProcess) * 100);
+
+    // Send incremental update
     postMessage({
-      type: 'FEATURES_READY',
+      type: 'FEATURES_CHUNK',
       payload: {
         features,
+        progress,
+        isFirstChunk: processedCount === chunk.length,
+        isViewport: processedCount <= inViewport.length,
         stats: {
           total: positions.length,
           visible: visible.length,
-          changed: changed.length,
+          processed: processedCount,
           cached: featureCache.size,
         },
       },
     });
+
+    // Schedule next chunk
+    processingController = {
+      timeoutId: setTimeout(processChunk, CHUNK_DELAY),
+    };
+  };
+
+  // Start processing
+  processChunk();
+};
+
+onmessage = (e) => {
+  const { type, payload } = e.data;
+
+  if (type === 'PROCESS_POSITIONS') {
+    const {
+      positions,
+      devices,
+      selectedDeviceId,
+      selectedPositionId,
+      bounds,
+      precision,
+      skipProgressiveLoad = false,
+    } = payload;
+
+    // For subsequent updates, process all at once (fast path)
+    if (skipProgressiveLoad) {
+      const visible = bounds
+        ? positions.filter((p) => isInBounds(p, bounds, 0.1))
+        : positions;
+
+      const changed = getChangedPositions(visible, precision);
+
+      const features = createFeatures(
+        visible,
+        devices,
+        selectedDeviceId,
+        selectedPositionId,
+        precision,
+        changed,
+      );
+
+      postMessage({
+        type: 'FEATURES_READY',
+        payload: {
+          features,
+          stats: {
+            total: positions.length,
+            visible: visible.length,
+            changed: changed.length,
+            cached: featureCache.size,
+          },
+        },
+      });
+    } else {
+      // Initial load - use progressive chunking
+      processInChunks(positions, devices, selectedDeviceId, selectedPositionId, bounds, precision);
+    }
   }
 
   if (type === 'CLEAR_CACHE') {
