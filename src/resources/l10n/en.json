@@ -545,6 +545,7 @@
 	"notificatorTelegram": "Telegram",
 	"notificatorPushover": "Pushover",
 	"reportReplay": "Replay",
+	"liveStream": "Live Stream",
 	"reportCombined": "Combined",
 	"reportRoute": "Route",
 	"reportEvents": "Events",

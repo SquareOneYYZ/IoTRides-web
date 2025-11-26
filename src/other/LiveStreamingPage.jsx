@@ -487,7 +487,7 @@ const LiveStreamingPage = () => {
             <Typography variant="body2" sx={{ opacity: 0.8 }}>
               {videoSources.length}
               {' '}
-              cameras connected
+              Cameras Connected
             </Typography>
           </div>
         </div>

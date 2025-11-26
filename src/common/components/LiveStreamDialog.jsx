@@ -175,18 +175,31 @@ const LiveStreamCard = () => {
   }, [deviceId, lastCommandTime]);
 
   useEffect(() => {
-    const loadUniqueId = async () => {
+    const loadUniqueIdAndStartStream = async () => {
       if (deviceId && open) {
         setLoading(true);
         const id = await fetchUniqueId(deviceId);
         setUniqueId(id);
-        await sendChannelCommand([1, 2, 3, 4]);
+
+        const ok = await sendChannelCommand([1, 2, 3, 4]);
+
+        if (ok) {
+          setTimeout(() => {
+            const videos = document.querySelectorAll('.video-block video');
+            videos.forEach((v) => {
+              if (v.paused) {
+                v.play().catch(() => {
+                });
+              }
+            });
+          }, 800);
+        }
 
         setLoading(false);
       }
     };
 
-    loadUniqueId();
+    loadUniqueIdAndStartStream();
   }, [deviceId, open]);
 
   if (!open || !deviceId) return null;
@@ -196,15 +209,11 @@ const LiveStreamCard = () => {
     setLastCommandTime({});
   };
 
-  const handleCloseSnackbar = () => {
-    setSnackbar({ ...snackbar, open: false });
-  };
-
   const cameraStreams = uniqueId ? [
-    { title: 'Front Camera', src: `https://staging.streaming.iotrides.com:8889/${uniqueId}_ch1/`, channel: 1 },
-    { title: 'Left Camera', src: `https://staging.streaming.iotrides.com:8889/${uniqueId}_ch2/`, channel: 2 },
-    { title: 'Right Camera', src: `https://staging.streaming.iotrides.com:8889/${uniqueId}_ch3/`, channel: 3 },
-    { title: 'Rear Camera', src: `https://staging.streaming.iotrides.com:8889/${uniqueId}_ch4/`, channel: 4 },
+    { title: 'Camera 1', src: `https://staging.streaming.iotrides.com:8889/${uniqueId}_ch1/`, channel: 1 },
+    { title: 'Camera 2', src: `https://staging.streaming.iotrides.com:8889/${uniqueId}_ch2/`, channel: 2 },
+    { title: 'Camera 3', src: `https://staging.streaming.iotrides.com:8889/${uniqueId}_ch3/`, channel: 3 },
+    { title: 'Camera 4', src: `https://staging.streaming.iotrides.com:8889/${uniqueId}_ch4/`, channel: 4 },
   ] : [];
 
   return (
@@ -213,7 +222,7 @@ const LiveStreamCard = () => {
         pointerEvents: 'auto',
         position: 'fixed',
         zIndex: 10,
-        left: '82%',
+        left: '86%',
         bottom: '1.7rem',
         transform: 'translateX(-50%)',
       }}
@@ -250,7 +259,7 @@ const LiveStreamCard = () => {
                   key={video.title}
                   title={video.title}
                   src={video.src}
-                  className={classes.videoBlock}
+                  className={`${classes.videoBlock} video-block`}
                   showLaunch
                   showFocusIcon
                   deviceId={deviceId}

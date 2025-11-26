@@ -1,8 +1,7 @@
 import React, {
-  useRef, useState, useEffect, useCallback,
+  useRef, useState, useEffect,
 } from 'react';
-import { Fullscreen, PlayArrow, ZoomOutMap } from '@mui/icons-material';
-import PauseIcon from '@mui/icons-material/Pause';
+import { PlayArrow, ZoomOutMap } from '@mui/icons-material';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import LaunchIcon from '@mui/icons-material/Launch';
@@ -32,31 +31,20 @@ const VideoBlock = ({
   const [isStarted, setIsStarted] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [lastCommandTime, setLastCommandTime] = useState(0);
-
-  useEffect(() => {
-    const observer = new ResizeObserver((entries) => {
-      entries.forEach((entry) => {
-        const { width, height } = entry.contentRect;
-        setSize({ width, height });
-      });
-    });
-    if (containerRef.current) observer.observe(containerRef.current);
-    return () => observer.disconnect();
-  }, []);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
   const controlScale = Math.max(0.6, Math.min(1, size.width / 600));
   const iconSize = 30 * controlScale;
-  const paddingY = 20 * controlScale;
-  const paddingX = 14 * controlScale;
+
   const sendLiveStreamCommand = useCatchCallback(async () => {
     const currentTime = Date.now();
-
     if (currentTime - lastCommandTime < COMMAND_COOLDOWN_MS) {
-      const remainingTime = Math.ceil((COMMAND_COOLDOWN_MS - (currentTime - lastCommandTime)) / 1000);
       setIsStarted(true);
       setIsPlaying(true);
       return;
     }
+
     const payload = {
       deviceId,
       type: 'liveStream',
@@ -78,8 +66,8 @@ const VideoBlock = ({
       } else {
         throw Error(await response.text());
       }
-    } catch (error) {
-      console.error('Failed to send livestream command:', error);
+    } catch (err) {
+      console.error('Failed to send livestream command:', err);
     }
   }, [deviceId, channelId, lastCommandTime, dispatch]);
 
@@ -92,27 +80,30 @@ const VideoBlock = ({
     setIsPlaying(newIsPlaying);
   };
 
-  const handleFullscreen = async () => {
-    const element = containerRef.current;
-    if (!element) return;
-    try {
-      if (document.fullscreenElement) {
-        await document.exitFullscreen();
-      } else if (element.requestFullscreen) {
-        await element.requestFullscreen();
+  const handleIframeLoad = () => {
+  // Iframe loaded *something*, but could still be an error page
+    setIsLoaded(true);
+
+    // If the src is Videoblocks API error page, the iframe loads instantly
+    // Wait a tick and check if video actually starts
+    setTimeout(() => {
+      if (!isPlaying) {
+        setHasError(true);
+      } else {
+        setHasError(false);
       }
-    } catch (err) {
-      console.error('Fullscreen error:', err);
-    }
+    }, 500);
   };
 
   const handleMouseMove = () => {
     if (isStarted) {
       setShowControls(true);
       if (controlsTimeout) clearTimeout(controlsTimeout);
+
       const timeout = setTimeout(() => {
         if (isPlaying) setShowControls(false);
       }, 2000);
+
       setControlsTimeout(timeout);
     }
   };
@@ -128,19 +119,56 @@ const VideoBlock = ({
     if (onFocus) onFocus(channelId);
   };
 
+  useEffect(() => {
+    const observer = new ResizeObserver((entries) => {
+      entries.forEach((entry) => {
+        const { width, height } = entry.contentRect;
+        setSize({ width, height });
+      });
+    });
+
+    if (containerRef.current) observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    sendLiveStreamCommand();
+    setIsStarted(true);
+    setIsPlaying(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isStarted) return () => {};
+
+    const retryTimer = setTimeout(() => {
+      if (!isLoaded) {
+        console.log('Retrying livestream command…');
+        setHasError(false);
+        sendLiveStreamCommand();
+      }
+    }, 15000);
+
+    return () => clearTimeout(retryTimer);
+  }, [isStarted, isLoaded, sendLiveStreamCommand]);
+
   return (
     <div
       ref={containerRef}
       className={className}
-      style={{ position: 'relative', width: '100%', height: '100%', backgroundColor: '#000' }}
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        backgroundColor: '#000',
+      }}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
     >
       {!isStarted && (
         <div
-          aria-label={title || 'Video player'}
           role="button"
           tabIndex={0}
+          aria-label={title || 'Video player'}
           onClick={handlePlayPause}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
@@ -157,7 +185,7 @@ const VideoBlock = ({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backgroundColor: 'rgba(0,0,0,0.5)',
             cursor: 'pointer',
             zIndex: 5,
           }}
@@ -166,6 +194,7 @@ const VideoBlock = ({
         </div>
       )}
 
+      {/* Launch Icon */}
       {showLaunch && (
         <Tooltip title="Open Livestream">
           <LaunchIcon
@@ -184,6 +213,7 @@ const VideoBlock = ({
         </Tooltip>
       )}
 
+      {/* Focus Icon */}
       {!showLaunch && showFocusIcon && (
         <Tooltip title="Focus this camera">
           <ZoomOutMap
@@ -198,63 +228,74 @@ const VideoBlock = ({
               cursor: 'pointer',
               opacity: 0.85,
               backgroundColor: 'rgba(0,0,0,0.5)',
-              borderRadius: '4px',
-              padding: '4px',
+              borderRadius: 4,
+              padding: 4,
             }}
           />
         </Tooltip>
       )}
 
+      {/* Title */}
+      {title && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 8 * controlScale,
+            left: 8 * controlScale,
+            padding: '3px 8px',
+            backgroundColor: 'rgba(0,0,0,0.6)',
+            color: 'white',
+            fontSize: `${14 * controlScale}px`,
+            borderRadius: 4,
+            zIndex: 20,
+            pointerEvents: 'none',
+          }}
+        >
+          {title}
+        </div>
+      )}
+
+      {hasError && (
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          backgroundColor: 'rgba(0,0,0,0.65)',
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: `${18 * controlScale}px`,
+          zIndex: 50,
+        }}
+      >
+        Not Available
+      </div>
+      )}
+
+      {/* Iframe */}
       <iframe
         src={src}
         title={title}
+        onLoad={handleIframeLoad}
         style={{
           width: '100%',
           height: '100%',
           border: 'none',
           display: isStarted ? 'block' : 'none',
+          visibility: hasError ? 'hidden' : 'visible',
         }}
-        allow="autoplay; fullscreen"
+        autoPlay="true"
+        onError={() => {
+          console.log('Stream failed to load, will retry...');
+          setIsLoaded(false);
+          setHasError(true);
+        }}
       />
 
-      {(isStarted || showControls) && (
-        <div
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            height: `${10 * controlScale}%`,
-            width: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            backgroundColor: 'rgba(0, 0, 0, 0.7)',
-            padding: `${paddingY}px ${paddingX}px`,
-            gap: `${12 * controlScale}px`,
-            opacity: showControls ? 1 : 0,
-            transition: 'opacity 0.3s ease',
-            zIndex: 10,
-          }}
-        >
-          <button
-            type="button"
-            onClick={handlePlayPause}
-            style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}
-          >
-            {isPlaying ? <PauseIcon sx={{ fontSize: iconSize }} /> : <PlayArrow sx={{ fontSize: iconSize }} />}
-          </button>
-
-          <div style={{ flex: 1 }} />
-
-          <button
-            type="button"
-            onClick={handleFullscreen}
-            style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}
-          >
-            <Fullscreen sx={{ fontSize: iconSize }} />
-          </button>
-        </div>
-      )}
     </div>
   );
 };

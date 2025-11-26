@@ -133,38 +133,15 @@ const StatusCard = ({
   const dispatch = useDispatch();
   const t = useTranslation();
   const admin = useAdministrator();
-  const [commandSent, setCommandSent] = useState(false);
 
   const handleLiveStreamOpen = useCatchCallback(async () => {
-    setCommandSent(true);
-
-    const payload = {
-      deviceId,
-      type: 'liveStream',
-      attributes: {
-        channels: [1, 2, 3, 4, 5, 6],
-        noQueue: false,
-      },
-    };
-
     try {
-      const response = await fetch('/api/commands/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        dispatch(livestreamActions.openLivestream(deviceId));
-      } else {
-        setCommandSent(false);
-        throw Error(await response.text());
-      }
+      dispatch(livestreamActions.openLivestream(deviceId));
     } catch (error) {
-      setCommandSent(false);
-      console.error('Failed to send livestream command:', error);
+      console.error('Failed to open livestream:', error);
     }
-  }, [deviceId, dispatch, commandSent]);
+  }, [deviceId, dispatch]);
+
   const deviceReadonly = useDeviceReadonly();
   const shareDisabled = useSelector(
     (state) => state.session.server.attributes.disableShare,
