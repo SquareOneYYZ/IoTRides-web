@@ -20,6 +20,7 @@ const VideoBlock = ({
   onFocus,
   deviceId,
   channelId,
+  isVidPlaying = true,
 }) => {
   const containerRef = useRef(null);
   const navigate = useNavigate();
@@ -83,9 +84,6 @@ const VideoBlock = ({
   const handleIframeLoad = () => {
   // Iframe loaded *something*, but could still be an error page
     setIsLoaded(true);
-
-    // If the src is Videoblocks API error page, the iframe loads instantly
-    // Wait a tick and check if video actually starts
     setTimeout(() => {
       if (!isPlaying) {
         setHasError(true);
@@ -276,7 +274,6 @@ const VideoBlock = ({
       </div>
       )}
 
-      {/* Iframe */}
       <iframe
         src={src}
         title={title}
@@ -285,7 +282,7 @@ const VideoBlock = ({
           width: '100%',
           height: '100%',
           border: 'none',
-          display: isStarted ? 'block' : 'none',
+          display: isStarted && isVidPlaying ? 'block' : 'none',
           visibility: hasError ? 'hidden' : 'visible',
         }}
         autoPlay="true"
@@ -309,6 +306,7 @@ VideoBlock.propTypes = {
   onFocus: PropTypes.func,
   deviceId: PropTypes.number.isRequired,
   channelId: PropTypes.number.isRequired,
+  isVidPlaying: PropTypes.bool,
 };
 
 VideoBlock.defaultProps = {
@@ -317,6 +315,7 @@ VideoBlock.defaultProps = {
   showLaunch: false,
   showFocusIcon: false,
   onFocus: null,
+  isVidPlaying: true,
 };
 
 export default VideoBlock;

@@ -99,11 +99,12 @@ const LiveStreamCard = () => {
 
   const { open, deviceId } = useSelector((state) => state.livestream);
   const device = useSelector((state) => state.devices.items[deviceId]);
-
   const [uniqueId, setUniqueId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [lastCommandTime, setLastCommandTime] = useState({});
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
+  const [numCamera, setNumCamera] = useState(4);
+  const [retrySent, setRetrySent] = useState(false);
 
   const fetchUniqueId = async (devId) => {
     try {
@@ -112,10 +113,14 @@ const LiveStreamCard = () => {
         throw Error('Failed to fetch device details');
       }
       const deviceData = await response.json();
-      return deviceData.uniqueId || devId;
+      const cameras = deviceData.attributes?.NumCamera || 4;
+      const maxCameras = Math.min(cameras, 4);
+      setNumCamera(maxCameras);
+      return { uniqueId: deviceData.uniqueId || devId, numCamera: maxCameras };
     } catch (error) {
       console.error(`Error fetching uniqueId for device ${devId}:`, error);
-      return devId;
+      setNumCamera(4);
+      return { uniqueId: devId, numCamera: 4 };
     }
   };
 
@@ -174,25 +179,36 @@ const LiveStreamCard = () => {
     }
   }, [deviceId, lastCommandTime]);
 
+  const hasAnyVideoStarted = () => {
+    const videos = document.querySelectorAll('.video-block video');
+    return Array.from(videos).some((v) => !v.paused && !v.ended);
+  };
+
   useEffect(() => {
     const loadUniqueIdAndStartStream = async () => {
       if (deviceId && open) {
         setLoading(true);
-        const id = await fetchUniqueId(deviceId);
+        const { uniqueId: id, numCamera: cameras } = await fetchUniqueId(deviceId);
         setUniqueId(id);
 
-        const ok = await sendChannelCommand([1, 2, 3, 4]);
+        const ok = await sendChannelCommand(Array.from({ length: cameras }, (_, i) => i + 1));
 
         if (ok) {
           setTimeout(() => {
             const videos = document.querySelectorAll('.video-block video');
-            videos.forEach((v) => {
-              if (v.paused) {
-                v.play().catch(() => {
-                });
-              }
-            });
+            videos.forEach((v) => v.play().catch(() => {}));
           }, 800);
+
+          setTimeout(async () => {
+            if (!hasAnyVideoStarted() && !retrySent) {
+              console.log('Playback not started → Sending retry command');
+              setRetrySent(true);
+
+              await sendChannelCommand(
+                Array.from({ length: cameras }, (_, i) => i + 1),
+              );
+            }
+          }, 15000);
         }
 
         setLoading(false);
@@ -209,12 +225,36 @@ const LiveStreamCard = () => {
     setLastCommandTime({});
   };
 
-  const cameraStreams = uniqueId ? [
-    { title: 'Camera 1', src: `https://staging.streaming.iotrides.com:8889/${uniqueId}_ch1/`, channel: 1 },
-    { title: 'Camera 2', src: `https://staging.streaming.iotrides.com:8889/${uniqueId}_ch2/`, channel: 2 },
-    { title: 'Camera 3', src: `https://staging.streaming.iotrides.com:8889/${uniqueId}_ch3/`, channel: 3 },
-    { title: 'Camera 4', src: `https://staging.streaming.iotrides.com:8889/${uniqueId}_ch4/`, channel: 4 },
-  ] : [];
+  const cameraStreams = uniqueId
+    ? Array.from({ length: numCamera }, (_, i) => ({
+      title: `Camera ${i + 1}`,
+      src: `https://staging.streaming.iotrides.com:8889/${uniqueId}_ch${i + 1}/`,
+      channel: i + 1,
+    }))
+    : [];
+
+  const getGridLayout = (count) => {
+    switch (count) {
+      case 1:
+        return { gridTemplateColumns: '1fr', gridTemplateRows: '1fr' };
+      case 2:
+        return { gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr' };
+      case 3:
+        return { gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr' };
+      case 4:
+      default:
+        return { gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr' };
+    }
+  };
+
+  const getAspectRatio = (count) => {
+    if (count === 1) return '16/9';
+    if (count === 2) return '32/9';
+    return '16/9';
+  };
+
+  const gridLayout = getGridLayout(numCamera);
+  const aspectRatio = getAspectRatio(numCamera);
 
   return (
     <div
@@ -253,7 +293,13 @@ const LiveStreamCard = () => {
               <CircularProgress />
             </div>
           ) : (
-            <div className={classes.content}>
+            <div
+              className={classes.content}
+              style={{
+                ...gridLayout,
+                aspectRatio,
+              }}
+            >
               {cameraStreams.map((video) => (
                 <VideoBlock
                   key={video.title}

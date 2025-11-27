@@ -59,6 +59,7 @@ const useStyles = makeStyles((theme) => ({
   rightHeader: {
     display: 'flex',
     alignItems: 'center',
+    justifyContent: 'flex-end',
     gap: theme.spacing(2),
     position: 'relative',
 
@@ -68,15 +69,18 @@ const useStyles = makeStyles((theme) => ({
       width: 'auto',
     },
   },
+
   controls: {
     display: 'flex',
     alignItems: 'center',
     gap: theme.spacing(1),
+    flexWrap: 'nowrap',
 
     [theme.breakpoints.down('md')]: {
       justifyContent: 'flex-end',
-      marginTop: theme.spacing(5),
+      marginTop: 0,
       gap: theme.spacing(1),
+
       '& button': {
         padding: theme.spacing(0.2, 1.2),
         fontSize: '0.8rem',
@@ -86,11 +90,13 @@ const useStyles = makeStyles((theme) => ({
   },
   closeBtn: {
     color: '#fff',
+    padding: theme.spacing(1),
+
     [theme.breakpoints.down('md')]: {
-      position: 'absolute',
-      top: 0,
-      right: 0,
-      zIndex: 10,
+      padding: theme.spacing(0.5),
+      '& svg': {
+        fontSize: '1.5rem',
+      },
     },
   },
   liveStatus: {
@@ -104,8 +110,15 @@ const useStyles = makeStyles((theme) => ({
     width: 10,
     height: 10,
     borderRadius: '50%',
-    backgroundColor: '#ff3b30',
-    boxShadow: '0 0 6px #ff3b30',
+    transition: 'all 0.3s ease',
+    '&.online': {
+      backgroundColor: '#ff3b30',
+      boxShadow: '0 0 6px #ff3b30',
+    },
+    '&.offline': {
+      backgroundColor: '#666',
+      boxShadow: 'none',
+    },
   },
   deviceName: {
     color: 'rgba(255, 255, 255, 0.7)',
@@ -353,11 +366,12 @@ const useStyles = makeStyles((theme) => ({
 const LiveStreamingPage = () => {
   const classes = useStyles();
   const navigate = useNavigate();
-  const [currentLayout, setCurrentLayout] = useState(1);
   const [focusedCameraIndex, setFocusedCameraIndex] = useState(0);
   const [uniqueId, setUniqueId] = useState(null);
   const [loading, setLoading] = useState(true);
-
+  const [numCamera, setNumCamera] = useState(4);
+  const [currentLayout, setCurrentLayout] = useState(4);
+  const [isPlaying, setIsPlaying] = useState(true);
   const { open, deviceId } = useSelector((state) => state.livestream);
   const device = useSelector((state) => state.devices.items[deviceId]);
 
@@ -368,9 +382,14 @@ const LiveStreamingPage = () => {
         throw Error('Failed to fetch device details');
       }
       const deviceData = await response.json();
+      const cameras = deviceData.attributes?.NumCamera || 4;
+      setNumCamera(cameras);
+      setCurrentLayout(cameras);
       return deviceData.uniqueId || devId;
     } catch (error) {
       console.error(`Error fetching uniqueId for device ${devId}:`, error);
+      setNumCamera(4);
+      setCurrentLayout(4);
       return devId;
     }
   };
@@ -388,46 +407,32 @@ const LiveStreamingPage = () => {
     loadUniqueId();
   }, [deviceId]);
 
+  useEffect(() => {
+    if (currentLayout > numCamera) {
+      setCurrentLayout(numCamera);
+    }
+  }, [numCamera, currentLayout]);
+
   if (!open || !deviceId) return null;
 
-  const handleStartAll = () => console.log('Starting all streams');
-  const handleStopAll = () => console.log('Stopping all streams');
-  const handleLocation = () => navigate('/map');
+  const handleStartAll = () => {
+    setIsPlaying(true);
+  };
+
+  const handleStopAll = () => {
+    setIsPlaying(false);
+  };
+
+  const handleLocation = () => navigate(`/map?deviceId=${deviceId}`);
+
   const handleBack = () => navigate(-1);
 
   const videoSources = uniqueId
-    ? [
-      {
-        id: 1,
-        src: `https://staging.streaming.iotrides.com:8889/${uniqueId}_ch1/`,
-        title: 'Front Camera',
-      },
-      {
-        id: 2,
-        src: `https://staging.streaming.iotrides.com:8889/${uniqueId}_ch2/`,
-        title: 'Left Camera',
-      },
-      {
-        id: 3,
-        src: `https://staging.streaming.iotrides.com:8889/${uniqueId}_ch3/`,
-        title: 'Right Camera',
-      },
-      {
-        id: 4,
-        src: `https://staging.streaming.iotrides.com:8889/${uniqueId}_ch4/`,
-        title: 'Rear Camera',
-      },
-      {
-        id: 5,
-        src: `https://staging.streaming.iotrides.com:8889/${uniqueId}_ch5/`,
-        title: 'Top Camera',
-      },
-      {
-        id: 6,
-        src: `https://staging.streaming.iotrides.com:8889/${uniqueId}_ch6/`,
-        title: 'Bottom Camera',
-      },
-    ]
+    ? Array.from({ length: numCamera }, (_, i) => ({
+      id: i + 1,
+      src: `https://staging.streaming.iotrides.com:8889/${uniqueId}_ch${i + 1}/`,
+      title: `Camera ${i + 1}`,
+    }))
     : [];
 
   const totalSlots = Number(currentLayout);
@@ -452,7 +457,9 @@ const LiveStreamingPage = () => {
   const handleMobileCameraSwitch = (index) => {
     setFocusedCameraIndex(index);
   };
+
   const isFocusEnabled = [3, 5, 6].includes(currentLayout);
+  const isDeviceOnline = device?.status === 'online';
 
   if (loading) {
     return (
@@ -479,13 +486,13 @@ const LiveStreamingPage = () => {
           <div>
             <div className={classes.liveStatus}>
               <Typography variant="body2">Live Stream</Typography>
-              <span className={classes.redDot} />
+              <span className={`${classes.redDot} ${isDeviceOnline ? 'online' : 'offline'}`} />
             </div>
             <Typography variant="h6">
               {device?.name || `Device ${deviceId}`}
             </Typography>
             <Typography variant="body2" sx={{ opacity: 0.8 }}>
-              {videoSources.length}
+              {numCamera}
               {' '}
               Cameras Connected
             </Typography>
@@ -494,7 +501,7 @@ const LiveStreamingPage = () => {
 
         <div style={{ textAlign: 'center' }}>
           <div className={classes.layoutButtons}>
-            {[1, 2, 3, 4, 5, 6].map((num) => (
+            {Array.from({ length: numCamera }, (_, i) => i + 1).map((num) => (
               <button
                 type="button"
                 key={num}
@@ -513,34 +520,39 @@ const LiveStreamingPage = () => {
           <div className={classes.controls}>
             <Button
               variant="contained"
-              color="success"
+              color="primary"
               startIcon={<PlayArrow />}
               onClick={handleStartAll}
+              disabled={isPlaying}
               sx={{ mr: 1 }}
             >
               Start
             </Button>
+
             <Button
               variant="outlined"
-              color="inherit"
+              color="error"
               startIcon={<Stop />}
               onClick={handleStopAll}
+              disabled={!isPlaying}
               sx={{ mr: 1 }}
             >
               Stop
             </Button>
+
             <Button
-              variant="text"
+              variant="outlined"
               color="inherit"
               startIcon={<LocationOn />}
               onClick={handleLocation}
-              sx={{ mr: 1, display: { xs: 'none', sm: 'flex' } }}
+              sx={{ mr: 1, display: { xs: 'flex', sm: 'flex' } }}
             >
               Location
             </Button>
 
-            <IconButton
-              color="inherit"
+            <Button
+              variant="outlined"
+              // color="inherit"
               onClick={handleBack}
               className={classes.closeBtn}
               sx={{
@@ -553,9 +565,10 @@ const LiveStreamingPage = () => {
               }}
             >
               <CloseIcon />
-            </IconButton>
+            </Button>
           </div>
         </div>
+
       </div>
 
       <div className={classes.content}>
@@ -574,6 +587,9 @@ const LiveStreamingPage = () => {
                 showLaunch={false}
                 showFocusIcon={isFocusEnabled}
                 onFocus={() => handleCameraFocus(originalIndex)}
+                deviceId={deviceId}
+                channelId={video.id}
+                isVidPlaying={isPlaying}
               />
             );
           })}
@@ -588,32 +604,40 @@ const LiveStreamingPage = () => {
 
         <div className={classes.mobileView}>
           <div className={classes.mainVideoContainer}>
-            {videoSources.map((video) => (
+            {videoSources.length > 0 && (
               <VideoBlock
-                key={video.id}
-                src={video.src}
-                title={video.title}
+                key={videoSources[focusedCameraIndex].id}
+                src={videoSources[focusedCameraIndex].src}
+                title={videoSources[focusedCameraIndex].title}
                 showLaunch={false}
-                showFocusIcon
-                onFocus={() => handleMobileCameraSwitch(
-                  videoSources.findIndex((v) => v.id === video.id),
-                )}
+                showFocusIcon={false}
+                deviceId={deviceId}
+                channelId={videoSources[focusedCameraIndex].id}
+                isVidPlaying={isPlaying}
               />
-            ))}
+            )}
           </div>
 
           <div className={classes.mobileVideoGrid}>
             {videoSources.map((video, index) => (
-              <VideoBlock
+              <div
                 key={video.id}
-                src={video.src}
-                title={video.title}
-                showLaunch={false}
-                showFocusIcon
-                onFocus={() => handleMobileCameraSwitch(index)}
-              />
+                style={{ position: 'relative' }}
+              >
+                <VideoBlock
+                  src={video.src}
+                  title={video.title}
+                  showLaunch={false}
+                  showFocusIcon
+                  onFocus={() => handleMobileCameraSwitch(index)}
+                  deviceId={deviceId}
+                  channelId={video.id}
+                  isVidPlaying={isPlaying}
+                />
+              </div>
             ))}
           </div>
+          {' '}
         </div>
       </div>
     </div>
