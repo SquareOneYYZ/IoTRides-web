@@ -102,27 +102,24 @@ const processInChunks = (positions, devices, selectedDeviceId, selectedPositionI
     clearTimeout(processingController.timeoutId);
   }
 
-  const visible = bounds
-    ? positions.filter((p) => isInBounds(p, bounds, 0.1))
-    : positions;
-
-  // Separate visible positions into viewport and non-viewport
+  // Separate ALL positions into viewport and non-viewport (prioritize, don't filter)
   const inViewport = [];
   const outViewport = [];
 
   if (bounds) {
-    visible.forEach((p) => {
-      if (isInBounds(p, bounds, 0)) {
+    positions.forEach((p) => {
+      // Use generous buffer to include nearby markers
+      if (isInBounds(p, bounds, 0.5)) {
         inViewport.push(p);
       } else {
         outViewport.push(p);
       }
     });
   } else {
-    inViewport.push(...visible);
+    inViewport.push(...positions);
   }
 
-  // Prioritize viewport positions
+  // Prioritize viewport positions first, but process ALL positions eventually
   const sortedPositions = [...inViewport, ...outViewport];
   const changed = getChangedPositions(sortedPositions, precision);
 
@@ -203,15 +200,12 @@ onmessage = (e) => {
     } = payload;
 
     // For subsequent updates, process all at once (fast path)
+    // DON'T filter by viewport - show all positions even when zoomed
     if (skipProgressiveLoad) {
-      const visible = bounds
-        ? positions.filter((p) => isInBounds(p, bounds, 0.1))
-        : positions;
-
-      const changed = getChangedPositions(visible, precision);
+      const changed = getChangedPositions(positions, precision);
 
       const features = createFeatures(
-        visible,
+        positions,
         devices,
         selectedDeviceId,
         selectedPositionId,
@@ -225,14 +219,14 @@ onmessage = (e) => {
           features,
           stats: {
             total: positions.length,
-            visible: visible.length,
+            visible: positions.length,
             changed: changed.length,
             cached: featureCache.size,
           },
         },
       });
     } else {
-      // Initial load - use progressive chunking
+      // Initial load - use progressive chunking with viewport priority
       processInChunks(positions, devices, selectedDeviceId, selectedPositionId, bounds, precision);
     }
   }
