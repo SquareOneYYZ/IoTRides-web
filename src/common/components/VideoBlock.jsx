@@ -21,6 +21,7 @@ const VideoBlock = ({
   deviceId,
   channelId,
   isVidPlaying = true,
+  showBothIcons,
 }) => {
   const containerRef = useRef(null);
   const navigate = useNavigate();
@@ -82,7 +83,6 @@ const VideoBlock = ({
   };
 
   const handleIframeLoad = () => {
-  // Iframe loaded *something*, but could still be an error page
     setIsLoaded(true);
     setTimeout(() => {
       if (!isPlaying) {
@@ -194,43 +194,43 @@ const VideoBlock = ({
 
       {/* Launch Icon */}
       {showLaunch && (
-        <Tooltip title="Open Livestream">
-          <LaunchIcon
-            onClick={handleLaunch}
-            style={{
-              position: 'absolute',
-              top: `${12 * controlScale}px`,
-              right: `${12 * controlScale}px`,
-              color: 'white',
-              fontSize: `${25 * controlScale}px`,
-              zIndex: 15,
-              cursor: 'pointer',
-              opacity: 0.85,
-            }}
-          />
-        </Tooltip>
+      <Tooltip title="Open Livestream">
+        <LaunchIcon
+          onClick={handleLaunch}
+          style={{
+            position: 'absolute',
+            top: `${12 * controlScale}px`,
+            right: `${12 * controlScale}px`,
+            color: 'white',
+            fontSize: `${25 * controlScale}px`,
+            zIndex: 15,
+            cursor: 'pointer',
+            opacity: 0.85,
+          }}
+        />
+      </Tooltip>
       )}
 
       {/* Focus Icon */}
-      {!showLaunch && showFocusIcon && (
-        <Tooltip title="Focus this camera">
-          <ZoomOutMap
-            onClick={handleFocusClick}
-            style={{
-              position: 'absolute',
-              top: `${12 * controlScale}px`,
-              right: `${12 * controlScale}px`,
-              color: 'white',
-              fontSize: `${25 * controlScale}px`,
-              zIndex: 15,
-              cursor: 'pointer',
-              opacity: 0.85,
-              backgroundColor: 'rgba(0,0,0,0.5)',
-              borderRadius: 4,
-              padding: 4,
-            }}
-          />
-        </Tooltip>
+      {(showBothIcons || (!showLaunch && showFocusIcon)) && (
+      <Tooltip title="Focus this camera">
+        <ZoomOutMap
+          onClick={handleFocusClick}
+          style={{
+            position: 'absolute',
+            top: `${12 * controlScale}px`,
+            right: `${12 * controlScale + 35}px`, // ← SHIFTED TO LEFT IF BOTH ACTIVE
+            color: 'white',
+            fontSize: `${25 * controlScale}px`,
+            zIndex: 15,
+            cursor: 'pointer',
+            opacity: 0.85,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            borderRadius: 4,
+            padding: 4,
+          }}
+        />
+      </Tooltip>
       )}
 
       {/* Title */}
@@ -307,6 +307,7 @@ VideoBlock.propTypes = {
   deviceId: PropTypes.number.isRequired,
   channelId: PropTypes.number.isRequired,
   isVidPlaying: PropTypes.bool,
+  showBothIcons: PropTypes.bool,
 };
 
 VideoBlock.defaultProps = {
@@ -316,6 +317,7 @@ VideoBlock.defaultProps = {
   showFocusIcon: false,
   onFocus: null,
   isVidPlaying: true,
+  showBothIcons: false,
 };
 
 export default VideoBlock;

@@ -309,8 +309,8 @@ const LiveStreamCard = () => {
         return { gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr' };
       case 3:
         return {
-          gridTemplateColumns: '1fr',
-          gridTemplateRows: '1fr 1fr',
+          gridTemplateColumns: '1fr 1fr',
+          gridTemplateRows: '1fr 1fr ',
         };
       case 4:
       default:
@@ -386,8 +386,9 @@ const LiveStreamCard = () => {
                     title={video.title}
                     src={video.src}
                     className={`${classes.videoBlock} video-block`}
-                    showLaunch={false}
+                    showLaunch
                     showFocusIcon={index !== 0}
+                    showBothIcons={index !== 0}
                     deviceId={deviceId}
                     channelId={video.channel}
                     onFocus={() => {
