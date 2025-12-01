@@ -150,7 +150,9 @@ const UsersPage = () => {
   const getFilterLabel = (key, value) => {
     if (key === 'search') return `Search: "${value}"`;
     if (key === 'admin') return `Admin: ${value === 'true' ? 'Yes' : 'No'}`;
-    if (key === 'status') { return `Status: ${value === 'true' ? 'Disabled' : 'Active'}`; }
+    if (key === 'status') {
+      return `Status: ${value === 'true' ? 'Disabled' : 'Active'}`;
+    }
     if (key === 'expiration') {
       const labels = { never: 'Never', active: 'Active', expired: 'Expired' };
       return `Expiration: ${labels[value]}`;

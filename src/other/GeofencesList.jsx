@@ -7,8 +7,6 @@ import {
   ListItemButton,
   ListItemText,
   TextField,
-  MenuItem,
-  Select,
   IconButton,
 } from '@mui/material';
 import SortIcon from '@mui/icons-material/Sort';
