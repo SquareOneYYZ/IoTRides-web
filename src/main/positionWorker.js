@@ -137,7 +137,7 @@ const processInChunks = (positions, devices, selectedDeviceId, selectedPositionI
         payload: {
           stats: {
             total: positions.length,
-            visible: visible.length,
+            visible: inViewport.length,
             processed: processedCount,
             cached: featureCache.size,
           },
@@ -168,7 +168,7 @@ const processInChunks = (positions, devices, selectedDeviceId, selectedPositionI
         isViewport: processedCount <= inViewport.length,
         stats: {
           total: positions.length,
-          visible: visible.length,
+          visible: inViewport.length,
           processed: processedCount,
           cached: featureCache.size,
         },
