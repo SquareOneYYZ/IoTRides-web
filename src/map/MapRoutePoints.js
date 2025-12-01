@@ -40,7 +40,11 @@ const MapRoutePoints = ({
       if (speed > max) max = speed;
       if (speed < min) min = speed;
     }
+  const onMouseEnter = () => (map.getCanvas().style.cursor = 'pointer');
+  const onMouseLeave = () => (map.getCanvas().style.cursor = '');
 
+  const { simplifiedPositions } = useMemo(() => {
+    if (!positions.length) return { simplifiedPositions: [] };
     const simplified = positions.filter(
       (p, i) => i === 0 || i === positions.length - 1 || i % 4 === 0,
     );
@@ -109,6 +113,40 @@ const MapRoutePoints = ({
       onLeave();
     }
   }, [onLeave]);
+    return { simplifiedPositions: simplified };
+  }, [positions]);
+
+  const onMarkerClick = useCallback(
+    (event) => {
+      event.preventDefault();
+      const feature = event.features[0];
+
+      if (feature) {
+        if (onClick) {
+          onClick(feature.properties.id, feature.properties.index);
+        }
+
+        const maxSpeed = Math.max(...positions.map((pt) => pt.speed));
+        const minSpeed = Math.min(...positions.map((pt) => pt.speed));
+
+        map.getSource(id)?.setData({
+          type: 'FeatureCollection',
+          features: positions.map((p, index) => ({
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [p.longitude, p.latitude] },
+            properties: {
+              index,
+              id: p.id,
+              rotation: p.course,
+              color: getSpeedColor(p.speed, minSpeed, maxSpeed),
+              border: p.isReturn ? '#000000' : 'transparent',
+            },
+          })),
+        });
+      }
+    },
+    [onClick, id, positions],
+  );
 
   useEffect(() => {
     map.addSource(id, {
@@ -116,7 +154,6 @@ const MapRoutePoints = ({
       data: { type: 'FeatureCollection', features: [] },
     });
 
-    // Add invisible hitzone layer with larger radius for better hover detection
     map.addLayer({
       id: `${id}-hitzone`,
       type: 'circle',
@@ -127,7 +164,7 @@ const MapRoutePoints = ({
       },
     });
 
-    // Add the visible symbol layer on top
+    });
     map.addLayer({
       id,
       type: 'symbol',
@@ -146,7 +183,6 @@ const MapRoutePoints = ({
       },
     });
 
-    // Attach mouse events to the hitzone layer for better capture
     map.on('mouseenter', `${id}-hitzone`, onMouseEnter);
     map.on('mouseleave', `${id}-hitzone`, onMouseLeave);
     map.on('click', `${id}-hitzone`, onMarkerClick);
@@ -168,6 +204,7 @@ const MapRoutePoints = ({
 
       if (map.getLayer(id)) map.removeLayer(id);
       if (map.getLayer(`${id}-hitzone`)) map.removeLayer(`${id}-hitzone`);
+      if (map.getLayer(id)) map.removeLayer(id);
       if (map.getSource(id)) map.removeSource(id);
     };
   }, [
@@ -194,7 +231,15 @@ const MapRoutePoints = ({
     if (!positions?.length) {
       return undefined;
     }
+    if (!positions.length) {
+      return () => {};
+    }
 
+    const maxSpeed = positions.reduce(
+      (a, b) => Math.max(a, b.speed),
+      -Infinity,
+    );
+    const minSpeed = positions.reduce((a, b) => Math.min(a, b.speed), Infinity);
     const control = new SpeedLegendControl(
       positions,
       speedUnit,
@@ -208,6 +253,36 @@ const MapRoutePoints = ({
       map.removeControl(control);
     };
   }, [positions, speedUnit, t, maxSpeed, minSpeed]);
+      map.getSource(id)?.setData({
+        type: 'FeatureCollection',
+        features: simplifiedPositions.map((p, index) => ({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [p.longitude, p.latitude] },
+          properties: {
+            index,
+            id: p.id,
+            rotation: p.course,
+            color: getSpeedColor(p.speed, minSpeed, maxSpeed),
+            border: p.isReturn ? '#000000' : 'transparent',
+          },
+        })),
+      });
+    };
+
+    showSimplifiedPoints();
+
+    map.on('click', (e) => {
+      const features = map.queryRenderedFeatures(e.point, { layers: [id] });
+      if (!features.length) {
+        showSimplifiedPoints();
+      }
+    });
+
+    return () => {
+      map.removeControl(control);
+      map.off('click');
+    };
+  }, [positions, simplifiedPositions, speedUnit, t, id]);
 
   return null;
 };
