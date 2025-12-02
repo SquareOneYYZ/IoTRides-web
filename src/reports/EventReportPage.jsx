@@ -57,6 +57,7 @@ import scheduleReport from './common/scheduleReport';
 import MapScale from '../map/MapScale';
 import SelectField from '../common/components/SelectField';
 import StatusCard from '../common/components/StatusCard';
+import useResizableMap from './common/useResizableMap';
 
 const columnsArray = [
   ['eventTime', 'positionFixTime'],
@@ -80,7 +81,7 @@ const EventReportPage = () => {
   const classes = useReportStyles();
   const t = useTranslation();
   const timerRef = useRef();
-
+  const { containerRef, mapHeight, handleMouseDown } = useResizableMap(60, 20, 80);
   const devices = useSelector((state) => state.devices.items);
   const geofences = useSelector((state) => state.geofences.items);
 
@@ -560,9 +561,27 @@ const EventReportPage = () => {
       menu={<ReportsMenu />}
       breadcrumbs={['reportTitle', 'reportEvents']}
     >
-      <div className={classes.container}>
+      <div
+        ref={containerRef}
+        className={classes.container}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: 'calc(100vh - 64px)',
+          overflow: 'hidden',
+        }}
+      >
         {selectedItem && (
-          <div className={classes.containerMap}>
+        <>
+          <div
+            className={classes.containerMap}
+            style={{
+              height: `${mapHeight}%`,
+              minHeight: '150px',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
             <MapView>
               <MapGeofence />
               {position && (
@@ -577,39 +596,79 @@ const EventReportPage = () => {
               />
             )}
           </div>
+
+          {/* 🟩 Draggable divider */}
+          <button
+            type="button"
+            onMouseDown={handleMouseDown}
+            style={{
+              height: '8px',
+              backgroundColor: '#e0e0e0',
+              cursor: 'row-resize',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              borderTop: '1px solid #ccc',
+              borderBottom: '1px solid #ccc',
+              transition: 'background-color 0.2s',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#d0d0d0')}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#e0e0e0')}
+          >
+            {' '}
+            <div
+              style={{
+                width: '40px',
+                height: '4px',
+                backgroundColor: '#999',
+                borderRadius: '2px',
+              }}
+            />
+          </button>
+        </>
         )}
-        <div className={classes.containerMain}>
-          <div className={classes.header}>
-            <ReportFilter
-              handleSubmit={handleSubmit}
-              handleSchedule={handleSchedule}
-              loading={loading}
-            >
-              <div className={classes.filterItem}>
-                <FormControl fullWidth>
-                  <InputLabel>{t('reportEventTypes')}</InputLabel>
-                  <Select
-                    label={t('reportEventTypes')}
-                    value={eventTypes}
-                    onChange={(e, child) => {
-                      let values = e.target.value;
-                      const clicked = child.props.value;
-                      if (values.includes('allEvents') && values.length > 1) {
-                        values = [clicked];
-                      }
-                      setEventTypes(values);
-                    }}
-                    multiple
-                  >
-                    {allEventTypes.map(([key, string]) => (
-                      <MenuItem key={key} value={key}>
-                        {t(string)}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </div>
-              {eventTypes[0] !== 'allEvents'
+
+        <div
+          className={classes.containerMain}
+          style={{
+            flex: 1,
+            overflow: 'auto',
+            minHeight: '150px',
+          }}
+        >
+          <div className={classes.containerMain}>
+            <div className={classes.header}>
+              <ReportFilter
+                handleSubmit={handleSubmit}
+                handleSchedule={handleSchedule}
+                loading={loading}
+              >
+                <div className={classes.filterItem}>
+                  <FormControl fullWidth>
+                    <InputLabel>{t('reportEventTypes')}</InputLabel>
+                    <Select
+                      label={t('reportEventTypes')}
+                      value={eventTypes}
+                      onChange={(e, child) => {
+                        let values = e.target.value;
+                        const clicked = child.props.value;
+                        if (values.includes('allEvents') && values.length > 1) {
+                          values = [clicked];
+                        }
+                        setEventTypes(values);
+                      }}
+                      multiple
+                    >
+                      {allEventTypes.map(([key, string]) => (
+                        <MenuItem key={key} value={key}>
+                          {t(string)}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </div>
+                {eventTypes[0] !== 'allEvents'
                 && eventTypes.includes('alarm') && (
                   <div className={classes.filterItem}>
                     <SelectField
@@ -622,30 +681,30 @@ const EventReportPage = () => {
                       fullWidth
                     />
                   </div>
-              )}
-              <ColumnSelect
-                columns={columns}
-                setColumns={setColumns}
-                columnsArray={columnsArray}
-              />
-            </ReportFilter>
-          </div>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell className={classes.columnAction} />
-                <TableCell className={classes.columnAction} />
-                {columns.map((key) => (
-                  <TableCell key={key}>{t(columnsMap.get(key))}</TableCell>
-                ))}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {!loading ? (
-                items.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell className={classes.columnAction} padding="none">
-                      {(item.positionId
+                )}
+                <ColumnSelect
+                  columns={columns}
+                  setColumns={setColumns}
+                  columnsArray={columnsArray}
+                />
+              </ReportFilter>
+            </div>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell className={classes.columnAction} />
+                  <TableCell className={classes.columnAction} />
+                  {columns.map((key) => (
+                    <TableCell key={key}>{t(columnsMap.get(key))}</TableCell>
+                  ))}
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {!loading ? (
+                  items.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell className={classes.columnAction} padding="none">
+                        {(item.positionId
                         && (selectedItem === item ? (
                           <IconButton
                             size="small"
@@ -662,9 +721,9 @@ const EventReportPage = () => {
                           </IconButton>
                         )))
                         || ''}
-                    </TableCell>
-                    <TableCell className={classes.columnAction} padding="none">
-                      {item.positionId && (
+                      </TableCell>
+                      <TableCell className={classes.columnAction} padding="none">
+                        {item.positionId && (
                         <IconButton
                           size="small"
                           onClick={() => handleReplayStart(item)}
@@ -672,18 +731,19 @@ const EventReportPage = () => {
                         >
                           <ReplayIcon fontSize="small" />
                         </IconButton>
-                      )}
-                    </TableCell>
-                    {columns.map((key) => (
-                      <TableCell key={key}>{formatValue(item, key)}</TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableShimmer columns={columns.length + 2} />
-              )}
-            </TableBody>
-          </Table>
+                        )}
+                      </TableCell>
+                      {columns.map((key) => (
+                        <TableCell key={key}>{formatValue(item, key)}</TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableShimmer columns={columns.length + 2} />
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       </div>
     </PageLayout>
