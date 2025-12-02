@@ -246,6 +246,7 @@ const MapPositions = ({
     selectedPosition,
     selectedDeviceId,
   ]);
+
   return null;
 };
 
