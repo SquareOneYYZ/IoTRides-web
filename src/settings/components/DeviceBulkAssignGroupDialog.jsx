@@ -85,5 +85,3 @@ const DeviceBulkAssignGroupDialog = ({
 };
 
 export default DeviceBulkAssignGroupDialog;
-
-

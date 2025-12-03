@@ -219,5 +219,3 @@ const DeviceBulkUpdateSettingsDialog = ({
 };
 
 export default DeviceBulkUpdateSettingsDialog;
-
-
