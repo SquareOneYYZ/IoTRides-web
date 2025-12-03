@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -10,6 +10,8 @@ import {
   Button,
   TableFooter,
   FormControlLabel,
+  Toolbar,
+  Paper,
   Switch,
   Select,
   MenuItem,
@@ -21,6 +23,8 @@ import {
   FormControl,
   InputLabel,
   Chip,
+  Checkbox,
+  Snackbar,
   TableSortLabel,
   IconButton,
   Tooltip,
@@ -40,6 +44,8 @@ import { useDeviceReadonly, useManager } from '../common/util/permissions';
 import useSettingsStyles from './common/useSettingsStyles';
 import DeviceUsersValue from './components/DeviceUsersValue';
 import usePersistedState from '../common/util/usePersistedState';
+import DeviceBulkAssignGroupDialog from './components/DeviceBulkAssignGroupDialog';
+import DeviceBulkUpdateSettingsDialog from './components/DeviceBulkUpdateSettingsDialog';
 
 const isExpiringSoon = (expirationTime) => {
   if (!expirationTime) return false;
@@ -96,6 +102,13 @@ const DevicesPage = () => {
   });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = usePersistedState('devicesPageSize', 25);
+
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [lastSelectedIndex, setLastSelectedIndex] = useState(null);
+
+  const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
+  const [bulkUpdateOpen, setBulkUpdateOpen] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '' });
 
   useEffectAsync(async () => {
     setLoading(true);
@@ -224,6 +237,14 @@ const DevicesPage = () => {
 
     return filtered;
   }, [items, globalSearch, filters, sortConfig, groups]);
+
+  const idToIndex = useMemo(() => {
+    const map = {};
+    processedItems.forEach((item, index) => {
+      map[item.id] = index;
+    });
+    return map;
+  }, [processedItems]);
   const totalPages = Math.ceil(processedItems.length / pageSize);
   const startIndex = (page - 1) * pageSize;
   const paginatedItems = processedItems.slice(
@@ -250,6 +271,127 @@ const DevicesPage = () => {
 
   const handlePageChange = (event, newPage) => {
     setPage(newPage);
+  };
+
+  const clearSelection = () => {
+    setSelectedIds([]);
+    setLastSelectedIndex(null);
+  };
+
+  const handleRowSelect = useCallback(
+    (deviceId, indexOnPage, event) => {
+      const globalIndex = idToIndex[deviceId];
+      if (event.shiftKey && lastSelectedIndex !== null) {
+        const start = Math.min(lastSelectedIndex, globalIndex);
+        const end = Math.max(lastSelectedIndex, globalIndex);
+        const rangeIds = processedItems.slice(start, end + 1).map((item) => item.id);
+        setSelectedIds((prev) => {
+          const set = new Set(prev);
+          rangeIds.forEach((id) => set.add(id));
+          return Array.from(set);
+        });
+      } else {
+        setSelectedIds((prev) => (prev.includes(deviceId)
+          ? prev.filter((id) => id !== deviceId)
+          : [...prev, deviceId]));
+        setLastSelectedIndex(globalIndex);
+      }
+    },
+    [idToIndex, lastSelectedIndex, processedItems],
+  );
+
+  const handleSelectAllOnPage = (event) => {
+    if (event.target.checked) {
+      const pageIds = paginatedItems.map((item) => item.id);
+      setSelectedIds((prev) => Array.from(new Set([...prev, ...pageIds])));
+    } else {
+      const pageIds = new Set(paginatedItems.map((item) => item.id));
+      setSelectedIds((prev) => prev.filter((id) => !pageIds.has(id)));
+    }
+  };
+
+  const handleBulkAssign = async (groupId) => {
+    const affected = items.filter((item) => selectedIds.includes(item.id));
+    const results = await Promise.allSettled(
+      affected.map(async (item) => {
+        const updated = { ...item, groupId };
+        const response = await fetch(`/api/devices/${item.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updated),
+        });
+        if (!response.ok) {
+          throw new Error(await response.text());
+        }
+        return updated;
+      }),
+    );
+
+    const succeeded = results
+      .filter((r) => r.status === 'fulfilled')
+      .map((r) => r.value);
+
+    if (succeeded.length > 0) {
+      setItems((prev) => prev.map((item) => {
+        const match = succeeded.find((x) => x.id === item.id);
+        return match || item;
+      }));
+    }
+
+    const failedCount = results.filter((r) => r.status === 'rejected').length;
+    const successCount = succeeded.length;
+
+    setSnackbar({
+      open: true,
+      message: `Assigned group to ${successCount} device(s)${
+        failedCount ? `, ${failedCount} failed` : ''
+      }`,
+    });
+
+    setBulkAssignOpen(false);
+    clearSelection();
+  };
+
+  const handleBulkUpdate = async (payload) => {
+    const affected = items.filter((item) => selectedIds.includes(item.id));
+    const results = await Promise.allSettled(
+      affected.map(async (item) => {
+        const updated = { ...item, ...payload };
+        const response = await fetch(`/api/devices/${item.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updated),
+        });
+        if (!response.ok) {
+          throw new Error(await response.text());
+        }
+        return updated;
+      }),
+    );
+
+    const succeeded = results
+      .filter((r) => r.status === 'fulfilled')
+      .map((r) => r.value);
+
+    if (succeeded.length > 0) {
+      setItems((prev) => prev.map((item) => {
+        const match = succeeded.find((x) => x.id === item.id);
+        return match || item;
+      }));
+    }
+
+    const failedCount = results.filter((r) => r.status === 'rejected').length;
+    const successCount = succeeded.length;
+
+    setSnackbar({
+      open: true,
+      message: `Updated settings for ${successCount} device(s)${
+        failedCount ? `, ${failedCount} failed` : ''
+      }`,
+    });
+
+    setBulkUpdateOpen(false);
+    clearSelection();
   };
 
   const actionConnections = {
@@ -280,7 +422,7 @@ const DevicesPage = () => {
       menu={<SettingsMenu />}
       breadcrumbs={['settingsTitle', 'deviceTitle']}
     >
-      <Box sx={{ minHeight: '100vh', overflowY: 'auto' }}>
+      <Box sx={{ pb: 2 }}>
         <Box
           sx={{
             p: 2,
@@ -313,6 +455,7 @@ const DevicesPage = () => {
                   {processedItems.length}
                   {' '}
                   of
+                  {' '}
                   {items.length}
                   {' '}
                   devices
@@ -455,11 +598,70 @@ const DevicesPage = () => {
           )}
         </Box>
 
+        {/* Bulk Actions Toolbar */}
+        {selectedIds.length > 0 && (
+          <Paper
+            elevation={1}
+            sx={{
+              mb: 1,
+              px: 2,
+              py: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <Typography variant="body2">
+              {selectedIds.length}
+              {' '}
+              selected
+            </Typography>
+            <Toolbar disableGutters sx={{ gap: 1 }}>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => setBulkAssignOpen(true)}
+                disabled={deviceReadonly}
+              >
+                Assign to Group
+              </Button>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => setBulkUpdateOpen(true)}
+                disabled={deviceReadonly}
+              >
+                Update Settings
+              </Button>
+              <Button
+                variant="text"
+                size="small"
+                onClick={clearSelection}
+              >
+                Clear selection
+              </Button>
+            </Toolbar>
+          </Paper>
+        )}
+
         {/* Main Table */}
         <Box sx={{ width: '100%', overflowX: 'auto' }}>
           <Table className={classes.table} style={{ minWidth: 900 }}>
             <TableHead>
               <TableRow>
+                <TableCell padding="checkbox">
+                  <Checkbox
+                    indeterminate={
+                      selectedIds.length > 0
+                      && selectedIds.length < paginatedItems.length
+                    }
+                    checked={
+                      paginatedItems.length > 0
+                      && paginatedItems.every((item) => selectedIds.includes(item.id))
+                    }
+                    onChange={handleSelectAllOnPage}
+                  />
+                </TableCell>
                 <TableCell>{getSortLabel('name')}</TableCell>
                 <TableCell>{getSortLabel('uniqueId')}</TableCell>
                 <TableCell>{getSortLabel('groupId')}</TableCell>
@@ -475,7 +677,19 @@ const DevicesPage = () => {
             <TableBody>
               {!loading ? (
                 paginatedItems.map((item) => (
-                  <TableRow key={item.id}>
+                  <TableRow
+                    key={item.id}
+                    hover
+                    onClick={(event) => handleRowSelect(item.id, null, event)}
+                    role="checkbox"
+                    selected={selectedIds.includes(item.id)}
+                  >
+                    <TableCell padding="checkbox" onClick={(event) => event.stopPropagation()}>
+                      <Checkbox
+                        checked={selectedIds.includes(item.id)}
+                        onChange={(event) => handleRowSelect(item.id, null, event)}
+                      />
+                    </TableCell>
                     <TableCell>{item.name}</TableCell>
                     <TableCell>{item.uniqueId}</TableCell>
                     <TableCell>
@@ -535,7 +749,7 @@ const DevicesPage = () => {
             </TableBody>
             <TableFooter>
               <TableRow>
-                <TableCell>
+                <TableCell colSpan={2}>
                   <Button onClick={handleExport} variant="text">
                     {t('reportExport')}
                   </Button>
@@ -572,6 +786,26 @@ const DevicesPage = () => {
 
         <CollectionFab editPath="/settings/device" />
       </Box>
+
+      <DeviceBulkAssignGroupDialog
+        open={bulkAssignOpen}
+        onClose={() => setBulkAssignOpen(false)}
+        onConfirm={handleBulkAssign}
+        groups={groups}
+        selectedCount={selectedIds.length}
+      />
+      <DeviceBulkUpdateSettingsDialog
+        open={bulkUpdateOpen}
+        onClose={() => setBulkUpdateOpen(false)}
+        onConfirm={handleBulkUpdate}
+        selectedCount={selectedIds.length}
+      />
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar({ open: false, message: '' })}
+        message={snackbar.message}
+      />
     </PageLayout>
   );
 };
