@@ -370,17 +370,26 @@ const MediaDetailsPage = () => {
           }}
         >
           {renderMediaContent()}
+        </Paper>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 2,
+            px: 3,
+            pb: 2,
+            flexWrap: 'wrap',
+          }}
+        >
           <Box
             sx={{
-              position: 'absolute',
-              bottom: 10,
-              left: 10,
-              bgcolor: 'rgba(0,0,0,0.7)',
-              color: '#fff',
+              bgcolor: 'rgba(0,0,0,0.08)',
               px: 1.5,
-              py: 0.5,
+              py: 0.75,
               borderRadius: 1,
               fontSize: { xs: 12, md: 14 },
+              maxWidth: '70%',
             }}
           >
             {selectedEvent?.fileName
@@ -389,20 +398,17 @@ const MediaDetailsPage = () => {
           </Box>
           <Box
             sx={{
-              position: 'absolute',
-              bottom: 10,
-              right: 10,
-              bgcolor: 'rgba(0,0,0,0.7)',
-              color: '#fff',
-              px: 1.5,
-              py: 0.5,
+              bgcolor: 'rgba(0,0,0,0.08)',
+              px: 1.25,
+              py: 0.75,
               borderRadius: 1,
-              fontSize: { xs: 10, md: 12 },
+              fontSize: { xs: 11, md: 12 },
+              whiteSpace: 'nowrap',
             }}
           >
             {eventDateTime}
           </Box>
-        </Paper>
+        </Box>
 
         {/* Map Section - Middle */}
         <Paper
@@ -450,6 +456,7 @@ const MediaDetailsPage = () => {
           <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
             <Typography variant="h6">
               Trips on
+              {' '}
               {eventDate}
             </Typography>
           </Box>

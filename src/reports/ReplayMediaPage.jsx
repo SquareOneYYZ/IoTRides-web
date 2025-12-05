@@ -420,11 +420,9 @@ const ReplayMediaPage = () => {
                 {t('reportReplay')}
                 {' '}
                 -
+                {' '}
                 {deviceName || t('sharedDevice')}
               </Typography>
-              <IconButton onClick={handleDownload}>
-                <DownloadIcon />
-              </IconButton>
               <IconButton onClick={handleClose}>
                 <CloseIcon />
               </IconButton>
