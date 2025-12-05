@@ -14,15 +14,15 @@ import {
   Slider,
   Dialog,
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import makeStyles from '@mui/styles/makeStyles';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
-import DownloadIcon from '@mui/icons-material/Download';
 import FastForwardIcon from '@mui/icons-material/FastForward';
 import FastRewindIcon from '@mui/icons-material/FastRewind';
 import CloseIcon from '@mui/icons-material/Close';
 import { useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import MapView from '../map/core/MapView';
 import MapRoutePath from '../map/MapRoutePath';
 import MapRoutePoints from '../map/MapRoutePoints';
@@ -38,6 +38,7 @@ import { useCatch } from '../reactHelper';
 import PageLayout from '../common/components/PageLayout';
 import ReportsMenu from './components/ReportsMenu';
 import useReportStyles from './common/useReportStyles';
+import { devicesActions } from '../store';
 
 const useStyles = makeStyles((theme) => ({
   container: {
@@ -110,10 +111,10 @@ const useStyles = makeStyles((theme) => ({
     overflowX: 'auto',
     overflowY: 'hidden',
     boxShadow: theme.shadows[6],
-    scrollbarWidth: 'thin', // Firefox
-    scrollbarColor: `${theme.palette.action.hover} transparent`, // Firefox
+    scrollbarWidth: 'thin',
+    scrollbarColor: `${theme.palette.action.hover} transparent`,
     '&::-webkit-scrollbar': {
-      height: 6, // Thin scrollbar
+      height: 6,
     },
     '&::-webkit-scrollbar-track': {
       background: 'transparent',
@@ -124,7 +125,6 @@ const useStyles = makeStyles((theme) => ({
       maxWidth: '95vw',
       height: 70,
     },
-    // Mobile
     [theme.breakpoints.down('sm')]: {
       left: '50%',
       bottom: theme.spacing(20),
@@ -144,7 +144,6 @@ const useStyles = makeStyles((theme) => ({
     '&:hover': {
       border: `2px solid ${theme.palette.primary.main}`,
     },
-    // Mobile - smaller thumbs
     [theme.breakpoints.down('sm')]: {
       borderRadius: 2,
       border: '1px solid transparent',
@@ -159,7 +158,6 @@ const useStyles = makeStyles((theme) => ({
       border: `1px solid ${theme.palette.primary.main}`,
     },
   },
-  // New classes for responsive elements
   toolbarTitle: {
     [theme.breakpoints.down('sm')]: {
       fontSize: '0.9rem',
@@ -175,8 +173,10 @@ const useStyles = makeStyles((theme) => ({
 const ReplayMediaPage = () => {
   const t = useTranslation();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const classes = useStyles();
   const reportClasses = useReportStyles();
+  const theme = useTheme();
 
   const timerRef = useRef();
   const abortControllerRef = useRef(null);
@@ -235,6 +235,7 @@ const ReplayMediaPage = () => {
     setIndex(0);
     setAnimationProgress(0);
     setPlaying(false);
+    setShowCard(false);
 
     try {
       const query = new URLSearchParams({ deviceId, from, to }).toString();
@@ -349,10 +350,18 @@ const ReplayMediaPage = () => {
     } else setSmoothPosition(current);
   }, [positions, index, animationProgress]);
 
-  const handleDownload = useCallback(() => {
-    const query = new URLSearchParams({ deviceId: selectedDeviceId, from, to });
-    window.location.assign(`/api/positions/kml?${query}`);
-  }, [selectedDeviceId, from, to]);
+  const onMarkerClick = useCallback(
+    (positionId) => {
+      setShowCard(!!positionId);
+    },
+    [setShowCard],
+  );
+
+  const onPointClick = useCallback((_, clickedIndex) => {
+    setIndex(clickedIndex);
+    setAnimationProgress(0);
+    setPlaying(false);
+  }, []);
 
   const handleClose = useCallback(() => {
     setPositions([]);
@@ -362,8 +371,8 @@ const ReplayMediaPage = () => {
     setIndex(0);
     setAnimationProgress(0);
     setPlaying(false);
-    setShowCard(false);
     setOpenMedia(null);
+    setShowCard(false);
   }, []);
 
   const currentPosition = positions[index];
@@ -400,9 +409,13 @@ const ReplayMediaPage = () => {
           <MapView>
             <MapGeofence />
             <MapRoutePath positions={positions} />
-            <MapRoutePoints positions={positions} />
+            <MapRoutePoints positions={positions} onClick={onPointClick} />
             {smoothPosition && (
-              <MapPositions positions={[smoothPosition]} titleField="fixTime" />
+              <MapPositions
+                positions={[smoothPosition]}
+                onClick={onMarkerClick}
+                titleField="fixTime"
+              />
             )}
           </MapView>
           <MapCamera positions={positions} />
@@ -416,6 +429,7 @@ const ReplayMediaPage = () => {
                 variant="subtitle1"
                 fontWeight="bold"
                 sx={{ flexGrow: 1 }}
+                className={classes.toolbarTitle}
               >
                 {t('reportReplay')}
                 {' '}
@@ -469,6 +483,7 @@ const ReplayMediaPage = () => {
                 {index + 1}
                 {' '}
                 /
+                {' '}
                 {positions.length}
               </Typography>
             </Box>
