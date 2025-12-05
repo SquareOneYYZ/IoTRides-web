@@ -337,7 +337,6 @@ const MediaEventPage = () => {
         <div className={classes.containerMain}>
           <div className={classes.header}>
             <ReportFilter
-              showLast24Hours
               handleSubmit={handleSubmit}
               handleSchedule={handleSchedule}
               loading={loading}

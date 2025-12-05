@@ -378,7 +378,6 @@ const ReplayMediaPage = () => {
           <div className={reportClasses.containerMain}>
             <div className={reportClasses.header}>
               <ReportFilter
-                showLast24Hours
                 handleSubmit={handleSubmit}
                 fullScreen
                 showOnly
