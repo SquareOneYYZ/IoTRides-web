@@ -22,6 +22,7 @@ const ReportFilter = ({
   loading,
   showLast24Hours,
   backdateToday,
+  initialFilters,
 }) => {
   const classes = useReportStyles();
   const dispatch = useDispatch();
@@ -43,14 +44,20 @@ const ReportFilter = ({
   const [description, setDescription] = useState();
   const [calendarId, setCalendarId] = useState();
 
-  const [selectedDate, setSelectedDate] = useState('');
-  const [fromTime, setFromTime] = useState('');
-  const [toTime, setToTime] = useState('');
+  // Initialize with saved filters if available
+  const [selectedDate, setSelectedDate] = useState(initialFilters?.selectedDate || '');
+  const [fromTime, setFromTime] = useState(initialFilters?.fromTime || '');
+  const [toTime, setToTime] = useState(initialFilters?.toTime || '');
   const [timeRangeValid, setTimeRangeValid] = useState(false);
 
-  const scheduleDisabled = button === 'schedule' && (!description || !calendarId);
-  const deviceMissing = (!ignoreDevice && !deviceId && !deviceIds.length && !groupIds.length);
-  const baseDisabled = deviceMissing || scheduleDisabled || loading;
+  // Restore filters when initialFilters changes (on component mount)
+  useEffect(() => {
+    if (initialFilters && showLast24Hours) {
+      if (initialFilters.selectedDate) setSelectedDate(initialFilters.selectedDate);
+      if (initialFilters.fromTime) setFromTime(initialFilters.fromTime);
+      if (initialFilters.toTime) setToTime(initialFilters.toTime);
+    }
+  }, [initialFilters, showLast24Hours]);
 
   useEffect(() => {
     if (!showLast24Hours) {
@@ -110,7 +117,7 @@ const ReportFilter = ({
             selectedTo = dayjs();
           } else {
             selectedFrom = dayjs().startOf('day');
-            selectedTo = dayjs().endOf('day');
+            selectedTo = dayjs();
           }
           break;
         case 'yesterday':
@@ -152,8 +159,15 @@ const ReportFilter = ({
       to: selectedTo.toISOString(),
       calendarId,
       type,
+      selectedDate: showLast24Hours ? selectedDate : undefined,
+      fromTime: showLast24Hours ? fromTime : undefined,
+      toTime: showLast24Hours ? toTime : undefined,
     });
   };
+  const deviceMissing = (!ignoreDevice && !deviceId && !deviceIds.length && !groupIds.length);
+  const scheduleDisabled = button === 'schedule' && (!description || !calendarId);
+
+  const baseDisabled = deviceMissing || scheduleDisabled || loading;
 
   const finalDisabled = showLast24Hours ? (baseDisabled || !timeRangeValid) : baseDisabled;
 

@@ -372,8 +372,40 @@ const LiveStreamingPage = () => {
   const [numCamera, setNumCamera] = useState(4);
   const [currentLayout, setCurrentLayout] = useState(4);
   const [isPlaying, setIsPlaying] = useState(true);
+  const [deviceData, setDeviceData] = useState(null);
   const { open, deviceId } = useSelector((state) => state.livestream);
   const device = useSelector((state) => state.devices.items[deviceId]);
+
+  // Fetch device data including camera names
+  useEffect(() => {
+    const fetchDeviceData = async () => {
+      if (!deviceId) return;
+
+      try {
+        const response = await fetch(`/api/devices/${deviceId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setDeviceData(data);
+        }
+      } catch (error) {
+        console.error('Error fetching device data:', error);
+      }
+    };
+
+    fetchDeviceData();
+  }, [deviceId]);
+
+  // Handle camera name updates
+  const handleCameraNameUpdate = (channelId, newName) => {
+    console.log(`Camera ${channelId} name updated to: ${newName}`);
+    setDeviceData((prev) => ({
+      ...prev,
+      attributes: {
+        ...prev.attributes,
+        [`camera${channelId}`]: newName,
+      },
+    }));
+  };
 
   const fetchUniqueId = async (devId) => {
     try {
@@ -552,7 +584,6 @@ const LiveStreamingPage = () => {
 
             <Button
               variant="outlined"
-              // color="inherit"
               onClick={handleBack}
               className={classes.closeBtn}
               sx={{
@@ -572,6 +603,7 @@ const LiveStreamingPage = () => {
       </div>
 
       <div className={classes.content}>
+        {/* Desktop Grid Layout */}
         <div className={`${classes.videoGrid} layout-${currentLayout}`}>
           {filledVideos.map((video) => {
             const originalIndex = videoSources.findIndex(
@@ -584,6 +616,8 @@ const LiveStreamingPage = () => {
                 src={video.src}
                 title={video.title}
                 className={classes.videoContainer}
+                cameraName={deviceData?.attributes?.[`camera${video.id}`]}
+                onCameraNameUpdate={handleCameraNameUpdate}
                 showLaunch={false}
                 showFocusIcon={isFocusEnabled}
                 onFocus={() => handleCameraFocus(originalIndex)}
@@ -602,13 +636,17 @@ const LiveStreamingPage = () => {
           )}
         </div>
 
+        {/* Mobile View */}
         <div className={classes.mobileView}>
+          {/* Main focused video */}
           <div className={classes.mainVideoContainer}>
             {videoSources.length > 0 && (
               <VideoBlock
                 key={videoSources[focusedCameraIndex].id}
                 src={videoSources[focusedCameraIndex].src}
                 title={videoSources[focusedCameraIndex].title}
+                cameraName={deviceData?.attributes?.[`camera${videoSources[focusedCameraIndex].id}`]}
+                onCameraNameUpdate={handleCameraNameUpdate}
                 showLaunch={false}
                 showFocusIcon={false}
                 deviceId={deviceId}
@@ -618,6 +656,7 @@ const LiveStreamingPage = () => {
             )}
           </div>
 
+          {/* Thumbnail grid */}
           <div className={classes.mobileVideoGrid}>
             {videoSources.map((video, index) => (
               <div
@@ -627,6 +666,8 @@ const LiveStreamingPage = () => {
                 <VideoBlock
                   src={video.src}
                   title={video.title}
+                  cameraName={deviceData?.attributes?.[`camera${video.id}`]}
+                  onCameraNameUpdate={handleCameraNameUpdate}
                   showLaunch={false}
                   showFocusIcon
                   onFocus={() => handleMobileCameraSwitch(index)}
@@ -637,7 +678,6 @@ const LiveStreamingPage = () => {
               </div>
             ))}
           </div>
-          {' '}
         </div>
       </div>
     </div>

@@ -139,6 +139,38 @@ const LiveStreamCard = () => {
   const [retrySent, setRetrySent] = useState(false);
   const [currentLayout, setCurrentLayout] = useState(1);
   const [focusedCameraIndex, setFocusedCameraIndex] = useState(0);
+  const [deviceData, setDeviceData] = useState(null);
+
+  // Fetch device data including camera names
+  useEffect(() => {
+    const fetchDeviceData = async () => {
+      try {
+        const response = await fetch(`/api/devices/${deviceId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setDeviceData(data);
+        }
+      } catch (error) {
+        console.error('Error fetching device data:', error);
+      }
+    };
+
+    if (deviceId) {
+      fetchDeviceData();
+    }
+  }, [deviceId]);
+
+  // Handle camera name updates
+  const handleCameraNameUpdate = (channelId, newName) => {
+    console.log(`Camera ${channelId} name updated to: ${newName}`);
+    setDeviceData((prev) => ({
+      ...prev,
+      attributes: {
+        ...prev.attributes,
+        [`camera${channelId}`]: newName,
+      },
+    }));
+  };
 
   const fetchUniqueId = async (devId) => {
     try {
@@ -319,6 +351,7 @@ const LiveStreamCard = () => {
   };
 
   const dialogGridLayout = getGridLayoutForDialog(currentLayout);
+
   return (
     <div
       style={{
@@ -386,6 +419,8 @@ const LiveStreamCard = () => {
                     title={video.title}
                     src={video.src}
                     className={`${classes.videoBlock} video-block`}
+                    cameraName={deviceData?.attributes?.[`camera${video.channel}`]}
+                    onCameraNameUpdate={handleCameraNameUpdate}
                     showLaunch
                     showFocusIcon={index !== 0}
                     showBothIcons={index !== 0}

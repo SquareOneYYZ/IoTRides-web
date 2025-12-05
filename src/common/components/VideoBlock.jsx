@@ -8,6 +8,7 @@ import LaunchIcon from '@mui/icons-material/Launch';
 import { Tooltip } from '@mui/material';
 import { useDispatch } from 'react-redux';
 import { useCatchCallback } from '../../reactHelper';
+import EditableCameraLabel from './EditableCameraLabel';
 
 const COMMAND_COOLDOWN_MS = 15000;
 
@@ -22,6 +23,8 @@ const VideoBlock = ({
   channelId,
   isVidPlaying = true,
   showBothIcons,
+  cameraName,
+  onCameraNameUpdate,
 }) => {
   const containerRef = useRef(null);
   const navigate = useNavigate();
@@ -234,24 +237,13 @@ const VideoBlock = ({
       )}
 
       {/* Title */}
-      {title && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 8 * controlScale,
-            left: 8 * controlScale,
-            padding: '3px 8px',
-            backgroundColor: 'rgba(0,0,0,0.6)',
-            color: 'white',
-            fontSize: `${14 * controlScale}px`,
-            borderRadius: 4,
-            zIndex: 20,
-            pointerEvents: 'none',
-          }}
-        >
-          {title}
-        </div>
-      )}
+      <EditableCameraLabel
+        deviceId={deviceId}
+        channelId={channelId}
+        initialName={cameraName || title}
+        onNameUpdate={onCameraNameUpdate}
+        controlScale={controlScale}
+      />
 
       {hasError && (
       <div
@@ -308,6 +300,8 @@ VideoBlock.propTypes = {
   channelId: PropTypes.number.isRequired,
   isVidPlaying: PropTypes.bool,
   showBothIcons: PropTypes.bool,
+  cameraName: PropTypes.string,
+  onCameraNameUpdate: PropTypes.func,
 };
 
 VideoBlock.defaultProps = {
@@ -318,6 +312,8 @@ VideoBlock.defaultProps = {
   onFocus: null,
   isVidPlaying: true,
   showBothIcons: false,
+  cameraName: '',
+  onCameraNameUpdate: null,
 };
 
 export default VideoBlock;

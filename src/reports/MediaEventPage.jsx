@@ -163,6 +163,10 @@ const MediaEventPage = () => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [position, setPosition] = useState(null);
 
+  // Get persisted data from Redux
+  const existingMediaList = useSelector((state) => state.events.mediaList);
+  const existingFilters = useSelector((state) => state.events.mediaFilters);
+
   useEffectAsync(async () => {
     if (selectedItem && selectedItem.positionId) {
       try {
@@ -206,6 +210,9 @@ const MediaEventPage = () => {
 
   const handleSubmit = useCatch(async ({ deviceId, from, to, type }) => {
     const query = new URLSearchParams({ deviceId, from, to });
+
+    // Save filter parameters to Redux for persistence
+    dispatch(eventsActions.setMediaFilters({ deviceId, from, to, type }));
 
     if (type === 'export') {
       window.location.assign(`/api/reports/events/xlsx?${query.toString()}`);
@@ -299,8 +306,7 @@ const MediaEventPage = () => {
     }
   });
 
-  const existingMediaList = useSelector((state) => state.events.mediaList);
-
+  // Restore media blocks from Redux when component mounts
   useEffect(() => {
     if (existingMediaList.length > 0) {
       setMediaBlocks(existingMediaList);
@@ -340,6 +346,7 @@ const MediaEventPage = () => {
               handleSchedule={handleSchedule}
               loading={loading}
               backdateToday
+              initialFilters={existingFilters}
             />
           </div>
 
