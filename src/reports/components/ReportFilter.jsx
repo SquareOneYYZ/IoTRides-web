@@ -12,8 +12,16 @@ import SelectField from '../../common/components/SelectField';
 import { useRestriction } from '../../common/util/permissions';
 
 const ReportFilter = ({
-  children, handleSubmit, handleSchedule, showOnly, ignoreDevice, multiDevice,
-  includeGroups, loading, showLast24Hours,
+  children,
+  handleSubmit,
+  handleSchedule,
+  showOnly,
+  ignoreDevice,
+  multiDevice,
+  includeGroups,
+  loading,
+  showLast24Hours,
+  backdateToday,
 }) => {
   const classes = useReportStyles();
   const dispatch = useDispatch();
@@ -97,8 +105,13 @@ const ReportFilter = ({
       // Original behavior - use Redux state
       switch (period) {
         case 'today':
-          selectedFrom = dayjs().startOf('day');
-          selectedTo = dayjs().endOf('day');
+          if (backdateToday) {
+            selectedFrom = dayjs().subtract(24, 'hour');
+            selectedTo = dayjs();
+          } else {
+            selectedFrom = dayjs().startOf('day');
+            selectedTo = dayjs().endOf('day');
+          }
           break;
         case 'yesterday':
           selectedFrom = dayjs().subtract(1, 'day').startOf('day');

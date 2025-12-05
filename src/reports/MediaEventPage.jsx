@@ -340,6 +340,7 @@ const MediaEventPage = () => {
               handleSubmit={handleSubmit}
               handleSchedule={handleSchedule}
               loading={loading}
+              backdateToday
             />
           </div>
 
