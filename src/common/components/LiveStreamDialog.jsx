@@ -24,7 +24,7 @@ const useStyles = makeStyles((theme) => ({
     zIndex: 1,
     borderRadius: theme.spacing(0.5),
     [theme.breakpoints.down('sm')]: {
-      width: '90vw',
+      width: '80vw',
       maxWidth: '400px',
     },
   },
@@ -80,7 +80,7 @@ const useStyles = makeStyles((theme) => ({
   responsiveContainer: {
     [theme.breakpoints.down('sm')]: {
       left: '50% !important',
-      top: '20% !important',
+      top: '10% !important',
       bottom: 'auto !important',
     },
   },
@@ -141,7 +141,6 @@ const LiveStreamCard = () => {
   const [focusedCameraIndex, setFocusedCameraIndex] = useState(0);
   const [deviceData, setDeviceData] = useState(null);
 
-  // Fetch device data including camera names
   useEffect(() => {
     const fetchDeviceData = async () => {
       try {
@@ -160,7 +159,6 @@ const LiveStreamCard = () => {
     }
   }, [deviceId]);
 
-  // Handle camera name updates
   const handleCameraNameUpdate = (channelId, newName) => {
     console.log(`Camera ${channelId} name updated to: ${newName}`);
     setDeviceData((prev) => ({
@@ -358,8 +356,8 @@ const LiveStreamCard = () => {
         pointerEvents: 'auto',
         position: 'fixed',
         zIndex: 10,
-        left: '86%',
-        bottom: '1.7rem',
+        left: '33%',
+        top: '.75rem',
         transform: 'translateX(-50%)',
       }}
       className={classes.responsiveContainer}
