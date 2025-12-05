@@ -459,6 +459,7 @@ const EventReportPage = () => {
                 {t('reportReplay')}
                 {' '}
                 -
+                {' '}
                 {deviceName}
               </Typography>
               <IconButton edge="end" onClick={handleReplayStop}>
@@ -661,10 +662,10 @@ const EventReportPage = () => {
                             <LocationSearchingIcon fontSize="small" />
                           </IconButton>
                         )))
-                        || ''}
+                        || null}
                     </TableCell>
                     <TableCell className={classes.columnAction} padding="none">
-                      {item.positionId && (
+                      {item.positionId ? (
                         <IconButton
                           size="small"
                           onClick={() => handleReplayStart(item)}
@@ -672,8 +673,9 @@ const EventReportPage = () => {
                         >
                           <ReplayIcon fontSize="small" />
                         </IconButton>
-                      )}
+                      ) : null}
                     </TableCell>
+
                     {columns.map((key) => (
                       <TableCell key={key}>{formatValue(item, key)}</TableCell>
                     ))}
