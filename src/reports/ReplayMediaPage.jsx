@@ -39,6 +39,7 @@ import PageLayout from '../common/components/PageLayout';
 import ReportsMenu from './components/ReportsMenu';
 import useReportStyles from './common/useReportStyles';
 import { devicesActions } from '../store';
+import MediaThumbnail from './components/MediaThumbnail';
 
 const useStyles = makeStyles((theme) => ({
   container: {
@@ -352,6 +353,7 @@ const ReplayMediaPage = () => {
             hour12: true,
           }),
           eventTime: event.eventTime || event.serverTime,
+          fileName: file,
         };
       });
 
@@ -580,12 +582,11 @@ const ReplayMediaPage = () => {
                   idx === activeMediaIndex ? classes.thumbActive : ''
                 }`}
               >
-                <img
+                <MediaThumbnail
                   src={item.thumb}
-                  alt="thumb"
+                  alt="media thumbnail"
                   width={120}
                   height={80}
-                  style={{ display: 'block' }}
                 />
                 <Typography
                   align="center"
