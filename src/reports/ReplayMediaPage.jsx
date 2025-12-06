@@ -39,7 +39,6 @@ import PageLayout from '../common/components/PageLayout';
 import ReportsMenu from './components/ReportsMenu';
 import useReportStyles from './common/useReportStyles';
 import { devicesActions } from '../store';
-import MediaThumbnail from './components/MediaThumbnail';
 
 const useStyles = makeStyles((theme) => ({
   container: {
@@ -99,7 +98,7 @@ const useStyles = makeStyles((theme) => ({
   mediaBar: {
     position: 'fixed',
     bottom: theme.spacing(10),
-    left: '62%',
+    left: '50%',
     transform: 'translateX(-50%)',
     zIndex: 1,
     display: 'flex',
@@ -114,6 +113,7 @@ const useStyles = makeStyles((theme) => ({
     boxShadow: theme.shadows[6],
     scrollbarWidth: 'thin',
     scrollbarColor: `${theme.palette.action.hover} transparent`,
+    cursor: 'grab',
     '&::-webkit-scrollbar': {
       height: 6,
     },
@@ -121,13 +121,11 @@ const useStyles = makeStyles((theme) => ({
       background: 'transparent',
     },
     [theme.breakpoints.down('md')]: {
-      left: '50%',
       bottom: theme.spacing(2),
       maxWidth: '95vw',
       height: 70,
     },
     [theme.breakpoints.down('sm')]: {
-      left: '50%',
       bottom: theme.spacing(20),
       maxWidth: '95vw',
       height: 65,
@@ -191,6 +189,9 @@ const ReplayMediaPage = () => {
   const timerRef = useRef();
   const abortControllerRef = useRef(null);
   const mediaBarRef = useRef(null);
+  const isDraggingRef = useRef(false);
+  const dragStartXRef = useRef(0);
+  const dragStartScrollRef = useRef(0);
 
   const devices = useSelector((state) => state.devices.items);
   const defaultDeviceId = useSelector((state) => state.devices.selectedId);
@@ -225,7 +226,6 @@ const ReplayMediaPage = () => {
 
     const currentTime = new Date(currentPos.fixTime).getTime();
 
-    // Find the media that is closest to current time (before or at current time)
     let closestIndex = -1;
     let smallestDiff = Infinity;
 
@@ -233,7 +233,6 @@ const ReplayMediaPage = () => {
       const mediaTime = new Date(media.eventTime).getTime();
       const diff = currentTime - mediaTime;
 
-      // Only consider media that happened before or at current time
       if (diff >= 0 && diff < smallestDiff) {
         smallestDiff = diff;
         closestIndex = idx;
@@ -255,9 +254,7 @@ const ReplayMediaPage = () => {
         const barWidth = mediaBar.offsetWidth;
         const { scrollLeft } = mediaBar;
 
-        // Check if active thumb is out of view
         if (thumbLeft < scrollLeft || thumbLeft + thumbWidth > scrollLeft + barWidth) {
-          // Scroll to center the active thumb
           mediaBar.scrollTo({
             left: thumbLeft - barWidth / 2 + thumbWidth / 2,
             behavior: 'smooth',
@@ -353,7 +350,6 @@ const ReplayMediaPage = () => {
             hour12: true,
           }),
           eventTime: event.eventTime || event.serverTime,
-          fileName: file,
         };
       });
 
@@ -419,11 +415,49 @@ const ReplayMediaPage = () => {
     setPlaying(false);
   }, []);
 
-  // Handle media thumbnail click - sync with replay position
+  // Drag functionality for media bar
+  const handleMouseDown = useCallback((e) => {
+    if (!mediaBarRef.current) return;
+    isDraggingRef.current = false;
+    dragStartXRef.current = e.pageX;
+    dragStartScrollRef.current = mediaBarRef.current.scrollLeft;
+    mediaBarRef.current.style.cursor = 'grabbing';
+    mediaBarRef.current.style.userSelect = 'none';
+  }, []);
+
+  const handleMouseMove = useCallback((e) => {
+    if (dragStartXRef.current === 0) return;
+
+    const dx = e.pageX - dragStartXRef.current;
+
+    if (Math.abs(dx) > 5) {
+      isDraggingRef.current = true;
+    }
+
+    if (mediaBarRef.current && isDraggingRef.current) {
+      mediaBarRef.current.scrollLeft = dragStartScrollRef.current - dx;
+    }
+  }, []);
+
+  const handleMouseUp = useCallback(() => {
+    if (mediaBarRef.current) {
+      mediaBarRef.current.style.cursor = 'grab';
+      mediaBarRef.current.style.userSelect = 'auto';
+    }
+    dragStartXRef.current = 0;
+
+    setTimeout(() => {
+      isDraggingRef.current = false;
+    }, 50);
+  }, []);
+
   const handleMediaClick = useCallback((media) => {
+    if (isDraggingRef.current) {
+      return;
+    }
+
     setOpenMedia(media);
 
-    // Find the position index closest to this media's time
     const mediaTime = new Date(media.eventTime).getTime();
     let closestIndex = 0;
     let smallestDiff = Infinity;
@@ -438,11 +472,23 @@ const ReplayMediaPage = () => {
       }
     });
 
-    // Update replay position to match media time
     setIndex(closestIndex);
     setAnimationProgress(0);
     setPlaying(false);
   }, [positions]);
+
+  useEffect(() => {
+    const mediaBar = mediaBarRef.current;
+    if (!mediaBar) return;
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [handleMouseMove, handleMouseUp]);
 
   const handleClose = useCallback(() => {
     setPositions([]);
@@ -571,7 +617,12 @@ const ReplayMediaPage = () => {
         </div>
 
         {mediaTimeline.length > 0 && (
-          <Paper ref={mediaBarRef} className={classes.mediaBar} elevation={6}>
+          <Paper
+            ref={mediaBarRef}
+            className={classes.mediaBar}
+            elevation={6}
+            onMouseDown={handleMouseDown}
+          >
             {mediaTimeline.map((item, idx) => (
               <Box
                 key={item.id}
@@ -582,11 +633,12 @@ const ReplayMediaPage = () => {
                   idx === activeMediaIndex ? classes.thumbActive : ''
                 }`}
               >
-                <MediaThumbnail
+                <img
                   src={item.thumb}
-                  alt="media thumbnail"
+                  alt="thumb"
                   width={120}
                   height={80}
+                  style={{ display: 'block' }}
                 />
                 <Typography
                   align="center"
