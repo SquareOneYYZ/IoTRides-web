@@ -214,7 +214,14 @@ const EventReportPage = () => {
         );
         if (response.ok) {
           const data = await response.json();
-          const typesToExclude = ['deviceOnline', 'deviceUnknown'];
+
+          // Updated: Add more event types to exclude
+          const typesToExclude = [
+            'deviceOnline',
+            'deviceUnknown',
+            'commandResult', // This filters out "Queued command sent" events
+          ];
+
           const ModifiedData = data.map((item) => ({
             ...item,
             speedLimit: item.attributes?.speedLimit || null,
