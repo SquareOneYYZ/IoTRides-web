@@ -65,6 +65,7 @@ const MediaDetailsPage = () => {
       return deviceId;
     }
   };
+
   useEffectAsync(async () => {
     if (selectedEvent && selectedEvent.positionId) {
       try {
@@ -424,6 +425,7 @@ const MediaDetailsPage = () => {
         >
           <MapView>
             <MapGeofence />
+            {/* Show trip route with start/end markers if trip selected */}
             {selectedTrip && route && route.length > 0 && (
               <>
                 <MapRoutePath positions={route} />
@@ -431,14 +433,20 @@ const MediaDetailsPage = () => {
                 <MapCamera positions={route} />
               </>
             )}
+            {/* ALWAYS show event position marker if available */}
+            {position && (
+              <MapPositions
+                positions={[position]}
+                titleField="fixTime"
+                customIcon="event-error"
+              />
+            )}
+            {/* Fallback camera if no trip selected */}
             {!selectedTrip && position && (
-              <>
-                <MapPositions positions={[position]} titleField="fixTime" />
-                <MapCamera
-                  latitude={position.latitude}
-                  longitude={position.longitude}
-                />
-              </>
+              <MapCamera
+                latitude={position.latitude}
+                longitude={position.longitude}
+              />
             )}
           </MapView>
           <MapScale />
