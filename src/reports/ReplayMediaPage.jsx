@@ -139,8 +139,9 @@ const useStyles = makeStyles((theme) => ({
     borderRadius: 4,
     overflow: 'hidden',
     border: '2px solid transparent',
-    transition: 'border 0.2s',
+    transition: 'all 0.3s ease',
     flexShrink: 0,
+    position: 'relative',
     '&:hover': {
       border: `2px solid ${theme.palette.primary.main}`,
     },
@@ -150,6 +151,14 @@ const useStyles = makeStyles((theme) => ({
       '&:hover': {
         border: `1px solid ${theme.palette.primary.main}`,
       },
+    },
+  },
+  thumbActive: {
+    border: `3px solid ${theme.palette.secondary.main}`,
+    transform: 'scale(1.05)',
+    boxShadow: `0 0 12px ${theme.palette.secondary.main}`,
+    [theme.breakpoints.down('sm')]: {
+      border: `2px solid ${theme.palette.secondary.main}`,
     },
   },
   thumbSelected: {
@@ -180,9 +189,11 @@ const ReplayMediaPage = () => {
 
   const timerRef = useRef();
   const abortControllerRef = useRef(null);
+  const mediaBarRef = useRef(null);
 
   const devices = useSelector((state) => state.devices.items);
   const defaultDeviceId = useSelector((state) => state.devices.selectedId);
+  const selectedDeviceIdFromRedux = useSelector((state) => state.devices.selectedId);
 
   const [positions, setPositions] = useState([]);
   const [index, setIndex] = useState(0);
@@ -198,12 +209,62 @@ const ReplayMediaPage = () => {
   const [startLocation, setStartLocation] = useState('');
   const [endLocation, setEndLocation] = useState('');
   const [mediaTimeline, setMediaTimeline] = useState([]);
-  const [showCard, setShowCard] = useState(false);
 
   const deviceName = useMemo(
     () => selectedDeviceId && devices[selectedDeviceId]?.name,
     [selectedDeviceId, devices],
   );
+
+  // Find the active media based on current position time
+  const activeMediaIndex = useMemo(() => {
+    if (!positions.length || !mediaTimeline.length) return -1;
+
+    const currentPos = positions[index];
+    if (!currentPos) return -1;
+
+    const currentTime = new Date(currentPos.fixTime).getTime();
+
+    // Find the media that is closest to current time (before or at current time)
+    let closestIndex = -1;
+    let smallestDiff = Infinity;
+
+    mediaTimeline.forEach((media, idx) => {
+      const mediaTime = new Date(media.eventTime).getTime();
+      const diff = currentTime - mediaTime;
+
+      // Only consider media that happened before or at current time
+      if (diff >= 0 && diff < smallestDiff) {
+        smallestDiff = diff;
+        closestIndex = idx;
+      }
+    });
+
+    return closestIndex;
+  }, [positions, index, mediaTimeline]);
+
+  // Auto-scroll media bar to show active media
+  useEffect(() => {
+    if (activeMediaIndex >= 0 && mediaBarRef.current) {
+      const mediaBar = mediaBarRef.current;
+      const activeThumb = mediaBar.children[activeMediaIndex];
+
+      if (activeThumb) {
+        const thumbLeft = activeThumb.offsetLeft;
+        const thumbWidth = activeThumb.offsetWidth;
+        const barWidth = mediaBar.offsetWidth;
+        const { scrollLeft } = mediaBar;
+
+        // Check if active thumb is out of view
+        if (thumbLeft < scrollLeft || thumbLeft + thumbWidth > scrollLeft + barWidth) {
+          // Scroll to center the active thumb
+          mediaBar.scrollTo({
+            left: thumbLeft - barWidth / 2 + thumbWidth / 2,
+            behavior: 'smooth',
+          });
+        }
+      }
+    }
+  }, [activeMediaIndex]);
 
   const fetchLocationName = useCallback(async (latitude, longitude, signal) => {
     try {
@@ -235,7 +296,7 @@ const ReplayMediaPage = () => {
     setIndex(0);
     setAnimationProgress(0);
     setPlaying(false);
-    setShowCard(false);
+    dispatch(devicesActions.selectId(null));
 
     try {
       const query = new URLSearchParams({ deviceId, from, to }).toString();
@@ -350,18 +411,36 @@ const ReplayMediaPage = () => {
     } else setSmoothPosition(current);
   }, [positions, index, animationProgress]);
 
-  const onMarkerClick = useCallback(
-    (positionId) => {
-      setShowCard(!!positionId);
-    },
-    [setShowCard],
-  );
-
   const onPointClick = useCallback((_, clickedIndex) => {
     setIndex(clickedIndex);
     setAnimationProgress(0);
     setPlaying(false);
   }, []);
+
+  // Handle media thumbnail click - sync with replay position
+  const handleMediaClick = useCallback((media) => {
+    setOpenMedia(media);
+
+    // Find the position index closest to this media's time
+    const mediaTime = new Date(media.eventTime).getTime();
+    let closestIndex = 0;
+    let smallestDiff = Infinity;
+
+    positions.forEach((pos, idx) => {
+      const posTime = new Date(pos.fixTime).getTime();
+      const diff = Math.abs(mediaTime - posTime);
+
+      if (diff < smallestDiff) {
+        smallestDiff = diff;
+        closestIndex = idx;
+      }
+    });
+
+    // Update replay position to match media time
+    setIndex(closestIndex);
+    setAnimationProgress(0);
+    setPlaying(false);
+  }, [positions]);
 
   const handleClose = useCallback(() => {
     setPositions([]);
@@ -372,8 +451,8 @@ const ReplayMediaPage = () => {
     setAnimationProgress(0);
     setPlaying(false);
     setOpenMedia(null);
-    setShowCard(false);
-  }, []);
+    dispatch(devicesActions.selectId(null));
+  }, [dispatch]);
 
   const currentPosition = positions[index];
 
@@ -413,7 +492,6 @@ const ReplayMediaPage = () => {
             {smoothPosition && (
               <MapPositions
                 positions={[smoothPosition]}
-                onClick={onMarkerClick}
                 titleField="fixTime"
               />
             )}
@@ -491,13 +569,15 @@ const ReplayMediaPage = () => {
         </div>
 
         {mediaTimeline.length > 0 && (
-          <Paper className={classes.mediaBar} elevation={6}>
-            {mediaTimeline.map((item) => (
+          <Paper ref={mediaBarRef} className={classes.mediaBar} elevation={6}>
+            {mediaTimeline.map((item, idx) => (
               <Box
                 key={item.id}
-                onClick={() => setOpenMedia(item)}
+                onClick={() => handleMediaClick(item)}
                 className={`${classes.thumb} ${
                   openMedia?.id === item.id ? classes.thumbSelected : ''
+                } ${
+                  idx === activeMediaIndex ? classes.thumbActive : ''
                 }`}
               >
                 <img
@@ -510,7 +590,11 @@ const ReplayMediaPage = () => {
                 <Typography
                   align="center"
                   variant="caption"
-                  sx={{ fontSize: '0.65rem', p: 0.5 }}
+                  sx={{
+                    fontSize: '0.65rem',
+                    p: 0.5,
+                    fontWeight: idx === activeMediaIndex ? 'bold' : 'normal',
+                  }}
                 >
                   {item.time}
                 </Typography>
@@ -533,11 +617,12 @@ const ReplayMediaPage = () => {
           )}
         </Dialog>
 
-        {showCard && currentPosition && (
+        {selectedDeviceIdFromRedux && currentPosition && (
           <StatusCard
-            deviceId={selectedDeviceId}
+            deviceId={selectedDeviceIdFromRedux}
             position={currentPosition}
-            onClose={() => setShowCard(false)}
+            onClose={() => dispatch(devicesActions.selectId(null))}
+            desktopPadding={theme.dimensions.drawerWidthDesktop}
             disableActions
           />
         )}
