@@ -31,7 +31,7 @@ import PendingIcon from '@mui/icons-material/Pending';
 import { useTranslation } from './LocalizationProvider';
 import RemoveDialog from './RemoveDialog';
 import PositionValue from './PositionValue';
-import { useAdministrator, useDeviceReadonly } from '../util/permissions';
+import { useAdministrator, useDeviceReadonly, useCanAccessLivestream } from '../util/permissions';
 import usePositionAttributes from '../attributes/usePositionAttributes';
 import { devicesActions } from '../../store';
 import { useCatch, useCatchCallback } from '../../reactHelper';
@@ -134,6 +134,9 @@ const StatusCard = ({
   const t = useTranslation();
   const admin = useAdministrator();
 
+  // Use the custom hook to check livestream access
+  const canAccessLivestream = useCanAccessLivestream(deviceId);
+
   const handleLiveStreamOpen = useCatchCallback(async () => {
     try {
       dispatch(livestreamActions.openLivestream(deviceId));
@@ -162,6 +165,7 @@ const StatusCard = ({
 
   const [anchorEl, setAnchorEl] = useState(null);
   const [removing, setRemoving] = useState(false);
+
   const handleRemove = useCatch(async (removed) => {
     if (removed) {
       const response = await fetch('/api/devices');
@@ -304,7 +308,8 @@ const StatusCard = ({
                   </IconButton>
                 </Tooltip>
 
-                {device.attributes?.LiveStream ? (
+                {/* Only show livestream button if user has permission AND device supports it */}
+                {canAccessLivestream ? (
                   <Tooltip title={t('liveStream')}>
                     <IconButton
                       onClick={handleLiveStreamOpen}
@@ -323,6 +328,7 @@ const StatusCard = ({
                     </IconButton>
                   </Tooltip>
                 )}
+
                 <Tooltip title={t('sharedEdit')}>
                   <IconButton
                     onClick={() => navigate(`/settings/device/${deviceId}`)}
