@@ -99,7 +99,7 @@ const useStyles = makeStyles((theme) => ({
   mediaBar: {
     position: 'fixed',
     bottom: theme.spacing(10),
-    left: '60.5%',
+    left: '62%',
     transform: 'translateX(-50%)',
     zIndex: 1,
     display: 'flex',
