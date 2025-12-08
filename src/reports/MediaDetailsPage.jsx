@@ -7,7 +7,6 @@ import {
   TableCell,
   TableHead,
   TableRow,
-  IconButton,
   CircularProgress,
   Typography,
   Box,
@@ -222,7 +221,6 @@ const MediaDetailsPage = () => {
       );
     }
 
-    // Default icon
     return mediaType === 'video' ? (
       <PlayCircleOutlineIcon sx={{ fontSize: 100, color: '#555' }} />
     ) : (
@@ -347,6 +345,7 @@ const MediaDetailsPage = () => {
           pb: 2,
         }}
       >
+        {/* Back Button */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, m: 2 }}>
           <Button
             variant="outlined"
@@ -356,103 +355,126 @@ const MediaDetailsPage = () => {
             Back
           </Button>
         </Box>
-        <Paper
-          sx={{
-            backgroundColor: '#1e1e1e',
-            borderRadius: 2,
-            aspectRatio: { xs: '16/9', md: '21/9' },
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            position: 'relative',
-            overflow: 'hidden',
-            m: 2,
-            flexShrink: 0,
-          }}
-        >
-          {renderMediaContent()}
-        </Paper>
+
+        {/* Media and Map Section - Side by Side on Desktop */}
         <Box
           sx={{
             display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
+            flexDirection: { xs: 'column', md: 'row' },
             gap: 2,
-            px: 3,
-            pb: 2,
-            flexWrap: 'wrap',
-          }}
-        >
-          <Box
-            sx={{
-              bgcolor: 'rgba(0,0,0,0.08)',
-              px: 1.5,
-              py: 0.75,
-              borderRadius: 1,
-              fontSize: { xs: 12, md: 14 },
-              maxWidth: '70%',
-            }}
-          >
-            {selectedEvent?.fileName
-              || selectedEvent?.attributes?.file
-              || 'Media File'}
-          </Box>
-          <Box
-            sx={{
-              bgcolor: 'rgba(0,0,0,0.08)',
-              px: 1.25,
-              py: 0.75,
-              borderRadius: 1,
-              fontSize: { xs: 11, md: 12 },
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {eventDateTime}
-          </Box>
-        </Box>
-
-        {/* Map Section - Middle */}
-        <Paper
-          sx={{
-            height: { xs: 300, sm: 400, md: 500 },
-            position: 'relative',
-            overflow: 'hidden',
-            borderRadius: 2,
             mx: 2,
             mb: 2,
-            flexShrink: 0,
+            padding: 1,
+            height: { xs: 'auto', md: '600px' }, // Fixed height on desktop
           }}
         >
-          <MapView>
-            <MapGeofence />
-            {/* Show trip route with start/end markers if trip selected */}
-            {selectedTrip && route && route.length > 0 && (
-              <>
-                <MapRoutePath positions={route} />
-                <MapMarkers markers={createMarkers()} />
-                <MapCamera positions={route} />
-              </>
-            )}
-            {/* ALWAYS show event position marker if available */}
-            {position && (
-              <MapPositions
-                positions={[position]}
-                titleField="fixTime"
-                customIcon="event-error"
-              />
-            )}
-            {/* Fallback camera if no trip selected */}
-            {!selectedTrip && position && (
-              <MapCamera
-                latitude={position.latitude}
-                longitude={position.longitude}
-              />
-            )}
-          </MapView>
-          <MapScale />
-        </Paper>
+          {/* Left Side - Media Block */}
+          <Box
+            sx={{
+              flex: { xs: '1 1 auto', md: '0 0 50%' },
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 1,
+              height: '100%',
+            }}
+          >
+            <Paper
+              sx={{
+                backgroundColor: '#1e1e1e',
+                borderRadius: 2,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'relative',
+                overflow: 'hidden',
+                flex: 1, // Take remaining space
+                minHeight: { xs: 100, md: 0 },
+              }}
+            >
+              {renderMediaContent()}
+            </Paper>
 
-        {/* Trips Table Section - Bottom */}
+            {/* Media Info */}
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 2,
+                flexWrap: 'wrap',
+                flexShrink: 0, // Don't shrink
+              }}
+            >
+              <Box
+                sx={{
+                  bgcolor: 'rgba(0,0,0,0.08)',
+                  px: 1.5,
+                  py: 0.75,
+                  borderRadius: 1,
+                  fontSize: { xs: 12, md: 14 },
+                  maxWidth: '70%',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {selectedEvent?.fileName
+                  || selectedEvent?.attributes?.file
+                  || 'Media File'}
+              </Box>
+              <Box
+                sx={{
+                  bgcolor: 'rgba(0,0,0,0.08)',
+                  px: 1.25,
+                  py: 0.75,
+                  borderRadius: 1,
+                  fontSize: { xs: 11, md: 12 },
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {eventDateTime}
+              </Box>
+            </Box>
+          </Box>
+
+          {/* Right Side - Map */}
+          <Paper
+            sx={{
+              flex: { xs: '1 1 auto', md: '0 0 50%' },
+              height: { xs: 300, sm: 400, md: '100%' },
+              position: 'relative',
+              overflow: 'hidden',
+              borderRadius: 2,
+            }}
+          >
+            <MapView>
+              <MapGeofence />
+              {selectedTrip && route && route.length > 0 && (
+                <>
+                  <MapRoutePath positions={route} />
+                  <MapMarkers markers={createMarkers()} />
+                  <MapCamera positions={route} />
+                </>
+              )}
+              {position && (
+                <MapPositions
+                  positions={[position]}
+                  titleField="fixTime"
+                  customIcon="event-error"
+                />
+              )}
+              {!selectedTrip && position && (
+                <MapCamera
+                  latitude={position.latitude}
+                  longitude={position.longitude}
+                />
+              )}
+            </MapView>
+            <MapScale />
+          </Paper>
+        </Box>
+
+        {/* Trips Table Section - Full Width Below */}
         <Paper
           sx={{
             mx: 2,
