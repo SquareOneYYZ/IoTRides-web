@@ -22,6 +22,7 @@ const useStyles = makeStyles((theme) => ({
   desktopRoot: {
     height: '100%',
     display: 'flex',
+    overflowX: 'hidden',
   },
   mobileRoot: {
     height: '100%',
@@ -30,6 +31,8 @@ const useStyles = makeStyles((theme) => ({
   },
   desktopDrawer: {
     width: (props) => (props.miniVariant ? `calc(${theme.spacing(8)} + 1px)` : theme.dimensions.drawerWidthDesktop),
+    whiteSpace: 'nowrap',
+    overflowX: 'hidden',
     transition: theme.transitions.create('width', {
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.enteringScreen,
@@ -47,6 +50,7 @@ const useStyles = makeStyles((theme) => ({
     display: 'flex',
     flexDirection: 'column',
     overflowY: 'auto',
+    overflowX: 'hidden',
   },
 }));
 
