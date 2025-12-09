@@ -57,8 +57,8 @@ const useStyles = makeStyles((theme) => ({
     flexDirection: 'column',
     position: 'fixed',
     zIndex: 3,
-    right: theme.spacing(2),
-    top: theme.spacing(2),
+    right: theme.spacing(6),
+    top: theme.spacing(1),
     width: 380,
     maxHeight: 'calc(100vh - 32px)',
     [theme.breakpoints.down('md')]: {
