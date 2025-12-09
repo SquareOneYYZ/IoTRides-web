@@ -12,6 +12,7 @@ import makeStyles from '@mui/styles/makeStyles';
 import { PlayArrow, Stop, LocationOn } from '@mui/icons-material';
 import CloseIcon from '@mui/icons-material/Close';
 import VideoBlock from '../common/components/VideoBlock';
+import usePersistedState from '../common/util/usePersistedState';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -366,38 +367,102 @@ const useStyles = makeStyles((theme) => ({
 const LiveStreamingPage = () => {
   const classes = useStyles();
   const navigate = useNavigate();
-  const [focusedCameraIndex, setFocusedCameraIndex] = useState(0);
+
+  // Get Redux state
+  const { open, deviceId } = useSelector((state) => state.livestream);
+  const reduxDevice = useSelector((state) => state.devices.items[deviceId]);
+
+  // Persist critical state
+  const [persistedDeviceId, setPersistedDeviceId] = usePersistedState('livestream_deviceId', null);
+  const [persistedOpen, setPersistedOpen] = usePersistedState('livestream_open', false);
+  const [persistedLayout, setPersistedLayout] = usePersistedState('livestream_layout', 4);
+  const [persistedFocusIndex, setPersistedFocusIndex] = usePersistedState('livestream_focusIndex', 0);
+
+  // Determine active values (Redux takes priority)
+  const activeDeviceId = deviceId || persistedDeviceId;
+  const isOpen = open || persistedOpen;
+
+  // Local state
+  const [focusedCameraIndex, setFocusedCameraIndex] = useState(persistedFocusIndex || 0);
   const [uniqueId, setUniqueId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [numCamera, setNumCamera] = useState(4);
-  const [currentLayout, setCurrentLayout] = useState(4);
+  const [currentLayout, setCurrentLayout] = useState(persistedLayout || 4);
   const [isPlaying, setIsPlaying] = useState(true);
   const [deviceData, setDeviceData] = useState(null);
-  const { open, deviceId } = useSelector((state) => state.livestream);
-  const device = useSelector((state) => state.devices.items[deviceId]);
+  const [device, setDevice] = useState(reduxDevice || null);
 
-  // Fetch device data including camera names
+  // Sync Redux state to localStorage
+  useEffect(() => {
+    if (deviceId) {
+      setPersistedDeviceId(deviceId);
+    }
+    if (open) {
+      setPersistedOpen(open);
+    }
+  }, [deviceId, open, setPersistedDeviceId, setPersistedOpen]);
+
+  // Persist layout changes
+  useEffect(() => {
+    setPersistedLayout(currentLayout);
+  }, [currentLayout, setPersistedLayout]);
+
+  // Persist focused camera index
+  useEffect(() => {
+    setPersistedFocusIndex(focusedCameraIndex);
+  }, [focusedCameraIndex, setPersistedFocusIndex]);
+
+  // Fetch device details (consolidated single API call)
   useEffect(() => {
     const fetchDeviceData = async () => {
-      if (!deviceId) return;
+      if (!activeDeviceId) return;
 
       try {
-        const response = await fetch(`/api/devices/${deviceId}`);
+        const response = await fetch(`/api/devices/${activeDeviceId}`);
         if (response.ok) {
           const data = await response.json();
           setDeviceData(data);
+          setDevice(data);
+
+          // Set uniqueId and numCamera
+          const cameras = data.attributes?.NumCamera || 4;
+          setNumCamera(cameras);
+          setCurrentLayout(persistedLayout <= cameras ? persistedLayout : cameras);
+          setUniqueId(data.uniqueId || activeDeviceId);
+
+          setLoading(false);
+        } else {
+          console.error('Failed to fetch device data');
+          setLoading(false);
         }
       } catch (error) {
         console.error('Error fetching device data:', error);
+        setLoading(false);
       }
     };
 
-    fetchDeviceData();
-  }, [deviceId]);
+    if (activeDeviceId) {
+      setLoading(true);
+      fetchDeviceData();
+    }
+  }, [activeDeviceId, persistedLayout]);
+
+  // Update device from Redux if available
+  useEffect(() => {
+    if (reduxDevice) {
+      setDevice(reduxDevice);
+    }
+  }, [reduxDevice]);
+
+  // Adjust layout if it exceeds number of cameras
+  useEffect(() => {
+    if (currentLayout > numCamera) {
+      setCurrentLayout(numCamera);
+    }
+  }, [numCamera, currentLayout]);
 
   // Handle camera name updates
   const handleCameraNameUpdate = (channelId, newName) => {
-    console.log(`Camera ${channelId} name updated to: ${newName}`);
     setDeviceData((prev) => ({
       ...prev,
       attributes: {
@@ -407,45 +472,8 @@ const LiveStreamingPage = () => {
     }));
   };
 
-  const fetchUniqueId = async (devId) => {
-    try {
-      const response = await fetch(`/api/devices/${devId}`);
-      if (!response.ok) {
-        throw Error('Failed to fetch device details');
-      }
-      const deviceData = await response.json();
-      const cameras = deviceData.attributes?.NumCamera || 4;
-      setNumCamera(cameras);
-      setCurrentLayout(cameras);
-      return deviceData.uniqueId || devId;
-    } catch (error) {
-      console.error(`Error fetching uniqueId for device ${devId}:`, error);
-      setNumCamera(4);
-      setCurrentLayout(4);
-      return devId;
-    }
-  };
-
-  useEffect(() => {
-    const loadUniqueId = async () => {
-      if (deviceId) {
-        setLoading(true);
-        const id = await fetchUniqueId(deviceId);
-        setUniqueId(id);
-        setLoading(false);
-      }
-    };
-
-    loadUniqueId();
-  }, [deviceId]);
-
-  useEffect(() => {
-    if (currentLayout > numCamera) {
-      setCurrentLayout(numCamera);
-    }
-  }, [numCamera, currentLayout]);
-
-  if (!open || !deviceId) return null;
+  // Early return if page shouldn't be shown
+  if (!isOpen || !activeDeviceId) return null;
 
   const handleStartAll = () => {
     setIsPlaying(true);
@@ -455,9 +483,16 @@ const LiveStreamingPage = () => {
     setIsPlaying(false);
   };
 
-  const handleLocation = () => navigate(`/map?deviceId=${deviceId}`);
+  const handleLocation = () => navigate(`/map?deviceId=${activeDeviceId}`);
 
-  const handleBack = () => navigate(-1);
+  const handleBack = () => {
+    // Clear all persisted state when user clicks back
+    setPersistedDeviceId(null);
+    setPersistedOpen(false);
+    setPersistedLayout(4);
+    setPersistedFocusIndex(0);
+    navigate(-1);
+  };
 
   const videoSources = uniqueId
     ? Array.from({ length: numCamera }, (_, i) => ({
@@ -521,7 +556,7 @@ const LiveStreamingPage = () => {
               <span className={`${classes.redDot} ${isDeviceOnline ? 'online' : 'offline'}`} />
             </div>
             <Typography variant="h6">
-              {device?.name || `Device ${deviceId}`}
+              {device?.name || `Device ${activeDeviceId}`}
             </Typography>
             <Typography variant="body2" sx={{ opacity: 0.8 }}>
               {numCamera}
@@ -621,7 +656,7 @@ const LiveStreamingPage = () => {
                 showLaunch={false}
                 showFocusIcon={isFocusEnabled}
                 onFocus={() => handleCameraFocus(originalIndex)}
-                deviceId={deviceId}
+                deviceId={activeDeviceId}
                 channelId={video.id}
                 isVidPlaying={isPlaying}
               />
@@ -649,7 +684,7 @@ const LiveStreamingPage = () => {
                 onCameraNameUpdate={handleCameraNameUpdate}
                 showLaunch={false}
                 showFocusIcon={false}
-                deviceId={deviceId}
+                deviceId={activeDeviceId}
                 channelId={videoSources[focusedCameraIndex].id}
                 isVidPlaying={isPlaying}
               />
@@ -671,7 +706,7 @@ const LiveStreamingPage = () => {
                   showLaunch={false}
                   showFocusIcon
                   onFocus={() => handleMobileCameraSwitch(index)}
-                  deviceId={deviceId}
+                  deviceId={activeDeviceId}
                   channelId={video.id}
                   isVidPlaying={isPlaying}
                 />
