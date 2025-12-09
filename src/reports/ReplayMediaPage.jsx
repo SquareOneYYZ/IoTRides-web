@@ -12,7 +12,7 @@ import {
   Toolbar,
   Typography,
   Slider,
-  Dialog,
+  useMediaQuery,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import makeStyles from '@mui/styles/makeStyles';
@@ -21,7 +21,6 @@ import PauseIcon from '@mui/icons-material/Pause';
 import FastForwardIcon from '@mui/icons-material/FastForward';
 import FastRewindIcon from '@mui/icons-material/FastRewind';
 import CloseIcon from '@mui/icons-material/Close';
-import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import MapView from '../map/core/MapView';
 import MapRoutePath from '../map/MapRoutePath';
@@ -39,6 +38,7 @@ import PageLayout from '../common/components/PageLayout';
 import ReportsMenu from './components/ReportsMenu';
 import useReportStyles from './common/useReportStyles';
 import { devicesActions } from '../store';
+import MediaPreview from './components/MediaPreview';
 
 const useStyles = makeStyles((theme) => ({
   container: {
@@ -98,8 +98,9 @@ const useStyles = makeStyles((theme) => ({
   mediaBar: {
     position: 'fixed',
     bottom: theme.spacing(10),
-    left: '50%',
-    transform: 'translateX(-50%)',
+    left: theme.spacing(2),
+    width: 'max-content',
+    maxWidth: 'calc(100vw - 32px)',
     zIndex: 1,
     display: 'flex',
     height: 110,
@@ -107,13 +108,16 @@ const useStyles = makeStyles((theme) => ({
     gap: theme.spacing(0.5),
     background: theme.palette.background.paper,
     borderRadius: theme.shape.borderRadius,
-    maxWidth: '78vw',
     overflowX: 'auto',
     overflowY: 'hidden',
     boxShadow: theme.shadows[6],
     scrollbarWidth: 'thin',
     scrollbarColor: `${theme.palette.action.hover} transparent`,
     cursor: 'grab',
+    transition: theme.transitions.create(['margin-left', 'margin-right'], {
+      easing: theme.transitions.easing.sharp,
+      duration: theme.transitions.duration.enteringScreen,
+    }),
     '&::-webkit-scrollbar': {
       height: 6,
     },
@@ -122,15 +126,15 @@ const useStyles = makeStyles((theme) => ({
     },
     [theme.breakpoints.down('md')]: {
       bottom: theme.spacing(2),
-      maxWidth: '95vw',
       height: 70,
     },
     [theme.breakpoints.down('sm')]: {
       bottom: theme.spacing(20),
-      maxWidth: '95vw',
       height: 65,
       padding: theme.spacing(0.5),
       gap: theme.spacing(0.25),
+      marginLeft: `${theme.spacing(1)} !important`,
+      marginRight: `${theme.spacing(1)} !important`,
     },
   },
   thumb: {
@@ -180,7 +184,6 @@ const useStyles = makeStyles((theme) => ({
 
 const ReplayMediaPage = () => {
   const t = useTranslation();
-  const navigate = useNavigate();
   const dispatch = useDispatch();
   const classes = useStyles();
   const reportClasses = useReportStyles();
@@ -197,6 +200,8 @@ const ReplayMediaPage = () => {
   const defaultDeviceId = useSelector((state) => state.devices.selectedId);
   const selectedDeviceIdFromRedux = useSelector((state) => state.devices.selectedId);
 
+  const desktop = useMediaQuery(theme.breakpoints.up('md'));
+
   const [positions, setPositions] = useState([]);
   const [index, setIndex] = useState(0);
   const [selectedDeviceId, setSelectedDeviceId] = useState(defaultDeviceId);
@@ -211,13 +216,39 @@ const ReplayMediaPage = () => {
   const [startLocation, setStartLocation] = useState('');
   const [endLocation, setEndLocation] = useState('');
   const [mediaTimeline, setMediaTimeline] = useState([]);
+  const [miniVariant, setMiniVariant] = useState(false);
 
   const deviceName = useMemo(
     () => selectedDeviceId && devices[selectedDeviceId]?.name,
     [selectedDeviceId, devices],
   );
 
-  // Find the active media based on current position time
+  useEffect(() => {
+    const handleDrawerChange = (event) => {
+      setMiniVariant(event.detail.miniVariant);
+    };
+
+    window.addEventListener('drawerStateChange', handleDrawerChange);
+    return () => {
+      window.removeEventListener('drawerStateChange', handleDrawerChange);
+    };
+  }, []);
+
+  const mediaBarStyle = useMemo(() => {
+    if (!desktop) {
+      return {};
+    }
+
+    const drawerWidth = miniVariant
+      ? `calc(${theme.spacing(8)} + 1px)`
+      : theme.dimensions.drawerWidthDesktop;
+
+    return {
+      marginLeft: `calc(${drawerWidth} + ${theme.spacing(2)})`,
+      marginRight: theme.spacing(2),
+    };
+  }, [desktop, miniVariant, theme]);
+
   const activeMediaIndex = useMemo(() => {
     if (!positions.length || !mediaTimeline.length) return -1;
 
@@ -242,7 +273,6 @@ const ReplayMediaPage = () => {
     return closestIndex;
   }, [positions, index, mediaTimeline]);
 
-  // Auto-scroll media bar to show active media
   useEffect(() => {
     if (activeMediaIndex >= 0 && mediaBarRef.current) {
       const mediaBar = mediaBarRef.current;
@@ -415,7 +445,6 @@ const ReplayMediaPage = () => {
     setPlaying(false);
   }, []);
 
-  // Drag functionality for media bar
   const handleMouseDown = useCallback((e) => {
     if (!mediaBarRef.current) return;
     isDraggingRef.current = false;
@@ -531,11 +560,21 @@ const ReplayMediaPage = () => {
           <MapView>
             <MapGeofence />
             <MapRoutePath positions={positions} />
-            <MapRoutePoints positions={positions} onClick={onPointClick} />
+            <MapRoutePoints
+              positions={positions}
+              onClick={(pos, idx) => {
+                onPointClick(pos, idx);
+
+                if (selectedDeviceId) {
+                  dispatch(devicesActions.selectId(selectedDeviceId));
+                }
+              }}
+            />
             {smoothPosition && (
               <MapPositions
                 positions={[smoothPosition]}
                 titleField="fixTime"
+                customIcon="event-error"
               />
             )}
           </MapView>
@@ -615,6 +654,7 @@ const ReplayMediaPage = () => {
           <Paper
             ref={mediaBarRef}
             className={classes.mediaBar}
+            style={mediaBarStyle}
             elevation={6}
             onMouseDown={handleMouseDown}
           >
@@ -651,28 +691,22 @@ const ReplayMediaPage = () => {
           </Paper>
         )}
 
-        <Dialog
+        {openMedia && (
+        <MediaPreview
           open={!!openMedia}
+          mediaUrl={openMedia.full}
           onClose={() => setOpenMedia(null)}
-          maxWidth="md"
-        >
-          {openMedia && (
-            <img
-              src={openMedia.full}
-              alt="preview"
-              style={{ width: '100%', height: 'auto' }}
-            />
-          )}
-        </Dialog>
+        />
+        )}
 
         {selectedDeviceIdFromRedux && currentPosition && (
-          <StatusCard
-            deviceId={selectedDeviceIdFromRedux}
-            position={currentPosition}
-            onClose={() => dispatch(devicesActions.selectId(null))}
-            desktopPadding={theme.dimensions.drawerWidthDesktop}
-            disableActions
-          />
+        <StatusCard
+          deviceId={selectedDeviceIdFromRedux}
+          position={currentPosition}
+          onClose={() => dispatch(devicesActions.selectId(null))}
+          desktopPadding={theme.dimensions.drawerWidthDesktop}
+          disableActions
+        />
         )}
       </div>
     </PageLayout>

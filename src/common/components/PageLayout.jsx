@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   AppBar,
   Breadcrumbs,
@@ -85,7 +85,18 @@ const PageLayout = ({ menu, breadcrumbs, children }) => {
 
   const [openDrawer, setOpenDrawer] = useState(false);
 
-  const toggleDrawer = () => setMiniVariant(!miniVariant);
+  const toggleDrawer = () => {
+    setMiniVariant(!miniVariant);
+  };
+
+  useEffect(() => {
+    if (desktop) {
+      const event = new CustomEvent('drawerStateChange', {
+        detail: { miniVariant },
+      });
+      window.dispatchEvent(event);
+    }
+  }, [miniVariant, desktop]);
 
   return desktop ? (
     <div className={classes.desktopRoot}>
