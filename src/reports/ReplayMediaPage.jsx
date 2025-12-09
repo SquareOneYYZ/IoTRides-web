@@ -130,7 +130,7 @@ const useStyles = makeStyles((theme) => ({
     },
     [theme.breakpoints.down('sm')]: {
       bottom: theme.spacing(20),
-      height: 65,
+      height: 85,
       padding: theme.spacing(0.5),
       gap: theme.spacing(0.25),
       marginLeft: `${theme.spacing(1)} !important`,
