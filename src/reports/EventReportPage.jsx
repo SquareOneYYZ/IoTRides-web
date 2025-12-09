@@ -61,28 +61,6 @@ const filterEvents = (events, typesToExclude) => {
   return data;
 };
 
-const findClosestPositionIndex = (positions, eventTime) => {
-  if (!positions || positions.length === 0) return 0;
-
-  const eventTimestamp = new Date(eventTime).getTime();
-  let closestIndex = 0;
-  let minDifference = Math.abs(
-    new Date(positions[0].fixTime).getTime() - eventTimestamp,
-  );
-
-  for (let i = 1; i < positions.length; i += 1) {
-    const positionTimestamp = new Date(positions[i].fixTime).getTime();
-    const difference = Math.abs(positionTimestamp - eventTimestamp);
-
-    if (difference < minDifference) {
-      minDifference = difference;
-      closestIndex = i;
-    }
-  }
-
-  return closestIndex;
-};
-
 const columnsMap = new Map(columnsArray);
 
 const EventReportPage = () => {
@@ -207,6 +185,7 @@ const EventReportPage = () => {
             'deviceOnline',
             'deviceUnknown',
             'commandResult',
+            'queuedCommandSent',
           ];
 
           const ModifiedData = data.map((item) => ({
