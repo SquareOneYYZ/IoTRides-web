@@ -35,12 +35,18 @@ import MapCamera from '../map/MapCamera';
 import MapRoutePath from '../map/MapRoutePath';
 import MapMarkers from '../map/MapMarkers';
 import { useEffectAsync } from '../reactHelper';
+import usePersistedState from '../common/util/usePersistedState';
 
 const MediaDetailsPage = () => {
   const classes = useReportStyles();
   const navigate = useNavigate();
   const t = useTranslation();
-  const selectedEvent = useSelector((state) => state.events.selectedEvent);
+  const selectedEventFromStore = useSelector((state) => state.events.selectedEvent);
+  const [persistedEvent, setPersistedEvent] = usePersistedState(
+    'mediaSelectedEvent',
+    null,
+  );
+  const selectedEvent = selectedEventFromStore || persistedEvent;
   const distanceUnit = useAttributePreference('distanceUnit');
   const speedUnit = useAttributePreference('speedUnit');
   const [position, setPosition] = useState(null);
@@ -50,6 +56,12 @@ const MediaDetailsPage = () => {
   const [error, setError] = useState(null);
   const [mediaUrl, setMediaUrl] = useState('');
   const [selectedTrip, setSelectedTrip] = useState(null);
+
+  useEffect(() => {
+    if (selectedEventFromStore && selectedEventFromStore !== persistedEvent) {
+      setPersistedEvent(selectedEventFromStore);
+    }
+  }, [selectedEventFromStore, persistedEvent, setPersistedEvent]);
 
   const fetchUniqueId = async (deviceId) => {
     try {
@@ -331,6 +343,11 @@ const MediaDetailsPage = () => {
     { key: 'duration', label: 'Duration' },
   ];
 
+  const handleBack = () => {
+    setPersistedEvent(null);
+    navigate(-1);
+  };
+
   return (
     <PageLayout
       menu={<ReportsMenu />}
@@ -350,7 +367,7 @@ const MediaDetailsPage = () => {
           <Button
             variant="outlined"
             startIcon={<ArrowBackIcon />}
-            onClick={() => navigate(-1)}
+            onClick={handleBack}
           >
             Back
           </Button>
