@@ -556,6 +556,7 @@
 	"reportCombined": "Combined",
 	"reportRoute": "Route",
 	"reportEvents": "Events",
+	"reportGeofenceActivity": "Geofence Activity",
 	"reportTrips": "Trips",
 	"reportStops": "Stops",
 	"reportSummary": "Summary",
