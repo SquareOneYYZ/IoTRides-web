@@ -279,15 +279,15 @@ const MediaBar = ({ mediaItems, devices, onMediaClick }) => (
             cursor: 'pointer',
             borderRadius: 1,
             overflow: 'hidden',
-            border: '2px solid #333',
-            backgroundColor: '#1a1a1a',
+            border: '2px solid #e0e0e0',
+            backgroundColor: '#fff',
             transition: 'all 0.2s',
             display: 'flex',
             flexDirection: 'column',
             '&:hover': {
               transform: 'translateY(-2px)',
-              boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
-              borderColor: '#0d47a1',
+              boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+              borderColor: '#1976d2',
             },
           }}
         >
@@ -297,7 +297,7 @@ const MediaBar = ({ mediaItems, devices, onMediaClick }) => (
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              backgroundColor: '#000',
+              backgroundColor: '#fafafa',
               position: 'relative',
               overflow: 'hidden',
             }}
@@ -320,14 +320,14 @@ const MediaBar = ({ mediaItems, devices, onMediaClick }) => (
             {isVideo && <VideoThumbnail url={mediaUrl} filename={filename} />}
 
             {!isImage && !isVideo && (
-              <InsertDriveFileIcon sx={{ fontSize: 40, color: '#666' }} />
+              <InsertDriveFileIcon sx={{ fontSize: 40, color: '#9e9e9e' }} />
             )}
           </Box>
           <Box
             sx={{
               padding: 0.5,
-              backgroundColor: '#333',
-              borderTop: '1px solid #333',
+              backgroundColor: '#fff',
+              borderTop: '1px solid #e0e0e0',
             }}
           >
             <Typography
@@ -339,7 +339,7 @@ const MediaBar = ({ mediaItems, devices, onMediaClick }) => (
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
-                color: '#fff',
+                color: '#666',
               }}
               title={filename}
             >
@@ -431,7 +431,6 @@ const EventReportPage = () => {
         'deviceFuelIncrease',
         'textMessage',
         'driverChanged',
-        'media',
       ];
       const typeFiltered = types.filter(
         (item) => !FilteredTypes.includes(item.type),
