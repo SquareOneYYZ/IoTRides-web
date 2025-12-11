@@ -13,6 +13,7 @@ import {
   Typography,
   Slider,
   useMediaQuery,
+  CircularProgress,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import makeStyles from '@mui/styles/makeStyles';
@@ -21,6 +22,8 @@ import PauseIcon from '@mui/icons-material/Pause';
 import FastForwardIcon from '@mui/icons-material/FastForward';
 import FastRewindIcon from '@mui/icons-material/FastRewind';
 import CloseIcon from '@mui/icons-material/Close';
+import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
+import ImageIcon from '@mui/icons-material/Image';
 import { useSelector, useDispatch } from 'react-redux';
 import MapView from '../map/core/MapView';
 import MapRoutePath from '../map/MapRoutePath';
@@ -98,9 +101,11 @@ const useStyles = makeStyles((theme) => ({
   mediaBar: {
     position: 'fixed',
     bottom: theme.spacing(10),
-    left: theme.spacing(2),
-    width: 'max-content',
-    maxWidth: 'calc(100vw - 32px)',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    width: 'fit-content',
+    maxWidth: 850,
+    minWidth: 260,
     zIndex: 1,
     display: 'flex',
     height: 110,
@@ -114,7 +119,7 @@ const useStyles = makeStyles((theme) => ({
     scrollbarWidth: 'thin',
     scrollbarColor: `${theme.palette.action.hover} transparent`,
     cursor: 'grab',
-    transition: theme.transitions.create(['margin-left', 'margin-right'], {
+    transition: theme.transitions.create(['left', 'width'], {
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.enteringScreen,
     }),
@@ -124,17 +129,24 @@ const useStyles = makeStyles((theme) => ({
     '&::-webkit-scrollbar-track': {
       background: 'transparent',
     },
+    '&::-webkit-scrollbar-thumb': {
+      background: theme.palette.action.hover,
+      borderRadius: 3,
+    },
     [theme.breakpoints.down('md')]: {
       bottom: theme.spacing(2),
       height: 70,
+      maxWidth: 680,
     },
     [theme.breakpoints.down('sm')]: {
       bottom: theme.spacing(20),
       height: 85,
       padding: theme.spacing(0.5),
       gap: theme.spacing(0.25),
-      marginLeft: `${theme.spacing(1)} !important`,
-      marginRight: `${theme.spacing(1)} !important`,
+      maxWidth: 'calc(100vw - 32px)',
+      width: 'fit-content',
+      left: '50%',
+      transform: 'translateX(-50%)',
     },
   },
   thumb: {
@@ -145,12 +157,23 @@ const useStyles = makeStyles((theme) => ({
     transition: 'all 0.3s ease',
     flexShrink: 0,
     position: 'relative',
+    backgroundColor: '#1e1e1e',
+    display: 'flex',
+    flexDirection: 'column',
+    width: 120,
+    height: 80,
     '&:hover': {
       border: `2px solid ${theme.palette.primary.main}`,
+    },
+    [theme.breakpoints.down('md')]: {
+      width: 100,
+      height: 65,
     },
     [theme.breakpoints.down('sm')]: {
       borderRadius: 2,
       border: '1px solid transparent',
+      width: 90,
+      height: 60,
       '&:hover': {
         border: `1px solid ${theme.palette.primary.main}`,
       },
@@ -181,6 +204,184 @@ const useStyles = makeStyles((theme) => ({
     },
   },
 }));
+
+// Helper to check if file is video
+const isVideoFile = (filename) => {
+  if (!filename) return false;
+  const videoExtensions = ['mp4', 'webm', 'ogg', 'mov', 'avi', 'wmv', 'flv', 'mkv'];
+  return videoExtensions.some((ext) => filename.toLowerCase().endsWith(ext));
+};
+
+// Helper to check if file is image
+const isImageFile = (filename) => {
+  if (!filename) return false;
+  const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'];
+  return imageExtensions.some((ext) => filename.toLowerCase().endsWith(ext));
+};
+
+const MediaThumbnail = ({ url, isVideo, isImage }) => {
+  const [thumbnail, setThumbnail] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    if (!url) {
+      setError(true);
+      return undefined;
+    }
+
+    if (isImage) {
+      setThumbnail(url);
+      return undefined;
+    }
+
+    if (!isVideo) {
+      setError(true);
+      return undefined;
+    }
+
+    // Generate thumbnail for videos
+    setLoading(true);
+    setError(false);
+
+    const video = document.createElement('video');
+    video.src = url;
+    video.crossOrigin = 'anonymous';
+    video.muted = true;
+    video.playsInline = true;
+
+    const timeoutId = setTimeout(() => {
+      setError(true);
+      setLoading(false);
+      video.remove();
+    }, 8000);
+
+    const handleLoadedData = () => {
+      const seekTime = Math.min(1, video.duration * 0.1);
+      video.currentTime = seekTime;
+    };
+
+    const handleSeeked = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth || 320;
+        canvas.height = video.videoHeight || 180;
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        const thumbnailDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        setThumbnail(thumbnailDataUrl);
+        setLoading(false);
+        clearTimeout(timeoutId);
+        video.remove();
+      } catch (err) {
+        console.error('Error generating thumbnail:', err);
+        setError(true);
+        setLoading(false);
+        clearTimeout(timeoutId);
+        video.remove();
+      }
+    };
+
+    const handleError = () => {
+      setError(true);
+      setLoading(false);
+      clearTimeout(timeoutId);
+      video.remove();
+    };
+
+    video.addEventListener('loadeddata', handleLoadedData);
+    video.addEventListener('seeked', handleSeeked);
+    video.addEventListener('error', handleError);
+
+    return () => {
+      clearTimeout(timeoutId);
+      video.removeEventListener('loadeddata', handleLoadedData);
+      video.removeEventListener('seeked', handleSeeked);
+      video.removeEventListener('error', handleError);
+      video.remove();
+    };
+  }, [url, isVideo, isImage]);
+
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: '#000',
+        }}
+      >
+        <CircularProgress size={24} sx={{ color: '#888' }} />
+      </Box>
+    );
+  }
+
+  if (error || !thumbnail) {
+    return (
+      <Box
+        sx={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: '#000',
+        }}
+      >
+        {isVideo ? (
+          <PlayCircleOutlineIcon sx={{ fontSize: 40, color: '#555' }} />
+        ) : (
+          <ImageIcon sx={{ fontSize: 40, color: '#555' }} />
+        )}
+      </Box>
+    );
+  }
+
+  return (
+    <Box sx={{
+      position: 'relative',
+      width: '100%',
+      height: '100%',
+      backgroundColor: '#000',
+    }}
+    >
+      <img
+        src={thumbnail}
+        alt="media"
+        style={{
+          width: '100%',
+          height: '100%',
+          display: 'block',
+          objectFit: 'cover',
+        }}
+      />
+      {isVideo && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            backgroundColor: 'rgba(0,0,0,0.6)',
+            borderRadius: '50%',
+            width: 28,
+            height: 28,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <PlayCircleOutlineIcon sx={{ fontSize: 20, color: 'white' }} />
+        </Box>
+      )}
+    </Box>
+  );
+};
 
 const ReplayMediaPage = () => {
   const t = useTranslation();
@@ -234,20 +435,24 @@ const ReplayMediaPage = () => {
     };
   }, []);
 
+  // FIXED: Simpler calculation that accounts for drawer position
   const mediaBarStyle = useMemo(() => {
     if (!desktop) {
       return {};
     }
 
-    const drawerWidth = miniVariant
-      ? `calc(${theme.spacing(8)} + 1px)`
-      : theme.dimensions.drawerWidthDesktop;
+    // Get drawer width based on state
+    const drawerWidth = miniVariant ? 73 : 280; // Approximate pixel values
+    // Wider when drawer collapsed, narrower when open
+    const maxWidth = miniVariant ? 1500 : 1100;
 
     return {
-      marginLeft: `calc(${drawerWidth} + ${theme.spacing(2)})`,
-      marginRight: theme.spacing(2),
+      left: '50%',
+      transform: `translateX(calc(-50% + ${drawerWidth / 2}px))`,
+      maxWidth,
+      width: 'fit-content',
     };
-  }, [desktop, miniVariant, theme]);
+  }, [desktop, miniVariant]);
 
   const activeMediaIndex = useMemo(() => {
     if (!positions.length || !mediaTimeline.length) return -1;
@@ -370,8 +575,10 @@ const ReplayMediaPage = () => {
         const fullUrl = `/api/media/${uniqueId}/${file}`;
         return {
           id: event.id || idx,
-          thumb: fullUrl,
-          full: fullUrl,
+          url: fullUrl,
+          file,
+          isVideo: isVideoFile(file),
+          isImage: isImageFile(file),
           time: new Date(
             event.eventTime || event.serverTime,
           ).toLocaleTimeString('en-US', {
@@ -507,11 +714,13 @@ const ReplayMediaPage = () => {
   }, [positions]);
 
   useEffect(() => {
-    const mediaBar = mediaBarRef.current;
-    if (!mediaBar) return;
-
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
   }, [handleMouseMove, handleMouseUp]);
 
   const handleClose = useCallback(() => {
@@ -651,50 +860,37 @@ const ReplayMediaPage = () => {
         </div>
 
         {mediaTimeline.length > 0 && (
-          <Paper
-            ref={mediaBarRef}
-            className={classes.mediaBar}
-            style={mediaBarStyle}
-            elevation={6}
-            onMouseDown={handleMouseDown}
-          >
-            {mediaTimeline.map((item, idx) => (
-              <Box
-                key={item.id}
-                onClick={() => handleMediaClick(item)}
-                className={`${classes.thumb} ${
-                  openMedia?.id === item.id ? classes.thumbSelected : ''
-                } ${
-                  idx === activeMediaIndex ? classes.thumbActive : ''
-                }`}
-              >
-                <img
-                  src={item.thumb}
-                  alt="thumb"
-                  width={120}
-                  height={80}
-                  style={{ display: 'block' }}
-                />
-                <Typography
-                  align="center"
-                  variant="caption"
-                  sx={{
-                    fontSize: '0.65rem',
-                    p: 0.5,
-                    fontWeight: idx === activeMediaIndex ? 'bold' : 'normal',
-                  }}
-                >
-                  {item.time}
-                </Typography>
-              </Box>
-            ))}
-          </Paper>
+        <Paper
+          ref={mediaBarRef}
+          className={classes.mediaBar}
+          style={mediaBarStyle}
+          elevation={6}
+          onMouseDown={handleMouseDown}
+        >
+          {mediaTimeline.map((item, idx) => (
+            <Box
+              key={item.id}
+              onClick={() => handleMediaClick(item)}
+              className={`${classes.thumb} ${
+                openMedia?.id === item.id ? classes.thumbSelected : ''
+              } ${
+                idx === activeMediaIndex ? classes.thumbActive : ''
+              }`}
+            >
+              <MediaThumbnail
+                url={item.url}
+                isVideo={item.isVideo}
+                isImage={item.isImage}
+              />
+            </Box>
+          ))}
+        </Paper>
         )}
 
         {openMedia && (
         <MediaPreview
           open={!!openMedia}
-          mediaUrl={openMedia.full}
+          mediaUrl={openMedia.url}
           onClose={() => setOpenMedia(null)}
         />
         )}

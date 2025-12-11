@@ -16,6 +16,141 @@ import { useCatch, useEffectAsync } from '../reactHelper';
 import scheduleReport from './common/scheduleReport';
 import { eventsActions } from '../store/events';
 
+// Video Thumbnail Component
+const VideoThumbnail = ({ url, fileName }) => {
+  const [thumbnail, setThumbnail] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    if (!url) {
+      setError(true);
+      setLoading(false);
+      return;
+    }
+
+    const video = document.createElement('video');
+    video.src = url;
+    video.crossOrigin = 'anonymous';
+    video.muted = true;
+    video.playsInline = true;
+
+    const timeoutId = setTimeout(() => {
+      setError(true);
+      setLoading(false);
+      video.remove();
+    }, 8000);
+
+    const handleLoadedData = () => {
+      const seekTime = Math.min(1, video.duration * 0.1);
+      video.currentTime = seekTime;
+    };
+
+    const handleSeeked = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 360;
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        const thumbnailDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        setThumbnail(thumbnailDataUrl);
+        setLoading(false);
+        clearTimeout(timeoutId);
+        video.remove();
+      } catch (err) {
+        setError(true);
+        setLoading(false);
+        clearTimeout(timeoutId);
+        video.remove();
+      }
+    };
+
+    const handleError = () => {
+      setError(true);
+      setLoading(false);
+      clearTimeout(timeoutId);
+      video.remove();
+    };
+
+    video.addEventListener('loadeddata', handleLoadedData);
+    video.addEventListener('seeked', handleSeeked);
+    video.addEventListener('error', handleError);
+  }, [url]);
+
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '100%',
+          height: '100%',
+        }}
+      >
+        <CircularProgress size={40} sx={{ color: '#888' }} />
+      </Box>
+    );
+  }
+
+  if (error || !thumbnail) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '100%',
+          height: '100%',
+          gap: 1,
+        }}
+      >
+        <PlayCircleOutlineIcon sx={{ fontSize: 60, color: '#555' }} />
+      </Box>
+    );
+  }
+
+  return (
+    <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
+      <img
+        src={thumbnail}
+        alt={fileName}
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+        }}
+      />
+      <Box
+        sx={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          bgcolor: 'rgba(0, 0, 0, 0.6)',
+          borderRadius: '50%',
+          width: 60,
+          height: 60,
+        }}
+      >
+        <PlayCircleOutlineIcon
+          sx={{
+            fontSize: 40,
+            color: 'white',
+          }}
+        />
+      </Box>
+    </Box>
+  );
+};
+
 const MediaBlock = ({ media, onLaunch, isSelected, onSelect }) => {
   const ref = useRef(null);
 
@@ -38,8 +173,15 @@ const MediaBlock = ({ media, onLaunch, isSelected, onSelect }) => {
             height: '100%',
             objectFit: 'cover',
           }}
+          onError={(e) => {
+            e.target.src = '';
+          }}
         />
       );
+    }
+
+    if (media.mediaType === 'video' && media.url) {
+      return <VideoThumbnail url={media.url} fileName={media.fileName} />;
     }
 
     if (media.mediaType === 'video') {
@@ -182,11 +324,9 @@ const MediaEventPage = () => {
             setPosition(positions[0]);
           }
         } else {
-          console.error('Failed to fetch position');
           setPosition(null);
         }
       } catch (error) {
-        console.error('Error fetching position:', error);
         setPosition(null);
       }
     } else {
@@ -203,7 +343,6 @@ const MediaEventPage = () => {
       const device = await response.json();
       return device.uniqueId || deviceId;
     } catch (error) {
-      console.error(`Error fetching uniqueId for device ${deviceId}:`, error);
       return deviceId;
     }
   };
@@ -299,14 +438,13 @@ const MediaEventPage = () => {
       dispatch(eventsActions.setMediaList(transformedMedia));
       setMediaBlocks(transformedMedia);
     } catch (error) {
-      console.error('Error fetching media events:', error);
+      console.log('Error fetching media events:', error);
       throw error;
     } finally {
       setLoading(false);
     }
   });
 
-  // Restore media blocks from Redux when component mounts
   useEffect(() => {
     if (existingMediaList.length > 0) {
       setMediaBlocks(existingMediaList);
