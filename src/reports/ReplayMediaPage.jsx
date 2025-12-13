@@ -103,54 +103,29 @@ const useStyles = makeStyles((theme) => ({
     bottom: theme.spacing(10),
     left: '50%',
     transform: 'translateX(-50%)',
-    width: 'fit-content',
-    maxWidth: 850,
-    minWidth: 260,
     zIndex: 1,
-    display: 'flex',
-    height: 110,
-    padding: theme.spacing(1),
-    gap: theme.spacing(0.5),
+    display: 'grid',
+    gridTemplateColumns: '1fr auto 1fr',
+    alignItems: 'center',
+    gap: theme.spacing(2),
+    padding: theme.spacing(2),
     background: theme.palette.background.paper,
     borderRadius: theme.shape.borderRadius,
-    overflowX: 'auto',
-    overflowY: 'hidden',
     boxShadow: theme.shadows[6],
-    scrollbarWidth: 'thin',
-    scrollbarColor: `${theme.palette.action.hover} transparent`,
-    cursor: 'grab',
-    transition: theme.transitions.create(['left', 'width'], {
-      easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.enteringScreen,
-    }),
-    '&::-webkit-scrollbar': {
-      height: 6,
-    },
-    '&::-webkit-scrollbar-track': {
-      background: 'transparent',
-    },
-    '&::-webkit-scrollbar-thumb': {
-      background: theme.palette.action.hover,
-      borderRadius: 3,
-    },
+    width: 'fit-content',
+    maxWidth: '90vw',
     [theme.breakpoints.down('md')]: {
       bottom: theme.spacing(2),
-      height: 70,
-      maxWidth: 680,
+      gap: theme.spacing(1.5),
+      padding: theme.spacing(1.5),
     },
     [theme.breakpoints.down('sm')]: {
       bottom: theme.spacing(20),
-      height: 85,
-      padding: theme.spacing(0.5),
-      gap: theme.spacing(0.25),
-      maxWidth: 'calc(100vw - 32px)',
-      width: 'fit-content',
-      left: '50%',
-      transform: 'translateX(-50%)',
+      gap: theme.spacing(1),
+      padding: theme.spacing(1),
     },
   },
   thumb: {
-    cursor: 'pointer',
     borderRadius: 4,
     overflow: 'hidden',
     border: '2px solid transparent',
@@ -158,164 +133,168 @@ const useStyles = makeStyles((theme) => ({
     flexShrink: 0,
     position: 'relative',
     backgroundColor: '#1e1e1e',
-    display: 'flex',
-    flexDirection: 'column',
     width: 120,
-    height: 80,
-    '&:hover': {
-      border: `2px solid ${theme.palette.primary.main}`,
-    },
+    height: 75,
     [theme.breakpoints.down('md')]: {
       width: 100,
       height: 65,
     },
     [theme.breakpoints.down('sm')]: {
-      borderRadius: 2,
-      border: '1px solid transparent',
-      width: 90,
+      width: 80,
       height: 60,
-      '&:hover': {
-        border: `1px solid ${theme.palette.primary.main}`,
-      },
+      borderRadius: 3,
     },
   },
-  thumbActive: {
+  thumbCenter: {
+    cursor: 'pointer',
     border: `3px solid ${theme.palette.secondary.main}`,
-    transform: 'scale(1.05)',
-    boxShadow: `0 0 12px ${theme.palette.secondary.main}`,
+    transform: 'scale(1.1)',
+    boxShadow: `0 0 20px ${theme.palette.secondary.main}`,
+    width: 140,
+    height: 90,
+    [theme.breakpoints.down('md')]: {
+      width: 120,
+      height: 75,
+    },
     [theme.breakpoints.down('sm')]: {
+      width: 90,
+      height: 65,
       border: `2px solid ${theme.palette.secondary.main}`,
     },
-  },
-  thumbSelected: {
-    border: `2px solid ${theme.palette.primary.main}`,
-    [theme.breakpoints.down('sm')]: {
-      border: `1px solid ${theme.palette.primary.main}`,
+    '&:hover': {
+      transform: 'scale(1.15)',
+      boxShadow: `0 0 25px ${theme.palette.secondary.main}`,
     },
+  },
+  section: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing(1.5),
+    minHeight: 90,
+    [theme.breakpoints.down('md')]: {
+      minHeight: 75,
+      gap: theme.spacing(1.2),
+    },
+    [theme.breakpoints.down('sm')]: {
+      minHeight: 65,
+      gap: theme.spacing(1),
+    },
+  },
+  leftSection: {
+    justifyContent: 'flex-end',
+    opacity: 0.6,
+  },
+  centerSection: {
+    justifyContent: 'center',
+    opacity: 1,
+  },
+  rightSection: {
+    justifyContent: 'flex-start',
+    opacity: 0.6,
   },
   toolbarTitle: {
     [theme.breakpoints.down('sm')]: {
       fontSize: '0.9rem',
     },
   },
-  dialogContent: {
-    [theme.breakpoints.down('sm')]: {
-      padding: 0,
-    },
-  },
 }));
 
-// Helper to check if file is video
 const isVideoFile = (filename) => {
   if (!filename) return false;
-  const videoExtensions = ['mp4', 'webm', 'ogg', 'mov', 'avi', 'wmv', 'flv', 'mkv'];
-  return videoExtensions.some((ext) => filename.toLowerCase().endsWith(ext));
+  const ext = filename.split('.').pop()?.toLowerCase();
+  return ['mp4', 'webm', 'ogg', 'mov', 'avi', 'wmv', 'flv', 'mkv'].includes(ext);
 };
 
-// Helper to check if file is image
 const isImageFile = (filename) => {
   if (!filename) return false;
-  const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'];
-  return imageExtensions.some((ext) => filename.toLowerCase().endsWith(ext));
+  const ext = filename.split('.').pop()?.toLowerCase();
+  return ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'].includes(ext);
 };
 
-const MediaThumbnail = ({ url, isVideo, isImage }) => {
-  const [thumbnail, setThumbnail] = useState(null);
-  const [loading, setLoading] = useState(false);
+const thumbnailCache = new Map();
+
+const MediaThumbnail = React.memo(({ url, isVideo, isImage }) => {
+  const [thumbnail, setThumbnail] = useState(() => thumbnailCache.get(url));
+  const [loading, setLoading] = useState(!thumbnailCache.has(url));
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    if (!url) {
-      setError(true);
-      return undefined;
-    }
+    if (!url || thumbnailCache.has(url)) return;
 
     if (isImage) {
+      thumbnailCache.set(url, url);
       setThumbnail(url);
-      return undefined;
+      setLoading(false);
+      return;
     }
 
     if (!isVideo) {
       setError(true);
-      return undefined;
+      setLoading(false);
+      return;
     }
-
-    // Generate thumbnail for videos
-    setLoading(true);
-    setError(false);
 
     const video = document.createElement('video');
     video.src = url;
     video.crossOrigin = 'anonymous';
     video.muted = true;
     video.playsInline = true;
+    video.preload = 'metadata';
 
-    const timeoutId = setTimeout(() => {
-      setError(true);
-      setLoading(false);
-      video.remove();
-    }, 8000);
-
-    const handleLoadedData = () => {
-      const seekTime = Math.min(1, video.duration * 0.1);
-      video.currentTime = seekTime;
+    const cleanup = () => {
+      video.src = '';
+      video.load();
     };
 
-    const handleSeeked = () => {
+    const timeout = setTimeout(() => {
+      setError(true);
+      setLoading(false);
+      cleanup();
+    }, 5000);
+
+    const onLoadedData = () => {
+      video.currentTime = Math.min(0.5, video.duration * 0.1);
+    };
+
+    const onSeeked = () => {
       try {
         const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth || 320;
-        canvas.height = video.videoHeight || 180;
+        const aspect = video.videoWidth / video.videoHeight;
+        canvas.width = 320;
+        canvas.height = 320 / aspect;
 
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { alpha: false });
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        const thumbnailDataUrl = canvas.toDataURL('image/jpeg', 0.7);
-        setThumbnail(thumbnailDataUrl);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+        thumbnailCache.set(url, dataUrl);
+        setThumbnail(dataUrl);
         setLoading(false);
-        clearTimeout(timeoutId);
-        video.remove();
+        clearTimeout(timeout);
+        cleanup();
       } catch (err) {
-        console.error('Error generating thumbnail:', err);
         setError(true);
         setLoading(false);
-        clearTimeout(timeoutId);
-        video.remove();
+        clearTimeout(timeout);
+        cleanup();
       }
     };
 
-    const handleError = () => {
+    const onError = () => {
       setError(true);
       setLoading(false);
-      clearTimeout(timeoutId);
-      video.remove();
+      clearTimeout(timeout);
+      cleanup();
     };
 
-    video.addEventListener('loadeddata', handleLoadedData);
-    video.addEventListener('seeked', handleSeeked);
-    video.addEventListener('error', handleError);
-
-    return () => {
-      clearTimeout(timeoutId);
-      video.removeEventListener('loadeddata', handleLoadedData);
-      video.removeEventListener('seeked', handleSeeked);
-      video.removeEventListener('error', handleError);
-      video.remove();
-    };
+    video.addEventListener('loadeddata', onLoadedData);
+    video.addEventListener('seeked', onSeeked);
+    video.addEventListener('error', onError);
   }, [url, isVideo, isImage]);
 
   if (loading) {
     return (
-      <Box
-        sx={{
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: '#000',
-        }}
-      >
+      <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000' }}>
         <CircularProgress size={24} sx={{ color: '#888' }} />
       </Box>
     );
@@ -323,65 +302,26 @@ const MediaThumbnail = ({ url, isVideo, isImage }) => {
 
   if (error || !thumbnail) {
     return (
-      <Box
-        sx={{
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: '#000',
-        }}
-      >
-        {isVideo ? (
-          <PlayCircleOutlineIcon sx={{ fontSize: 40, color: '#555' }} />
-        ) : (
-          <ImageIcon sx={{ fontSize: 40, color: '#555' }} />
-        )}
+      <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000' }}>
+        {isVideo ? <PlayCircleOutlineIcon sx={{ fontSize: 40, color: '#555' }} /> : <ImageIcon sx={{ fontSize: 40, color: '#555' }} />}
       </Box>
     );
   }
 
   return (
-    <Box sx={{
-      position: 'relative',
-      width: '100%',
-      height: '100%',
-      backgroundColor: '#000',
-    }}
-    >
-      <img
-        src={thumbnail}
-        alt="media"
-        style={{
-          width: '100%',
-          height: '100%',
-          display: 'block',
-          objectFit: 'cover',
-        }}
-      />
+    <Box sx={{ position: 'relative', width: '100%', height: '100%', backgroundColor: '#000' }}>
+      <img src={thumbnail} alt="media" style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover' }} />
       {isVideo && (
-        <Box
-          sx={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            backgroundColor: 'rgba(0,0,0,0.6)',
-            borderRadius: '50%',
-            width: 28,
-            height: 28,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
+        <Box sx={{
+          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}
         >
           <PlayCircleOutlineIcon sx={{ fontSize: 20, color: 'white' }} />
         </Box>
       )}
     </Box>
   );
-};
+});
 
 const ReplayMediaPage = () => {
   const t = useTranslation();
@@ -392,10 +332,6 @@ const ReplayMediaPage = () => {
 
   const timerRef = useRef();
   const abortControllerRef = useRef(null);
-  const mediaBarRef = useRef(null);
-  const isDraggingRef = useRef(false);
-  const dragStartXRef = useRef(0);
-  const dragStartScrollRef = useRef(0);
 
   const devices = useSelector((state) => state.devices.items);
   const defaultDeviceId = useSelector((state) => state.devices.selectedId);
@@ -406,18 +342,14 @@ const ReplayMediaPage = () => {
   const [positions, setPositions] = useState([]);
   const [index, setIndex] = useState(0);
   const [selectedDeviceId, setSelectedDeviceId] = useState(defaultDeviceId);
-  const [from, setFrom] = useState();
-  const [to, setTo] = useState();
   const [playing, setPlaying] = useState(false);
   const [loading, setLoading] = useState(false);
   const [smoothPosition, setSmoothPosition] = useState(null);
   const [animationProgress, setAnimationProgress] = useState(0);
-  const [speed, setSpeed] = useState(1);
   const [openMedia, setOpenMedia] = useState(null);
-  const [startLocation, setStartLocation] = useState('');
-  const [endLocation, setEndLocation] = useState('');
   const [mediaTimeline, setMediaTimeline] = useState([]);
   const [miniVariant, setMiniVariant] = useState(false);
+  const [activeMediaIndex, setActiveMediaIndex] = useState(-1);
 
   const deviceName = useMemo(
     () => selectedDeviceId && devices[selectedDeviceId]?.name,
@@ -428,24 +360,14 @@ const ReplayMediaPage = () => {
     const handleDrawerChange = (event) => {
       setMiniVariant(event.detail.miniVariant);
     };
-
     window.addEventListener('drawerStateChange', handleDrawerChange);
-    return () => {
-      window.removeEventListener('drawerStateChange', handleDrawerChange);
-    };
+    return () => window.removeEventListener('drawerStateChange', handleDrawerChange);
   }, []);
 
-  // FIXED: Simpler calculation that accounts for drawer position
   const mediaBarStyle = useMemo(() => {
-    if (!desktop) {
-      return {};
-    }
-
-    // Get drawer width based on state
-    const drawerWidth = miniVariant ? 73 : 280; // Approximate pixel values
-    // Wider when drawer collapsed, narrower when open
+    if (!desktop) return {};
+    const drawerWidth = miniVariant ? 73 : 280;
     const maxWidth = miniVariant ? 1500 : 1100;
-
     return {
       left: '50%',
       transform: `translateX(calc(-50% + ${drawerWidth / 2}px))`,
@@ -454,68 +376,49 @@ const ReplayMediaPage = () => {
     };
   }, [desktop, miniVariant]);
 
-  const activeMediaIndex = useMemo(() => {
-    if (!positions.length || !mediaTimeline.length) return -1;
+  useEffect(() => {
+    if (!positions.length || !mediaTimeline.length || openMedia) return;
 
     const currentPos = positions[index];
-    if (!currentPos) return -1;
+    if (!currentPos) return;
 
     const currentTime = new Date(currentPos.fixTime).getTime();
-
     let closestIndex = -1;
     let smallestDiff = Infinity;
 
     mediaTimeline.forEach((media, idx) => {
       const mediaTime = new Date(media.eventTime).getTime();
       const diff = currentTime - mediaTime;
-
       if (diff >= 0 && diff < smallestDiff) {
         smallestDiff = diff;
         closestIndex = idx;
       }
     });
 
-    return closestIndex;
-  }, [positions, index, mediaTimeline]);
+    setActiveMediaIndex(closestIndex);
+  }, [positions, index, mediaTimeline, openMedia]);
 
-  useEffect(() => {
-    if (activeMediaIndex >= 0 && mediaBarRef.current) {
-      const mediaBar = mediaBarRef.current;
-      const activeThumb = mediaBar.children[activeMediaIndex];
+  const displayedMedia = useMemo(() => {
+    const result = { left: [], center: null, right: [] };
 
-      if (activeThumb) {
-        const thumbLeft = activeThumb.offsetLeft;
-        const thumbWidth = activeThumb.offsetWidth;
-        const barWidth = mediaBar.offsetWidth;
-        const { scrollLeft } = mediaBar;
-
-        if (thumbLeft < scrollLeft || thumbLeft + thumbWidth > scrollLeft + barWidth) {
-          mediaBar.scrollTo({
-            left: thumbLeft - barWidth / 2 + thumbWidth / 2,
-            behavior: 'smooth',
-          });
-        }
+    if (activeMediaIndex >= 0 && mediaTimeline[activeMediaIndex]) {
+      result.center = mediaTimeline[activeMediaIndex];
+      if (activeMediaIndex >= 2) {
+        result.left.push(mediaTimeline[activeMediaIndex - 2]);
+        result.left.push(mediaTimeline[activeMediaIndex - 1]);
+      } else if (activeMediaIndex === 1) {
+        result.left.push(mediaTimeline[0]);
+      }
+      if (activeMediaIndex < mediaTimeline.length - 2) {
+        result.right.push(mediaTimeline[activeMediaIndex + 1]);
+        result.right.push(mediaTimeline[activeMediaIndex + 2]);
+      } else if (activeMediaIndex === mediaTimeline.length - 2) {
+        result.right.push(mediaTimeline[activeMediaIndex + 1]);
       }
     }
-  }, [activeMediaIndex]);
 
-  const fetchLocationName = useCallback(async (latitude, longitude, signal) => {
-    try {
-      const res = await fetch(
-        `/api/server/geocode?latitude=${latitude}&longitude=${longitude}`,
-        { signal },
-      );
-      if (res.ok) {
-        const data = await res.json();
-        return (
-          data.address || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
-        );
-      }
-    } catch {
-      return `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-    }
-    return `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-  }, []);
+    return result;
+  }, [activeMediaIndex, mediaTimeline]);
 
   const handleSubmit = useCatch(async ({ deviceId, from, to }) => {
     if (abortControllerRef.current) abortControllerRef.current.abort();
@@ -524,48 +427,25 @@ const ReplayMediaPage = () => {
 
     setLoading(true);
     setSelectedDeviceId(deviceId);
-    setFrom(from);
-    setTo(to);
     setIndex(0);
     setAnimationProgress(0);
     setPlaying(false);
+    setActiveMediaIndex(-1);
     dispatch(devicesActions.selectId(null));
 
     try {
       const query = new URLSearchParams({ deviceId, from, to }).toString();
       const [positionsRes, eventsRes] = await Promise.all([
         fetch(`/api/positions?${query}`, { signal }),
-        fetch(`/api/reports/events?${query}`, {
-          headers: { Accept: 'application/json' },
-          signal,
-        }),
+        fetch(`/api/reports/events?${query}`, { headers: { Accept: 'application/json' }, signal }),
       ]);
 
-      if (!positionsRes.ok) throw new Error(await positionsRes.text());
-      if (!eventsRes.ok) throw new Error(await eventsRes.text());
+      if (!positionsRes.ok || !eventsRes.ok) throw new Error(t('sharedNoData'));
 
-      const [positionsData, allEvents] = await Promise.all([
-        positionsRes.json(),
-        eventsRes.json(),
-      ]);
+      const [positionsData, allEvents] = await Promise.all([positionsRes.json(), eventsRes.json()]);
       if (!positionsData.length) throw new Error(t('sharedNoData'));
 
       setPositions(positionsData);
-
-      const [startLoc, endLoc] = await Promise.all([
-        fetchLocationName(
-          positionsData[0].latitude,
-          positionsData[0].longitude,
-          signal,
-        ),
-        fetchLocationName(
-          positionsData[positionsData.length - 1].latitude,
-          positionsData[positionsData.length - 1].longitude,
-          signal,
-        ),
-      ]);
-      setStartLocation(startLoc);
-      setEndLocation(endLoc);
 
       const device = devices[deviceId];
       const uniqueId = device?.uniqueId || 'unknown';
@@ -579,13 +459,6 @@ const ReplayMediaPage = () => {
           file,
           isVideo: isVideoFile(file),
           isImage: isImageFile(file),
-          time: new Date(
-            event.eventTime || event.serverTime,
-          ).toLocaleTimeString('en-US', {
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true,
-          }),
           eventTime: event.eventTime || event.serverTime,
         };
       });
@@ -606,7 +479,7 @@ const ReplayMediaPage = () => {
     if (playing && positions.length > 0) {
       timerRef.current = setInterval(() => {
         setAnimationProgress((progress) => {
-          const newProgress = progress + 0.02 * speed;
+          const newProgress = progress + 0.02;
           if (newProgress >= 1) {
             setIndex((prev) => {
               const next = prev + 1;
@@ -621,29 +494,28 @@ const ReplayMediaPage = () => {
           return newProgress;
         });
       }, 16);
-    } else if (timerRef.current) clearInterval(timerRef.current);
+    } else if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
     return () => clearInterval(timerRef.current);
-  }, [playing, positions.length, speed]);
+  }, [playing, positions.length]);
 
   useEffect(() => {
     if (!positions.length) {
       setSmoothPosition(null);
       return;
     }
-    if (index >= positions.length) {
-      setSmoothPosition(positions[positions.length - 1]);
-      return;
-    }
     const current = positions[index];
     if (index < positions.length - 1 && animationProgress > 0) {
       const next = positions[index + 1];
-      const t = animationProgress;
       setSmoothPosition({
         ...current,
-        latitude: current.latitude + (next.latitude - current.latitude) * t,
-        longitude: current.longitude + (next.longitude - current.longitude) * t,
+        latitude: current.latitude + (next.latitude - current.latitude) * animationProgress,
+        longitude: current.longitude + (next.longitude - current.longitude) * animationProgress,
       });
-    } else setSmoothPosition(current);
+    } else {
+      setSmoothPosition(current);
+    }
   }, [positions, index, animationProgress]);
 
   const onPointClick = useCallback((_, clickedIndex) => {
@@ -652,46 +524,8 @@ const ReplayMediaPage = () => {
     setPlaying(false);
   }, []);
 
-  const handleMouseDown = useCallback((e) => {
-    if (!mediaBarRef.current) return;
-    isDraggingRef.current = false;
-    dragStartXRef.current = e.pageX;
-    dragStartScrollRef.current = mediaBarRef.current.scrollLeft;
-    mediaBarRef.current.style.cursor = 'grabbing';
-    mediaBarRef.current.style.userSelect = 'none';
-  }, []);
-
-  const handleMouseMove = useCallback((e) => {
-    if (dragStartXRef.current === 0) return;
-
-    const dx = e.pageX - dragStartXRef.current;
-
-    if (Math.abs(dx) > 5) {
-      isDraggingRef.current = true;
-    }
-
-    if (mediaBarRef.current && isDraggingRef.current) {
-      mediaBarRef.current.scrollLeft = dragStartScrollRef.current - dx;
-    }
-  }, []);
-
-  const handleMouseUp = useCallback(() => {
-    if (mediaBarRef.current) {
-      mediaBarRef.current.style.cursor = 'grab';
-      mediaBarRef.current.style.userSelect = 'auto';
-    }
-    dragStartXRef.current = 0;
-
-    setTimeout(() => {
-      isDraggingRef.current = false;
-    }, 50);
-  }, []);
-
   const handleMediaClick = useCallback((media) => {
-    if (isDraggingRef.current) {
-      return;
-    }
-
+    if (!media) return;
     setOpenMedia(media);
 
     const mediaTime = new Date(media.eventTime).getTime();
@@ -701,7 +535,6 @@ const ReplayMediaPage = () => {
     positions.forEach((pos, idx) => {
       const posTime = new Date(pos.fixTime).getTime();
       const diff = Math.abs(mediaTime - posTime);
-
       if (diff < smallestDiff) {
         smallestDiff = diff;
         closestIndex = idx;
@@ -713,25 +546,14 @@ const ReplayMediaPage = () => {
     setPlaying(false);
   }, [positions]);
 
-  useEffect(() => {
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [handleMouseMove, handleMouseUp]);
-
   const handleClose = useCallback(() => {
     setPositions([]);
     setMediaTimeline([]);
-    setStartLocation('');
-    setEndLocation('');
     setIndex(0);
     setAnimationProgress(0);
     setPlaying(false);
     setOpenMedia(null);
+    setActiveMediaIndex(-1);
     dispatch(devicesActions.selectId(null));
   }, [dispatch]);
 
@@ -739,19 +561,11 @@ const ReplayMediaPage = () => {
 
   if (!positions.length) {
     return (
-      <PageLayout
-        menu={<ReportsMenu />}
-        breadcrumbs={['reportTitle', 'reportReplayMedia']}
-      >
+      <PageLayout menu={<ReportsMenu />} breadcrumbs={['reportTitle', 'reportReplayMedia']}>
         <div className={reportClasses.container}>
           <div className={reportClasses.containerMain}>
             <div className={reportClasses.header}>
-              <ReportFilter
-                handleSubmit={handleSubmit}
-                fullScreen
-                showOnly
-                loading={loading}
-              />
+              <ReportFilter handleSubmit={handleSubmit} fullScreen showOnly loading={loading} />
             </div>
           </div>
         </div>
@@ -760,10 +574,7 @@ const ReplayMediaPage = () => {
   }
 
   return (
-    <PageLayout
-      menu={<ReportsMenu />}
-      breadcrumbs={['reportTitle', 'reportReplay']}
-    >
+    <PageLayout menu={<ReportsMenu />} breadcrumbs={['reportTitle', 'reportReplay']}>
       <div className={classes.container}>
         <div className={classes.mapContainer}>
           <MapView>
@@ -773,19 +584,10 @@ const ReplayMediaPage = () => {
               positions={positions}
               onClick={(pos, idx) => {
                 onPointClick(pos, idx);
-
-                if (selectedDeviceId) {
-                  dispatch(devicesActions.selectId(selectedDeviceId));
-                }
+                if (selectedDeviceId) dispatch(devicesActions.selectId(selectedDeviceId));
               }}
             />
-            {smoothPosition && (
-              <MapPositions
-                positions={[smoothPosition]}
-                titleField="fixTime"
-                customIcon="event-error"
-              />
-            )}
+            {smoothPosition && <MapPositions positions={[smoothPosition]} titleField="fixTime" customIcon="event-error" />}
           </MapView>
           <MapCamera positions={positions} />
           <MapScale />
@@ -794,16 +596,10 @@ const ReplayMediaPage = () => {
         <div className={classes.sidebar}>
           <Paper elevation={4}>
             <Toolbar>
-              <Typography
-                variant="subtitle1"
-                fontWeight="bold"
-                sx={{ flexGrow: 1 }}
-                className={classes.toolbarTitle}
-              >
+              <Typography variant="subtitle1" fontWeight="bold" sx={{ flexGrow: 1 }} className={classes.toolbarTitle}>
                 {t('reportReplay')}
                 {' '}
                 -
-                {' '}
                 {deviceName || t('sharedDevice')}
               </Typography>
               <IconButton onClick={handleClose}>
@@ -814,9 +610,7 @@ const ReplayMediaPage = () => {
 
           <Paper className={classes.sidebarContent}>
             <Typography variant="subtitle1" fontWeight="bold">
-              {currentPosition
-                ? formatTime(currentPosition.fixTime, 'seconds')
-                : '--'}
+              {currentPosition ? formatTime(currentPosition.fixTime, 'seconds') : '--'}
             </Typography>
             <Slider
               max={positions.length - 1}
@@ -830,29 +624,19 @@ const ReplayMediaPage = () => {
               marks={positions.map((_, i) => ({ value: i }))}
             />
             <Box className={classes.controls}>
-              <IconButton
-                onClick={() => setIndex((i) => Math.max(0, i - 1))}
-                disabled={playing || index <= 0}
-              >
+              <IconButton onClick={() => setIndex((i) => Math.max(0, i - 1))} disabled={index <= 0}>
                 <FastRewindIcon />
               </IconButton>
-              <IconButton
-                onClick={() => setPlaying((p) => !p)}
-                disabled={index >= positions.length - 1 && !playing}
-              >
+              <IconButton onClick={() => setPlaying((p) => !p)} disabled={index >= positions.length - 1 && !playing}>
                 {playing ? <PauseIcon /> : <PlayArrowIcon />}
               </IconButton>
-              <IconButton
-                onClick={() => setIndex((i) => Math.min(i + 1, positions.length - 1))}
-                disabled={playing || index >= positions.length - 1}
-              >
+              <IconButton onClick={() => setIndex((i) => Math.min(i + 1, positions.length - 1))} disabled={index >= positions.length - 1}>
                 <FastForwardIcon />
               </IconButton>
               <Typography variant="caption">
                 {index + 1}
                 {' '}
                 /
-                {' '}
                 {positions.length}
               </Typography>
             </Box>
@@ -860,49 +644,43 @@ const ReplayMediaPage = () => {
         </div>
 
         {mediaTimeline.length > 0 && (
-        <Paper
-          ref={mediaBarRef}
-          className={classes.mediaBar}
-          style={mediaBarStyle}
-          elevation={6}
-          onMouseDown={handleMouseDown}
-        >
-          {mediaTimeline.map((item, idx) => (
-            <Box
-              key={item.id}
-              onClick={() => handleMediaClick(item)}
-              className={`${classes.thumb} ${
-                openMedia?.id === item.id ? classes.thumbSelected : ''
-              } ${
-                idx === activeMediaIndex ? classes.thumbActive : ''
-              }`}
-            >
-              <MediaThumbnail
-                url={item.url}
-                isVideo={item.isVideo}
-                isImage={item.isImage}
-              />
+          <Paper className={classes.mediaBar} style={mediaBarStyle} elevation={6}>
+            <Box className={`${classes.section} ${classes.leftSection}`}>
+              {displayedMedia.left.map((media) => (
+                <Box key={media.id} className={classes.thumb}>
+                  <MediaThumbnail url={media.url} isVideo={media.isVideo} isImage={media.isImage} />
+                </Box>
+              ))}
             </Box>
-          ))}
-        </Paper>
+
+            <Box className={`${classes.section} ${classes.centerSection}`}>
+              {displayedMedia.center && (
+                <Box className={`${classes.thumb} ${classes.thumbCenter}`} onClick={() => handleMediaClick(displayedMedia.center)}>
+                  <MediaThumbnail url={displayedMedia.center.url} isVideo={displayedMedia.center.isVideo} isImage={displayedMedia.center.isImage} />
+                </Box>
+              )}
+            </Box>
+
+            <Box className={`${classes.section} ${classes.rightSection}`}>
+              {displayedMedia.right.map((media) => (
+                <Box key={media.id} className={classes.thumb}>
+                  <MediaThumbnail url={media.url} isVideo={media.isVideo} isImage={media.isImage} />
+                </Box>
+              ))}
+            </Box>
+          </Paper>
         )}
 
-        {openMedia && (
-        <MediaPreview
-          open={!!openMedia}
-          mediaUrl={openMedia.url}
-          onClose={() => setOpenMedia(null)}
-        />
-        )}
+        {openMedia && <MediaPreview open={!!openMedia} mediaUrl={openMedia.url} onClose={() => setOpenMedia(null)} />}
 
         {selectedDeviceIdFromRedux && currentPosition && (
-        <StatusCard
-          deviceId={selectedDeviceIdFromRedux}
-          position={currentPosition}
-          onClose={() => dispatch(devicesActions.selectId(null))}
-          desktopPadding={theme.dimensions.drawerWidthDesktop}
-          disableActions
-        />
+          <StatusCard
+            deviceId={selectedDeviceIdFromRedux}
+            position={currentPosition}
+            onClose={() => dispatch(devicesActions.selectId(null))}
+            desktopPadding={theme.dimensions.drawerWidthDesktop}
+            disableActions
+          />
         )}
       </div>
     </PageLayout>
