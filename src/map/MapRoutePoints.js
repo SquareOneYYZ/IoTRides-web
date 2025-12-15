@@ -1,5 +1,5 @@
 import {
-  useId, useCallback, useEffect, useMemo, useRef,
+  useId, useCallback, useEffect, useMemo,
 } from 'react';
 import { map } from './core/MapView';
 import getSpeedColor from '../common/util/colors';
@@ -13,68 +13,50 @@ const MapRoutePoints = ({ positions, onClick }) => {
   const t = useTranslation();
   const speedUnit = useAttributePreference('speedUnit');
 
-  const clickHandlerRef = useRef(null);
+  const onMouseEnter = () => (map.getCanvas().style.cursor = 'pointer');
+  const onMouseLeave = () => (map.getCanvas().style.cursor = '');
 
-  const { minSpeed, maxSpeed } = useMemo(() => {
-    if (!positions.length) return { minSpeed: 0, maxSpeed: 0 };
+  const { simplifiedPositions } = useMemo(() => {
+    if (!positions.length) return { simplifiedPositions: [] };
 
-    let min = Infinity;
-    let max = -Infinity;
-
-    for (let i = 0; i < positions.length; i += 1) {
-      const s = positions[i].speed;
-      if (s < min) min = s;
-      if (s > max) max = s;
-    }
-    return { minSpeed: min, maxSpeed: max };
-  }, [positions]);
-
-  const simplifiedPositions = useMemo(() => {
-    if (!positions.length) return [];
-    return positions.filter(
+    const simplified = positions.filter(
       (p, i) => i === 0 || i === positions.length - 1 || i % 4 === 0,
     );
+
+    return { simplifiedPositions: simplified };
   }, [positions]);
-
-  const onMouseEnter = useCallback(() => {
-    map.getCanvas().style.cursor = 'pointer';
-  }, []);
-
-  const onMouseLeave = useCallback(() => {
-    map.getCanvas().style.cursor = '';
-  }, []);
 
   const onMarkerClick = useCallback(
     (event) => {
       event.preventDefault();
-      const feature = event.features?.[0];
-      if (!feature) return;
+      const feature = event.features[0];
 
-      if (onClick) {
-        onClick(feature.properties.id, feature.properties.index);
+      if (feature) {
+        if (onClick) {
+          onClick(feature.properties.id, feature.properties.index);
+        }
+
+        const maxSpeed = Math.max(...positions.map((pt) => pt.speed));
+        const minSpeed = Math.min(...positions.map((pt) => pt.speed));
+
+        map.getSource(id)?.setData({
+          type: 'FeatureCollection',
+          features: positions.map((p, index) => ({
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [p.longitude, p.latitude] },
+            properties: {
+              index,
+              id: p.id,
+              rotation: p.course,
+              color: getSpeedColor(p.speed, minSpeed, maxSpeed),
+              border: p.isReturn ? '#000000' : 'transparent',
+            },
+          })),
+        });
       }
-
-      const features = positions.map((p, index) => ({
-        type: 'Feature',
-        geometry: { type: 'Point', coordinates: [p.longitude, p.latitude] },
-        properties: {
-          index,
-          id: p.id,
-          rotation: p.course,
-          color: getSpeedColor(p.speed, minSpeed, maxSpeed),
-          border: p.isReturn ? '#000000' : 'transparent',
-        },
-      }));
-
-      map.getSource(id)?.setData({
-        type: 'FeatureCollection',
-        features,
-      });
     },
-    [positions, onClick, id, minSpeed, maxSpeed],
+    [onClick, id, positions],
   );
-
-  clickHandlerRef.current = onMarkerClick;
 
   useEffect(() => {
     map.addSource(id, {
@@ -101,19 +83,28 @@ const MapRoutePoints = ({ positions, onClick }) => {
 
     map.on('mouseenter', id, onMouseEnter);
     map.on('mouseleave', id, onMouseLeave);
-    map.on('click', id, (e) => clickHandlerRef.current?.(e));
+    map.on('click', id, onMarkerClick);
 
-    map.once('remove', () => {
-      if (map.getLayer(id)) map.removeLayer(id);
-      if (map.getSource(id)) map.removeSource(id);
+    return () => {
       map.off('mouseenter', id, onMouseEnter);
       map.off('mouseleave', id, onMouseLeave);
-      map.off('click', id, clickHandlerRef.current);
-    });
-  }, [id, onMouseEnter, onMouseLeave]);
+      map.off('click', id, onMarkerClick);
+
+      if (map.getLayer(id)) map.removeLayer(id);
+      if (map.getSource(id)) map.removeSource(id);
+    };
+  }, [onMarkerClick]);
 
   useEffect(() => {
-    if (!positions.length) return;
+    if (!positions.length) {
+      return () => {};
+    }
+
+    const maxSpeed = positions.reduce(
+      (a, b) => Math.max(a, b.speed),
+      -Infinity,
+    );
+    const minSpeed = positions.reduce((a, b) => Math.min(a, b.speed), Infinity);
 
     const control = new SpeedLegendControl(
       positions,
@@ -124,7 +115,7 @@ const MapRoutePoints = ({ positions, onClick }) => {
     );
     map.addControl(control, 'bottom-left');
 
-    const draw = () => {
+    const showSimplifiedPoints = () => {
       map.getSource(id)?.setData({
         type: 'FeatureCollection',
         features: simplifiedPositions.map((p, index) => ({
@@ -141,20 +132,20 @@ const MapRoutePoints = ({ positions, onClick }) => {
       });
     };
 
-    draw();
+    showSimplifiedPoints();
 
-    const outsideClick = (e) => {
+    map.on('click', (e) => {
       const features = map.queryRenderedFeatures(e.point, { layers: [id] });
-      if (!features.length) draw();
-    };
-
-    map.on('click', outsideClick);
-
-    map.once('remove', () => {
-      map.removeControl(control);
-      map.off('click', outsideClick);
+      if (!features.length) {
+        showSimplifiedPoints();
+      }
     });
-  }, [positions, simplifiedPositions, speedUnit, t, id, minSpeed, maxSpeed]);
+
+    return () => {
+      map.removeControl(control);
+      map.off('click');
+    };
+  }, [positions, simplifiedPositions, speedUnit, t, id]);
 
   return null;
 };

@@ -41,7 +41,6 @@ import useSettingsStyles from './common/useSettingsStyles';
 import DeviceUsersValue from './components/DeviceUsersValue';
 import usePersistedState from '../common/util/usePersistedState';
 
-// Helper function to check if expiration is soon (within 30 days)
 const isExpiringSoon = (expirationTime) => {
   if (!expirationTime) return false;
   const expirationDate = new Date(expirationTime);
@@ -50,7 +49,6 @@ const isExpiringSoon = (expirationTime) => {
   return expirationDate <= thirtyDaysFromNow && expirationDate > new Date();
 };
 
-// Enhanced filter function for global search
 const filterByGlobalSearch = (keyword) => (item) => {
   if (!keyword) return true;
   const searchFields = [
@@ -234,7 +232,20 @@ const DevicesPage = () => {
   );
 
   const handleExport = () => {
-    window.location.assign('/api/reports/devices/xlsx');
+    const params = new URLSearchParams();
+
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) params.append(key, value);
+    });
+
+    if (globalSearch) {
+      params.append('search', globalSearch);
+    }
+
+    params.append('sortKey', sortConfig.key);
+    params.append('sortDir', sortConfig.direction);
+
+    window.location.assign(`/api/reports/devices/xlsx?${params.toString()}`);
   };
 
   const handlePageChange = (event, newPage) => {
@@ -317,6 +328,7 @@ const DevicesPage = () => {
             </Grid>
           </Grid>
 
+          {/* Column Filters */}
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6} md={2}>
               <FormControl fullWidth size="small">
