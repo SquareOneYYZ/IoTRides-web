@@ -30,8 +30,8 @@ import scheduleReport from './common/scheduleReport';
 const columnsArray = [
   ['deviceId', 'sharedDevice'],
   ['geofenceId', 'sharedGeofence'],
-  ['startTime', 'reportStartDate'],
-  ['endTime', 'reportEndDate'],
+  ['startTime', 'reportStartTime'],
+  ['endTime', 'reportEndTime'],
   ['type', 'sharedType'],
   ['totalDistance', 'sharedTotalDistance'],
   ['startDistance', 'sharedStartDistance'],
@@ -49,6 +49,7 @@ const GeofenceDistanceReportPage = () => {
   const devices = useSelector((state) => state.devices.items);
 
   const distanceUnit = useAttributePreference('distanceUnit');
+  const [filterRange, setFilterRange] = useState({ from: null, to: null });
 
   const [columns, setColumns] = usePersistedState('geofenceDistanceColumns', [
     'deviceId',
@@ -112,6 +113,7 @@ const GeofenceDistanceReportPage = () => {
         if (response.ok) {
           const data = await response.json();
           setItems(data);
+          setFilterRange({ from, to });
         } else {
           throw Error(await response.text());
         }
@@ -141,17 +143,14 @@ const GeofenceDistanceReportPage = () => {
         return geofences[value]?.name || value;
 
       case 'startTime':
+        return filterRange.from
+          ? formatTime(filterRange.from, 'minutes')
+          : 'N/A';
+
       case 'endTime':
-        // Format date and time in "Nov 29, 10 AM" format
-        if (value) {
-          const date = new Date(value);
-          const options = { month: 'short', day: 'numeric' };
-          const timeOptions = { hour: 'numeric', minute: '2-digit', hour12: true };
-          const dateStr = date.toLocaleDateString('en-US', options);
-          const timeStr = date.toLocaleTimeString('en-US', timeOptions);
-          return `${dateStr}, ${timeStr}`;
-        }
-        return 'N/A';
+        return filterRange.to
+          ? formatTime(filterRange.to, 'minutes')
+          : 'N/A';
 
       case 'type':
         if (value === 'enter') return 'Entered Geofence';
