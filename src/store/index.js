@@ -25,21 +25,18 @@ const reducer = combineReducers({
   reports,
 });
 
-export * from './errors';
-export * from './session';
-export * from './devices';
-export * from './events';
-export * from './geofences';
-export * from './groups';
-export * from './drivers';
-export * from './maintenances';
-export * from './calendars';
-export * from './reports';
+export { errorsActions } from './errors';
+export { sessionActions } from './session';
+export { devicesActions } from './devices';
+export { eventsActions } from './events';
+export { geofencesActions } from './geofences';
+export { groupsActions } from './groups';
+export { driversActions } from './drivers';
+export { maintenancesActions } from './maintenances';
+export { calendarsActions } from './calendars';
+export { reportsActions } from './reports';
 
 export default configureStore({
   reducer,
-  middleware: (getDefaultMiddleware) => getDefaultMiddleware({
-    serializableCheck: false,
-    immutableCheck: false,
-  }).concat(throttleMiddleware),
+  middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(throttleMiddleware),
 });

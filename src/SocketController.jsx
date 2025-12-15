@@ -24,9 +24,6 @@ const SocketController = () => {
 
   const socketRef = useRef();
 
-  const positionBuffer = useRef([]);
-  const batchTimeout = useRef(null);
-
   const [events, setEvents] = useState([]);
   const [notifications, setNotifications] = useState([]);
 
@@ -46,16 +43,6 @@ const SocketController = () => {
 
     socket.onclose = async (event) => {
       dispatch(sessionActions.updateSocket(false));
-
-      if (batchTimeout.current) {
-        clearTimeout(batchTimeout.current);
-        batchTimeout.current = null;
-      }
-      if (positionBuffer.current.length > 0) {
-        dispatch(sessionActions.updatePositions(positionBuffer.current));
-        positionBuffer.current = [];
-      }
-
       if (event.code !== logoutCode) {
         try {
           const devicesResponse = await fetch('/api/devices');
@@ -78,32 +65,18 @@ const SocketController = () => {
 
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
-
       if (data.devices) {
         dispatch(devicesActions.update(data.devices));
       }
-
       if (data.positions) {
-        positionBuffer.current.push(...data.positions);
-        if (batchTimeout.current) {
-          clearTimeout(batchTimeout.current);
-        }
-        batchTimeout.current = setTimeout(() => {
-          if (positionBuffer.current.length > 0) {
-            dispatch(sessionActions.updatePositions(positionBuffer.current));
-            positionBuffer.current = [];
-          }
-          batchTimeout.current = null;
-        }, 500);
+        dispatch(sessionActions.updatePositions(data.positions));
       }
-
       if (data.events) {
         if (!features.disableEvents) {
           dispatch(eventsActions.add(data.events));
         }
         setEvents(data.events);
       }
-
       if (data.logs) {
         dispatch(sessionActions.updateLogs(data.logs));
       }
@@ -127,9 +100,6 @@ const SocketController = () => {
         const socket = socketRef.current;
         if (socket) {
           socket.close(logoutCode);
-        }
-        if (batchTimeout.current) {
-          clearTimeout(batchTimeout.current);
         }
       };
     }
