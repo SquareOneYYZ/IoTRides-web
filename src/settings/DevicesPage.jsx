@@ -126,14 +126,6 @@ const DevicesPage = () => {
     }
   }, [timestamp, showAll]);
 
-  const uniqueModels = useMemo(() => {
-    const models = [
-      ...new Set(items.map((item) => item.model).filter(Boolean)),
-    ];
-    return models.sort();
-  }, [items]);
-
-  // Handle sorting
   const handleSort = (key) => {
     setSortConfig((prev) => ({
       key,
@@ -200,7 +192,6 @@ const DevicesPage = () => {
         }
       }
 
-      // Text-based filters
       const textFilters = [
         { field: item.name || '', filter: filters.name },
         { field: item.uniqueId || '', filter: filters.identifier },
@@ -566,7 +557,6 @@ const DevicesPage = () => {
             </Grid>
           </Grid>
 
-          {/* Active Filters Display */}
           {hasActiveFilters && (
             <Box sx={{ mt: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
               <Typography variant="body2" color="textSecondary" sx={{ mr: 1 }}>
@@ -680,7 +670,6 @@ const DevicesPage = () => {
                   <TableRow
                     key={item.id}
                     hover
-                    onClick={(event) => handleRowSelect(item.id, null, event)}
                     role="checkbox"
                     selected={selectedIds.includes(item.id)}
                   >
