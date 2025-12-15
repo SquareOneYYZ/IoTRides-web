@@ -1,5 +1,6 @@
 import React, {
   useState,
+  useEffect,
 } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -29,48 +30,72 @@ import scheduleReport from './common/scheduleReport';
 const columnsArray = [
   ['deviceId', 'sharedDevice'],
   ['geofenceId', 'sharedGeofence'],
-  ['startTime', 'reportStartTime'],
-  ['endTime', 'reportEndTime'],
+  ['startTime', 'reportStartDate'],
+  ['endTime', 'reportEndDate'],
   ['type', 'sharedType'],
-  ['distance', 'sharedDistance'],
-  ['startOdometer', 'reportStartOdometer'],
-  ['endOdometer', 'reportEndOdometer'],
+  ['totalDistance', 'sharedTotalDistance'],
+  ['startDistance', 'sharedStartDistance'],
+  ['endDistance', 'sharedEndDistance'],
+  ['distanceTraveled', 'sharedDistanceTraveled'],
 ];
 
 const columnsMap = new Map(columnsArray);
 
-const GeofenceActivityReportPage = () => {
+const GeofenceDistanceReportPage = () => {
   const navigate = useNavigate();
   const classes = useReportStyles();
   const t = useTranslation();
 
   const devices = useSelector((state) => state.devices.items);
-  const geofences = useSelector((state) => state.geofences.items);
 
   const distanceUnit = useAttributePreference('distanceUnit');
 
-  const [columns, setColumns] = usePersistedState('geofenceActivityColumns', [
+  const [columns, setColumns] = usePersistedState('geofenceDistanceColumns', [
     'deviceId',
     'geofenceId',
     'startTime',
     'endTime',
     'type',
-    'distance',
-    'startOdometer',
-    'endOdometer',
+    'totalDistance',
+    'startDistance',
+    'endDistance',
+    'distanceTraveled',
   ]);
 
   const [items, setItems] = useState([]);
+  const [geofences, setGeofences] = useState({});
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchGeofences = async () => {
+      try {
+        const response = await fetch('/api/geofences', {
+          headers: { Accept: 'application/json' },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const geofenceMap = {};
+          data.forEach((geofence) => {
+            geofenceMap[geofence.id] = geofence;
+          });
+          setGeofences(geofenceMap);
+        }
+      } catch (error) {
+        console.error('Error fetching geofences:', error);
+      }
+    };
+
+    fetchGeofences();
+  }, []);
 
   const handleSubmit = useCatch(async ({ deviceId, from, to, type }) => {
     const query = new URLSearchParams({ deviceId, from, to });
 
     if (type === 'export') {
-      window.location.assign(`/api/reports/geofence-activity/xlsx?${query.toString()}`);
+      window.location.assign(`/api/devicegeofencedistances/xlsx?${query.toString()}`);
     } else if (type === 'mail') {
       const response = await fetch(
-        `/api/reports/geofence-activity/mail?${query.toString()}`,
+        `/api/devicegeofencedistances/mail?${query.toString()}`,
       );
       if (!response.ok) {
         throw Error(await response.text());
@@ -79,7 +104,7 @@ const GeofenceActivityReportPage = () => {
       setLoading(true);
       try {
         const response = await fetch(
-          `/api/reports/geofence-activity?${query.toString()}`,
+          `/api/devicegeofencedistances?${query.toString()}`,
           {
             headers: { Accept: 'application/json' },
           },
@@ -97,7 +122,7 @@ const GeofenceActivityReportPage = () => {
   });
 
   const handleSchedule = useCatch(async (deviceIds, groupIds, report) => {
-    report.type = 'geofence-activity';
+    report.type = 'geofence-distance';
     const error = await scheduleReport(deviceIds, groupIds, report);
     if (error) {
       throw Error(error);
@@ -117,21 +142,34 @@ const GeofenceActivityReportPage = () => {
 
       case 'startTime':
       case 'endTime':
-        return formatTime(value, 'seconds');
+        // Format date and time in "Nov 29, 10 AM" format
+        if (value) {
+          const date = new Date(value);
+          const options = { month: 'short', day: 'numeric' };
+          const timeOptions = { hour: 'numeric', minute: '2-digit', hour12: true };
+          const dateStr = date.toLocaleDateString('en-US', options);
+          const timeStr = date.toLocaleTimeString('en-US', timeOptions);
+          return `${dateStr}, ${timeStr}`;
+        }
+        return 'N/A';
 
       case 'type':
-        // Map type values to display text
-        if (value === 'within') return 'Within Geofence';
-        if (value === 'entered') return 'Entered Geofence';
-        if (value === 'exited') return 'Exited Geofence';
+        if (value === 'enter') return 'Entered Geofence';
+        if (value === 'exit') return 'Exited Geofence';
         return value;
 
-      case 'distance':
+      case 'totalDistance':
+      case 'startDistance':
+      case 'endDistance':
+        if (value === null || value === undefined) return 'N/A';
         return formatDistance(value, distanceUnit, t);
 
-      case 'startOdometer':
-      case 'endOdometer':
-        return formatDistance(value, distanceUnit, t);
+      case 'distanceTraveled':
+        if (item.startDistance !== null && item.endDistance !== null) {
+          const distanceTraveled = item.endDistance - item.startDistance;
+          return formatDistance(distanceTraveled, distanceUnit, t);
+        }
+        return 'N/A';
 
       default:
         return value;
@@ -141,7 +179,7 @@ const GeofenceActivityReportPage = () => {
   return (
     <PageLayout
       menu={<ReportsMenu />}
-      breadcrumbs={['reportTitle', 'reportGeofenceActivity']}
+      breadcrumbs={['reportTitle', 'reportGeofenceDistance']}
     >
       <div className={classes.container}>
         <div className={classes.containerMain}>
@@ -169,7 +207,7 @@ const GeofenceActivityReportPage = () => {
             <TableBody>
               {!loading ? (
                 items.map((item) => (
-                  <TableRow key={`${item.deviceId}-${item.geofenceId}-${item.startTime}`}>
+                  <TableRow key={item.id}>
                     {columns.map((key) => (
                       <TableCell key={key}>{formatValue(item, key)}</TableCell>
                     ))}
@@ -186,4 +224,4 @@ const GeofenceActivityReportPage = () => {
   );
 };
 
-export default GeofenceActivityReportPage;
+export default GeofenceDistanceReportPage;
