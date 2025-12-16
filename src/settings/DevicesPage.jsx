@@ -76,8 +76,6 @@ const DevicesPage = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showAll, setShowAll] = usePersistedState('showAllDevices', false);
-
-  // Search and Filter States
   const [globalSearch, setGlobalSearch] = useState('');
   const [filters, setFilters] = useState({
     group: '',
@@ -147,7 +145,6 @@ const DevicesPage = () => {
     setGlobalSearch('');
     setPage(1);
   };
-
   const hasActiveFilters = Object.values(filters).some((value) => value !== '') || globalSearch !== '';
 
   const processedItems = useMemo(() => {
