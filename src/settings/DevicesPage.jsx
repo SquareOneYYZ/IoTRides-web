@@ -72,18 +72,13 @@ const DevicesPage = () => {
   const classes = useSettingsStyles();
   const navigate = useNavigate();
   const t = useTranslation();
-
   const groups = useSelector((state) => state.groups.items);
-
   const manager = useManager();
   const deviceReadonly = useDeviceReadonly();
-
   const [timestamp, setTimestamp] = useState(Date.now());
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showAll, setShowAll] = usePersistedState('showAllDevices', false);
-
-  // Search and Filter States
   const [globalSearch, setGlobalSearch] = useState('');
   const [filters, setFilters] = useState({
     group: '',
@@ -738,12 +733,7 @@ const DevicesPage = () => {
             </TableBody>
             <TableFooter>
               <TableRow>
-                <TableCell colSpan={2}>
-                  <Button onClick={handleExport} variant="text">
-                    {t('reportExport')}
-                  </Button>
-                </TableCell>
-                <TableCell colSpan={manager ? 9 : 8} align="right">
+                {/* <TableCell colSpan={manager ? 9 : 8} align="right">
                   <FormControlLabel
                     control={(
                       <Switch
@@ -756,9 +746,12 @@ const DevicesPage = () => {
                     labelPlacement="start"
                     disabled={!manager}
                   />
-                </TableCell>
+                </TableCell> */}
               </TableRow>
             </TableFooter>
+            <Button onClick={handleExport} variant="text">
+              {t('reportExport')}
+            </Button>
           </Table>
         </Box>
         <Box sx={{
