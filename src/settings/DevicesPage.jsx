@@ -761,8 +761,41 @@ const DevicesPage = () => {
             </TableFooter>
           </Table>
         </Box>
+        <Box sx={{
+          display: 'flex',
+          justifyContent: 'space-evenly',
+          alignItems: 'center',
+          mt: 2,
+          mb: 8,
+          flexWrap: 'wrap',
+          gap: 2,
+        }}
+        >
+          {/* Rows per page selector */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="body2" color="textSecondary">
+              Rows per page:
+            </Typography>
+            <Select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(e.target.value);
+                setPage(1); // Reset to first page when changing page size
+              }}
+              size="small"
+              variant="outlined"
+              sx={{ minWidth: 80 }}
+            >
+              <MenuItem value={25}>25</MenuItem>
+              <MenuItem value={50}>50</MenuItem>
+              <MenuItem value={100}>100</MenuItem>
+            </Select>
+            <Typography variant="body2" color="textSecondary">
+              {`${startIndex + 1}-${Math.min(startIndex + pageSize, processedItems.length)} of ${processedItems.length}`}
+            </Typography>
+          </Box>
 
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2, mb: 8 }}>
+          {/* Pagination controls */}
           <Pagination
             count={totalPages}
             page={page}
