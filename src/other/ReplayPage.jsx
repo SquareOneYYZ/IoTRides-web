@@ -2,7 +2,7 @@ import React, {
   useState, useEffect, useRef, useCallback,
 } from 'react';
 import {
-  IconButton, Paper, Slider, Toolbar, Typography,
+  IconButton, Paper, Slider, Toolbar, Typography, Box, Chip,
 } from '@mui/material';
 import makeStyles from '@mui/styles/makeStyles';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -12,6 +12,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import FastForwardIcon from '@mui/icons-material/FastForward';
 import FastRewindIcon from '@mui/icons-material/FastRewind';
+import SpeedIcon from '@mui/icons-material/Speed';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import MapView from '../map/core/MapView';
@@ -26,6 +27,8 @@ import MapCamera from '../map/MapCamera';
 import MapGeofence from '../map/MapGeofence';
 import StatusCard from '../common/components/StatusCard';
 import MapScale from '../map/MapScale';
+
+const SPEED_OPTIONS = [0.75, 0.5, 1, 1.5, 2];
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -55,6 +58,20 @@ const useStyles = makeStyles((theme) => ({
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  speedControl: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'column',
+    gap: theme.spacing(1),
+    marginBottom: theme.spacing(2),
+    marginTop: theme.spacing(2),
+  },
+  speedChips: {
+    display: 'flex',
+    gap: theme.spacing(0.75),
+    flexWrap: 'wrap',
   },
   formControlLabel: {
     height: '100%',
@@ -167,6 +184,8 @@ const ReplayPage = () => {
   const onPointClick = useCallback(
     (_, index) => {
       setIndex(index);
+      setAnimationProgress(0);
+      setPlaying(false);
     },
     [setIndex],
   );
@@ -255,18 +274,44 @@ const ReplayPage = () => {
               <Typography variant="subtitle1" align="center">
                 {deviceName}
               </Typography>
+
+              {/* Speed Control Section */}
+              <Box className={classes.speedControl}>
+                <Box className={classes.speedChips}>
+                  {SPEED_OPTIONS.map((speedOption) => (
+                    <Chip
+                      key={speedOption}
+                      label={`${speedOption}x`}
+                      onClick={() => setSpeed(speedOption)}
+                      color={speed === speedOption ? 'primary' : 'default'}
+                      variant={speed === speedOption ? 'filled' : 'outlined'}
+                      size="small"
+                      sx={{ minWidth: 48 }}
+                    />
+                  ))}
+                </Box>
+              </Box>
+
               <Slider
                 className={classes.slider}
                 max={positions.length - 1}
                 step={null}
                 marks={positions.map((_, index) => ({ value: index }))}
                 value={index}
-                onChange={(_, index) => setIndex(index)}
+                onChange={(_, newIndex) => {
+                  setIndex(newIndex);
+                  setAnimationProgress(0);
+                  setPlaying(false);
+                }}
               />
               <div className={classes.controls}>
                 {`${index + 1}/${positions.length}`}
                 <IconButton
-                  onClick={() => setIndex((index) => index - 1)}
+                  onClick={() => {
+                    setIndex((index) => index - 1);
+                    setAnimationProgress(0);
+                    setPlaying(false);
+                  }}
                   disabled={playing || index <= 0}
                 >
                   <FastRewindIcon />
@@ -278,7 +323,11 @@ const ReplayPage = () => {
                   {playing ? <PauseIcon /> : <PlayArrowIcon />}
                 </IconButton>
                 <IconButton
-                  onClick={() => setIndex((index) => index + 1)}
+                  onClick={() => {
+                    setIndex((index) => index + 1);
+                    setAnimationProgress(0);
+                    setPlaying(false);
+                  }}
                   disabled={playing || index >= positions.length - 1}
                 >
                   <FastForwardIcon />
