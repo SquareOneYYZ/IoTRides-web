@@ -1,10 +1,15 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   IconButton, Table, TableBody, TableCell, TableHead, TableRow,
 } from '@mui/material';
 import GpsFixedIcon from '@mui/icons-material/GpsFixed';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import Collapse from '@mui/material/Collapse';
+import Box from '@mui/material/Box';
+import { useSelector } from 'react-redux';
 import {
   formatDistance, formatSpeed, formatVolume, formatTime, formatNumericHours,
 } from '../common/util/formatter';
@@ -27,6 +32,8 @@ import MapGeofence from '../map/MapGeofence';
 import scheduleReport from './common/scheduleReport';
 import MapScale from '../map/MapScale';
 import useResizableMap from './common/useResizableMap';
+import MediaPreview from './components/MediaPreview';
+// import MediaBar from './components/MediaBar';
 
 const columnsArray = [
   ['startTime', 'reportStartTime'],
@@ -52,12 +59,15 @@ const TripReportPage = () => {
   const distanceUnit = useAttributePreference('distanceUnit');
   const speedUnit = useAttributePreference('speedUnit');
   const volumeUnit = useAttributePreference('volumeUnit');
-
+  const devices = useSelector((state) => state.devices.items);
   const [columns, setColumns] = usePersistedState('tripColumns', ['startTime', 'endTime', 'distance', 'averageSpeed']);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [route, setRoute] = useState(null);
+  const [tripMediaMap, setTripMediaMap] = useState({});
+  const [openTrips, setOpenTrips] = useState({});
+  const [mediaPreviewUrl, setMediaPreviewUrl] = useState(null);
 
   const createMarkers = () => ([
     {
@@ -93,6 +103,46 @@ const TripReportPage = () => {
       setRoute(null);
     }
   }, [selectedItem]);
+
+  const fetchTripMedia = async (trip) => {
+    const query = new URLSearchParams({
+      deviceId: trip.deviceId,
+      from: trip.startTime,
+      to: trip.endTime,
+      type: 'media',
+    });
+
+    const response = await fetch(`/api/reports/events?${query.toString()}`, {
+      headers: { Accept: 'application/json' },
+    });
+
+    if (response.ok) {
+      const events = await response.json();
+      if (events.length) {
+        setTripMediaMap((prev) => ({
+          ...prev,
+          [trip.startPositionId]: events,
+        }));
+      }
+    }
+  };
+
+  useEffect(() => {
+    items.forEach((trip) => {
+      fetchTripMedia(trip);
+    });
+  }, [items]);
+
+  const toggleTrip = (tripId) => {
+    setOpenTrips((prev) => ({
+      ...prev,
+      [tripId]: !prev[tripId],
+    }));
+  };
+
+  const handleMediaClick = (url) => {
+    setMediaPreviewUrl(url);
+  };
 
   const handleSubmit = useCatch(async ({ deviceId, from, to, type }) => {
     const query = new URLSearchParams({ deviceId, from, to });
@@ -244,30 +294,78 @@ const TripReportPage = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {!loading ? items.map((item) => (
-                <TableRow key={item.startPositionId}>
-                  <TableCell className={classes.columnAction} padding="none">
-                    {selectedItem === item ? (
-                      <IconButton size="small" onClick={() => setSelectedItem(null)}>
-                        <GpsFixedIcon fontSize="small" />
-                      </IconButton>
-                    ) : (
-                      <IconButton size="small" onClick={() => setSelectedItem(item)}>
-                        <LocationSearchingIcon fontSize="small" />
-                      </IconButton>
+              {!loading ? items.map((item) => {
+                const media = tripMediaMap[item.startPositionId] || [];
+                const isOpen = openTrips[item.startPositionId];
+
+                return (
+                  <React.Fragment key={item.startPositionId}>
+                    <TableRow>
+                      <TableCell className={classes.columnAction} padding="none">
+                        {selectedItem === item ? (
+                          <IconButton size="small" onClick={() => setSelectedItem(null)}>
+                            <GpsFixedIcon fontSize="small" />
+                          </IconButton>
+                        ) : (
+                          <IconButton size="small" onClick={() => setSelectedItem(item)}>
+                            <LocationSearchingIcon fontSize="small" />
+                          </IconButton>
+                        )}
+                      </TableCell>
+
+                      {columns.map((key, index) => (
+                        <TableCell key={key}>
+                          {index === 0 && media.length > 0 ? (
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <IconButton
+                                size="small"
+                                onClick={() => toggleTrip(item.startPositionId)}
+                              >
+                                {isOpen ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+                              </IconButton>
+                              {formatValue(item, key)}
+                            </Box>
+                          ) : (
+                            formatValue(item, key)
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+
+                    {media.length > 0 && (
+                    <TableRow>
+                      <TableCell
+                        colSpan={columns.length + 1}
+                        style={{ padding: 0 }}
+                      >
+                        <Collapse in={isOpen} timeout="auto" unmountOnExit>
+                          <Box sx={{ margin: 2, marginLeft: 6 }}>
+                            <MediaBar
+                              mediaItems={media}
+                              devices={devices}
+                              onMediaClick={handleMediaClick}
+                            />
+                          </Box>
+                        </Collapse>
+                      </TableCell>
+                    </TableRow>
                     )}
-                  </TableCell>
-                  {columns.map((key) => (
-                    <TableCell key={key}>
-                      {formatValue(item, key)}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              )) : (<TableShimmer columns={columns.length + 1} startAction />)}
+                  </React.Fragment>
+                );
+              }) : (
+                <TableShimmer columns={columns.length + 1} startAction />
+              )}
+
             </TableBody>
           </Table>
         </div>
       </div>
+
+      <MediaPreview
+        open={!!mediaPreviewUrl}
+        mediaUrl={mediaPreviewUrl}
+        onClose={() => setMediaPreviewUrl(null)}
+      />
 
     </PageLayout>
   );
