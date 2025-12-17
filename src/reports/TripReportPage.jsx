@@ -33,7 +33,6 @@ import scheduleReport from './common/scheduleReport';
 import MapScale from '../map/MapScale';
 import useResizableMap from './common/useResizableMap';
 import MediaPreview from './components/MediaPreview';
-// import MediaBar from './components/MediaBar';
 
 const columnsArray = [
   ['startTime', 'reportStartTime'],
@@ -50,6 +49,120 @@ const columnsArray = [
   ['driverName', 'sharedDriver'],
 ];
 const columnsMap = new Map(columnsArray);
+
+const MediaBar = ({ mediaItems, devices, onMediaClick }) => (
+  <Box
+    sx={{
+      display: 'flex',
+      gap: 1.5,
+      overflowX: 'auto',
+      padding: 1.5,
+      borderRadius: 1,
+      '&::-webkit-scrollbar': {
+        height: 8,
+      },
+      '&::-webkit-scrollbar-track': {
+        backgroundColor: '#e0e0e0',
+        borderRadius: 4,
+      },
+      '&::-webkit-scrollbar-thumb': {
+        backgroundColor: '#9e9e9e',
+        borderRadius: 4,
+        '&:hover': {
+          backgroundColor: '#757575',
+        },
+      },
+    }}
+  >
+    {mediaItems.map((mediaItem) => {
+      const mediaUrl = `/api/media/${devices[mediaItem.deviceId]?.uniqueId}/${mediaItem.attributes.file}`;
+      const filename = mediaItem.attributes.file;
+      const isImage = isImageFile(filename);
+      const isVideo = isVideoFile(filename);
+
+      return (
+        <Box
+          key={mediaItem.id}
+          onClick={() => onMediaClick(mediaUrl)}
+          sx={{
+            minWidth: 120,
+            maxWidth: 120,
+            height: 100,
+            cursor: 'pointer',
+            borderRadius: 1,
+            overflow: 'hidden',
+            border: '2px solid #e0e0e0',
+            backgroundColor: '#fff',
+            transition: 'all 0.2s',
+            display: 'flex',
+            flexDirection: 'column',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+              borderColor: '#1976d2',
+            },
+          }}
+        >
+          <Box
+            sx={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: '#fafafa',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
+            {isImage && (
+              <img
+                src={mediaUrl}
+                alt={filename}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                }}
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                }}
+              />
+            )}
+
+            {isVideo && <VideoThumbnail url={mediaUrl} filename={filename} />}
+
+            {!isImage && !isVideo && (
+              <InsertDriveFileIcon sx={{ fontSize: 40, color: '#9e9e9e' }} />
+            )}
+          </Box>
+          <Box
+            sx={{
+              padding: 0.5,
+              backgroundColor: '#fff',
+              borderTop: '1px solid #e0e0e0',
+            }}
+          >
+            <Typography
+              variant="caption"
+              sx={{
+                display: 'block',
+                fontSize: 10,
+                textAlign: 'center',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                color: '#666',
+              }}
+              title={filename}
+            >
+              {filename}
+            </Typography>
+          </Box>
+        </Box>
+      );
+    })}
+  </Box>
+);
 
 const TripReportPage = () => {
   const navigate = useNavigate();
