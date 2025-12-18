@@ -32,7 +32,6 @@ import MapGeofence from '../map/MapGeofence';
 import scheduleReport from './common/scheduleReport';
 import MapScale from '../map/MapScale';
 import useResizableMap from './common/useResizableMap';
-import MediaPreview from './components/MediaPreview';
 
 const columnsArray = [
   ['startTime', 'reportStartTime'],
@@ -50,119 +49,63 @@ const columnsArray = [
 ];
 const columnsMap = new Map(columnsArray);
 
-const MediaBar = ({ mediaItems, devices, onMediaClick }) => (
-  <Box
-    sx={{
-      display: 'flex',
-      gap: 1.5,
-      overflowX: 'auto',
-      padding: 1.5,
-      borderRadius: 1,
-      '&::-webkit-scrollbar': {
-        height: 8,
-      },
-      '&::-webkit-scrollbar-track': {
-        backgroundColor: '#e0e0e0',
-        borderRadius: 4,
-      },
-      '&::-webkit-scrollbar-thumb': {
-        backgroundColor: '#9e9e9e',
-        borderRadius: 4,
-        '&:hover': {
-          backgroundColor: '#757575',
-        },
-      },
-    }}
-  >
-    {mediaItems.map((mediaItem) => {
-      const mediaUrl = `/api/media/${devices[mediaItem.deviceId]?.uniqueId}/${mediaItem.attributes.file}`;
-      const filename = mediaItem.attributes.file;
-      const isImage = isImageFile(filename);
-      const isVideo = isVideoFile(filename);
+const EventsTable = ({ events, t }) => {
+  if (!events || events.length === 0) {
+    return (
+      <Box sx={{ padding: 2, textAlign: 'center', color: '#666' }}>
+        No events found for this trip
+      </Box>
+    );
+  }
 
-      return (
-        <Box
-          key={mediaItem.id}
-          onClick={() => onMediaClick(mediaUrl)}
-          sx={{
-            minWidth: 120,
-            maxWidth: 120,
-            height: 100,
-            cursor: 'pointer',
-            borderRadius: 1,
-            overflow: 'hidden',
-            border: '2px solid #e0e0e0',
-            backgroundColor: '#fff',
-            transition: 'all 0.2s',
-            display: 'flex',
-            flexDirection: 'column',
-            '&:hover': {
-              transform: 'translateY(-2px)',
-              boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
-              borderColor: '#1976d2',
-            },
-          }}
-        >
-          <Box
-            sx={{
-              flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: '#fafafa',
-              position: 'relative',
-              overflow: 'hidden',
-            }}
-          >
-            {isImage && (
-              <img
-                src={mediaUrl}
-                alt={filename}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                }}
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                }}
-              />
-            )}
-
-            {isVideo && <VideoThumbnail url={mediaUrl} filename={filename} />}
-
-            {!isImage && !isVideo && (
-              <InsertDriveFileIcon sx={{ fontSize: 40, color: '#9e9e9e' }} />
-            )}
-          </Box>
-          <Box
-            sx={{
-              padding: 0.5,
-              backgroundColor: '#fff',
-              borderTop: '1px solid #e0e0e0',
-            }}
-          >
-            <Typography
-              variant="caption"
-              sx={{
-                display: 'block',
-                fontSize: 10,
-                textAlign: 'center',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                color: '#666',
-              }}
-              title={filename}
-            >
-              {filename}
-            </Typography>
-          </Box>
-        </Box>
-      );
-    })}
-  </Box>
-);
+  return (
+    <Box sx={{ margin: 2, marginLeft: 6 }}>
+      <Table size="small">
+        <TableHead>
+          <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+            <TableCell sx={{ fontWeight: 600 }}>Fix Time</TableCell>
+            <TableCell sx={{ fontWeight: 600 }}>Type</TableCell>
+            <TableCell sx={{ fontWeight: 600 }}>Data</TableCell>
+            <TableCell sx={{ fontWeight: 600 }}>Speed Limit</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {events.map((event) => (
+            <TableRow key={event.id} hover>
+              <TableCell>
+                {formatTime(event.eventTime, 'seconds')}
+              </TableCell>
+              <TableCell>
+                {event.type || 'N/A'}
+              </TableCell>
+              <TableCell>
+                {event.attributes && Object.keys(event.attributes).length > 0 ? (
+                  <Box>
+                    {Object.entries(event.attributes).map(([key, value]) => (
+                      <Box key={key} sx={{ fontSize: '0.875rem' }}>
+                        <strong>
+                          {key}
+                          :
+                        </strong>
+                        {' '}
+                        {String(value)}
+                      </Box>
+                    ))}
+                  </Box>
+                ) : (
+                  'N/A'
+                )}
+              </TableCell>
+              <TableCell>
+                {event.attributes?.speedLimit || 'N/A'}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </Box>
+  );
+};
 
 const TripReportPage = () => {
   const navigate = useNavigate();
@@ -172,15 +115,14 @@ const TripReportPage = () => {
   const distanceUnit = useAttributePreference('distanceUnit');
   const speedUnit = useAttributePreference('speedUnit');
   const volumeUnit = useAttributePreference('volumeUnit');
-  const devices = useSelector((state) => state.devices.items);
+
   const [columns, setColumns] = usePersistedState('tripColumns', ['startTime', 'endTime', 'distance', 'averageSpeed']);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [route, setRoute] = useState(null);
-  const [tripMediaMap, setTripMediaMap] = useState({});
+  const [tripEventsMap, setTripEventsMap] = useState({});
   const [openTrips, setOpenTrips] = useState({});
-  const [mediaPreviewUrl, setMediaPreviewUrl] = useState(null);
 
   const createMarkers = () => ([
     {
@@ -217,32 +159,33 @@ const TripReportPage = () => {
     }
   }, [selectedItem]);
 
-  const fetchTripMedia = async (trip) => {
+  const fetchTripEvents = async (trip) => {
     const query = new URLSearchParams({
       deviceId: trip.deviceId,
       from: trip.startTime,
       to: trip.endTime,
-      type: 'media',
     });
 
-    const response = await fetch(`/api/reports/events?${query.toString()}`, {
-      headers: { Accept: 'application/json' },
-    });
+    try {
+      const response = await fetch(`/api/reports/events?${query.toString()}`, {
+        headers: { Accept: 'application/json' },
+      });
 
-    if (response.ok) {
-      const events = await response.json();
-      if (events.length) {
-        setTripMediaMap((prev) => ({
+      if (response.ok) {
+        const events = await response.json();
+        setTripEventsMap((prev) => ({
           ...prev,
           [trip.startPositionId]: events,
         }));
       }
+    } catch (error) {
+      console.error('Error fetching events for trip:', error);
     }
   };
 
   useEffect(() => {
     items.forEach((trip) => {
-      fetchTripMedia(trip);
+      fetchTripEvents(trip);
     });
   }, [items]);
 
@@ -251,10 +194,6 @@ const TripReportPage = () => {
       ...prev,
       [tripId]: !prev[tripId],
     }));
-  };
-
-  const handleMediaClick = (url) => {
-    setMediaPreviewUrl(url);
   };
 
   const handleSubmit = useCatch(async ({ deviceId, from, to, type }) => {
@@ -408,8 +347,9 @@ const TripReportPage = () => {
             </TableHead>
             <TableBody>
               {!loading ? items.map((item) => {
-                const media = tripMediaMap[item.startPositionId] || [];
+                const events = tripEventsMap[item.startPositionId] || [];
                 const isOpen = openTrips[item.startPositionId];
+                const hasEvents = events.length > 0;
 
                 return (
                   <React.Fragment key={item.startPositionId}>
@@ -428,7 +368,7 @@ const TripReportPage = () => {
 
                       {columns.map((key, index) => (
                         <TableCell key={key}>
-                          {index === 0 && media.length > 0 ? (
+                          {index === 0 && hasEvents ? (
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                               <IconButton
                                 size="small"
@@ -445,20 +385,14 @@ const TripReportPage = () => {
                       ))}
                     </TableRow>
 
-                    {media.length > 0 && (
+                    {hasEvents && (
                     <TableRow>
                       <TableCell
                         colSpan={columns.length + 1}
                         style={{ padding: 0 }}
                       >
                         <Collapse in={isOpen} timeout="auto" unmountOnExit>
-                          <Box sx={{ margin: 2, marginLeft: 6 }}>
-                            <MediaBar
-                              mediaItems={media}
-                              devices={devices}
-                              onMediaClick={handleMediaClick}
-                            />
-                          </Box>
+                          <EventsTable events={events} t={t} />
                         </Collapse>
                       </TableCell>
                     </TableRow>
@@ -473,13 +407,6 @@ const TripReportPage = () => {
           </Table>
         </div>
       </div>
-
-      <MediaPreview
-        open={!!mediaPreviewUrl}
-        mediaUrl={mediaPreviewUrl}
-        onClose={() => setMediaPreviewUrl(null)}
-      />
-
     </PageLayout>
   );
 };
