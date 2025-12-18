@@ -29,6 +29,7 @@ const useStyles = makeStyles((theme) => ({
     flexDirection: 'column',
   },
   desktopDrawer: {
+    paddingLeft: theme.spacing(0.5),
     width: (props) => (props.miniVariant ? `calc(${theme.spacing(8)} + 1px)` : theme.dimensions.drawerWidthDesktop),
     transition: theme.transitions.create('width', {
       easing: theme.transitions.easing.sharp,
