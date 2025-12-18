@@ -3,6 +3,7 @@ import React, {
 } from 'react';
 import {
   IconButton, Paper, Slider, Toolbar, Typography, Box, Chip,
+  Tooltip,
 } from '@mui/material';
 import makeStyles from '@mui/styles/makeStyles';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -12,7 +13,6 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import FastForwardIcon from '@mui/icons-material/FastForward';
 import FastRewindIcon from '@mui/icons-material/FastRewind';
-import SpeedIcon from '@mui/icons-material/Speed';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import MapView from '../map/core/MapView';
@@ -28,7 +28,7 @@ import MapGeofence from '../map/MapGeofence';
 import StatusCard from '../common/components/StatusCard';
 import MapScale from '../map/MapScale';
 
-const SPEED_OPTIONS = [0.75, 0.5, 1, 1.5, 2];
+const SPEED_OPTIONS = [1, 1.5, 2, 5, 10];
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -52,7 +52,7 @@ const useStyles = makeStyles((theme) => ({
     flexGrow: 1,
   },
   slider: {
-    width: '100%',
+    width: '100vh',
   },
   controls: {
     display: 'flex',
@@ -253,9 +253,30 @@ const ReplayPage = () => {
             >
               <ArrowBackIcon />
             </IconButton>
-            <Typography variant="h6" className={classes.title}>
-              {t('reportReplay')}
-            </Typography>
+            <Tooltip
+              title={`${t('reportReplay')}${deviceName ? ` - ${deviceName}` : ''}`}
+              arrow
+              placement="bottom"
+            >
+              <Typography
+                variant="subtitle1"
+                align="center"
+                noWrap
+                sx={{
+                  maxWidth: '100%',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                }}
+                className={classes.title}
+              >
+                {t('reportReplay')}
+                {deviceName ? ` - ${deviceName}` : ''}
+              </Typography>
+            </Tooltip>
+
             {!expanded && (
               <>
                 <IconButton onClick={handleDownload}>
@@ -271,11 +292,6 @@ const ReplayPage = () => {
         <Paper className={classes.content} square>
           {!expanded ? (
             <>
-              <Typography variant="subtitle1" align="center">
-                {deviceName}
-              </Typography>
-
-              {/* Speed Control Section */}
               <Box className={classes.speedControl}>
                 <Box className={classes.speedChips}>
                   {SPEED_OPTIONS.map((speedOption) => (
@@ -304,6 +320,22 @@ const ReplayPage = () => {
                   setPlaying(false);
                 }}
               />
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginTop: -10,
+                  marginBottom: 8,
+                }}
+              >
+                <Typography variant="caption" color="text.secondary">
+                  -1hr
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  +1hr
+                </Typography>
+              </div>
               <div className={classes.controls}>
                 {`${index + 1}/${positions.length}`}
                 <IconButton

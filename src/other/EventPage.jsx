@@ -240,6 +240,7 @@ const EventPage = () => {
     return (
       <ReplayControl
         replayPositions={replayPositions}
+        deviceName={device ? device.name : ''}
         selectedItem={{ deviceId: event.deviceId, type: event.type }}
         eventPosition={eventPosition}
         onClose={handleReplayStop}

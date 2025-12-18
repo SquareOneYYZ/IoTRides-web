@@ -9,13 +9,16 @@ import {
   Slider,
   Box,
   Chip,
+  Tooltip,
 } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
+import makeStyles from '@mui/styles/makeStyles';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import FastForwardIcon from '@mui/icons-material/FastForward';
 import FastRewindIcon from '@mui/icons-material/FastRewind';
-import SpeedIcon from '@mui/icons-material/Speed';
+import DownloadIcon from '@mui/icons-material/Download';
+import { ArrowBack } from '@mui/icons-material';
 import { formatTime } from '../../common/util/formatter';
 import { useTranslation } from '../../common/components/LocalizationProvider';
 import { prefixString } from '../../common/util/stringUtils';
@@ -28,10 +31,64 @@ import MapCamera from '../../map/MapCamera';
 import MapScale from '../../map/MapScale';
 import StatusCard from '../../common/components/StatusCard';
 
-const SPEED_OPTIONS = [0.75, 0.5, 1, 1.5, 2];
-const ANIMATION_FPS = 60;
+const SPEED_OPTIONS = [1, 1.5, 2, 5, 10];
 
-// Helper function to interpolate between two positions
+const useStyles = makeStyles((theme) => ({
+  root: {
+    height: '100%',
+  },
+  sidebar: {
+    display: 'flex',
+    flexDirection: 'column',
+    position: 'fixed',
+    zIndex: 3,
+    left: 0,
+    top: 0,
+    margin: theme.spacing(1.5),
+    width: theme.dimensions.drawerWidthDesktop,
+    [theme.breakpoints.down('md')]: {
+      width: '100%',
+      margin: 0,
+    },
+  },
+  title: {
+    flexGrow: 1,
+  },
+  slider: {
+    width: '100%',
+  },
+  controls: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  speedControl: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'column',
+    gap: theme.spacing(1),
+    marginBottom: theme.spacing(2),
+    marginTop: theme.spacing(2),
+  },
+  speedChips: {
+    display: 'flex',
+    gap: theme.spacing(0.75),
+    flexWrap: 'wrap',
+  },
+  content: {
+    display: 'flex',
+    flexDirection: 'column',
+    padding: theme.spacing(2),
+    [theme.breakpoints.down('md')]: {
+      margin: theme.spacing(1),
+    },
+    [theme.breakpoints.up('md')]: {
+      marginTop: theme.spacing(1),
+    },
+  },
+}));
+
 const interpolatePosition = (pos1, pos2, progress) => ({
   ...pos2,
   latitude: pos1.latitude + (pos2.latitude - pos1.latitude) * progress,
@@ -51,6 +108,7 @@ const ReplayControl = ({
   initialSpeed = 1,
 }) => {
   const t = useTranslation();
+  const classes = useStyles();
   const timerRef = useRef();
   const animationRef = useRef();
 
@@ -59,7 +117,6 @@ const ReplayControl = ({
   const [showCard, setShowCard] = useState(false);
   const [speed, setSpeed] = useState(initialSpeed);
   const [interpolatedPosition, setInterpolatedPosition] = useState(null);
-  const [animationProgress, setAnimationProgress] = useState(0);
 
   const getInterval = () => 500 / speed;
 
@@ -152,8 +209,18 @@ const ReplayControl = ({
     setSpeed(newSpeed);
   };
 
+  const handleDownload = () => {
+    if (!selectedItem) return;
+    const query = new URLSearchParams({
+      deviceId: selectedItem.deviceId,
+      from: replayPositions[0]?.fixTime,
+      to: replayPositions[replayPositions.length - 1]?.fixTime,
+    });
+    window.location.assign(`/api/positions/kml?${query.toString()}`);
+  };
+
   return (
-    <div style={{ height: '100%' }}>
+    <div className={classes.root}>
       <MapView>
         <MapGeofence />
         <MapRoutePath positions={replayPositions} />
@@ -176,55 +243,63 @@ const ReplayControl = ({
       <MapScale />
       <MapCamera positions={replayPositions} />
 
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          position: 'fixed',
-          zIndex: 3,
-          left: 0,
-          top: 0,
-          margin: 12,
-          width: 400,
-        }}
-      >
+      {/* Sidebar */}
+      <div className={classes.sidebar}>
         <Paper elevation={3} square>
           <Toolbar>
-            <Typography noWrap variant="h6" style={{ flexGrow: 1, maxWidth: 'calc(100% - 48px)' }}>
-              {t('reportReplay')}
-              {deviceName && ` - ${deviceName}`}
-            </Typography>
-            <IconButton edge="end" onClick={handleClose}>
-              <CloseIcon />
+            <IconButton edge="start" sx={{ mr: 2 }} onClick={handleClose}>
+              <ArrowBackIcon />
+            </IconButton>
+            <Tooltip
+              title={`${t('reportReplay')}${deviceName ? ` - ${deviceName}` : ''}`}
+              arrow
+              placement="bottom"
+            >
+              <Typography
+                variant="subtitle1"
+                align="center"
+                noWrap
+                sx={{
+                  maxWidth: '100%',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                }}
+                className={classes.title}
+              >
+                {t('reportReplay')}
+                {deviceName ? ` - ${deviceName}` : ''}
+              </Typography>
+            </Tooltip>
+
+            <IconButton onClick={handleDownload} disabled={replayPositions.length === 0}>
+              <DownloadIcon />
             </IconButton>
           </Toolbar>
         </Paper>
 
-        <Paper
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            padding: 16,
-            marginTop: 2,
-          }}
-          square
-        >
-          {showEventType && selectedItem?.type && (
-            <Typography variant="h6" align="center">
-              {t(prefixString('event', selectedItem.type))}
-            </Typography>
-          )}
-
-          <Box sx={{ mt: 2 }}>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                gap: 1,
-                flexWrap: 'wrap',
-              }}
-            >
+        <Paper className={classes.content} square>
+          {/* Speed Control */}
+          <Typography
+            variant="subtitle1"
+            align="center"
+            noWrap
+            sx={{
+              maxWidth: '100%',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+            className={classes.title}
+          >
+            {showEventType && selectedItem?.type
+              ? t(prefixString('event', selectedItem.type))
+              : t('reportReplay')}
+          </Typography>
+          <Box className={classes.speedControl}>
+            <Box className={classes.speedChips}>
               {SPEED_OPTIONS.map((speedOption) => (
                 <Chip
                   key={speedOption}
@@ -233,21 +308,21 @@ const ReplayControl = ({
                   color={speed === speedOption ? 'primary' : 'default'}
                   variant={speed === speedOption ? 'filled' : 'outlined'}
                   size="small"
-                  sx={{ minWidth: 50 }}
+                  sx={{ minWidth: 48 }}
                 />
               ))}
             </Box>
           </Box>
 
+          {/* Slider */}
           <Slider
-            style={{ width: '100%', margin: '16px 0' }}
-            min={0}
+            className={classes.slider}
             max={replayPositions.length - 1}
             step={null}
             marks={replayPositions.map((_, index) => ({ value: index }))}
             value={replayIndex}
-            onChange={(e, newValue) => {
-              setReplayIndex(newValue);
+            onChange={(_, newIndex) => {
+              setReplayIndex(newIndex);
               setReplayPlaying(false);
             }}
           />
@@ -257,40 +332,42 @@ const ReplayControl = ({
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              marginTop: -15,
+              marginTop: -10,
+              marginBottom: 8,
             }}
           >
-            <Typography variant="caption">-1hr</Typography>
-            <Typography variant="caption">+1hr</Typography>
+            <Typography variant="caption" color="text.secondary">
+              -1hr
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              +1hr
+            </Typography>
           </div>
 
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
+          {/* Controls */}
+          <div className={classes.controls}>
             <span>{`${replayIndex + 1}/${replayPositions.length}`}</span>
             <IconButton
-              onClick={() => setReplayIndex((i) => i - 1)}
+              onClick={() => {
+                setReplayIndex((index) => index - 1);
+                setReplayPlaying(false);
+              }}
               disabled={replayPlaying || replayIndex <= 0}
             >
               <FastRewindIcon />
             </IconButton>
-
             <IconButton
               onClick={() => setReplayPlaying(!replayPlaying)}
               disabled={replayIndex >= replayPositions.length - 1}
             >
               {replayPlaying ? <PauseIcon /> : <PlayArrowIcon />}
             </IconButton>
-
             <IconButton
-              onClick={() => setReplayIndex((i) => i + 1)}
-              disabled={
-                replayPlaying || replayIndex >= replayPositions.length - 1
-              }
+              onClick={() => {
+                setReplayIndex((index) => index + 1);
+                setReplayPlaying(false);
+              }}
+              disabled={replayPlaying || replayIndex >= replayPositions.length - 1}
             >
               <FastForwardIcon />
             </IconButton>
@@ -303,9 +380,10 @@ const ReplayControl = ({
         </Paper>
       </div>
 
+      {/* Status Card */}
       {showCard && replayIndex < replayPositions.length && (
         <StatusCard
-          deviceId={selectedItem.deviceId}
+          deviceId={selectedItem?.deviceId}
           position={replayPositions[replayIndex]}
           onClose={() => setShowCard(false)}
           disableActions
