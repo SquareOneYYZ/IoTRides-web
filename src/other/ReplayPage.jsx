@@ -43,6 +43,13 @@ const useStyles = makeStyles((theme) => ({
     top: 0,
     margin: theme.spacing(1.5),
     width: theme.dimensions.drawerWidthDesktop,
+    maxWidth: '90vw',
+    transition: 'width 0.3s ease',
+
+    '&.expanded': {
+      width: 600,
+    },
+
     [theme.breakpoints.down('md')]: {
       width: '100%',
       margin: 0,
@@ -52,7 +59,7 @@ const useStyles = makeStyles((theme) => ({
     flexGrow: 1,
   },
   slider: {
-    width: '100vh',
+    width: '100%',
   },
   controls: {
     display: 'flex',
@@ -113,6 +120,7 @@ const ReplayPage = () => {
   const [smoothPosition, setSmoothPosition] = useState(null);
   const [animationProgress, setAnimationProgress] = useState(0);
   const [speed, setSpeed] = useState(1);
+  const [titleExpanded, setTitleExpanded] = useState(false);
 
   const deviceName = useSelector((state) => {
     if (selectedDeviceId) {
@@ -165,7 +173,6 @@ const ReplayPage = () => {
           longitude:
             currentPos.longitude
             + (nextPos.longitude - currentPos.longitude) * animationProgress,
-          // Interpolate other numeric fields if needed
           speed:
             currentPos.speed
             + (nextPos.speed - currentPos.speed) * animationProgress,
@@ -243,9 +250,17 @@ const ReplayPage = () => {
       </MapView>
       <MapScale />
       <MapCamera positions={positions} />
-      <div className={classes.sidebar}>
+      <div className={`${classes.sidebar} ${titleExpanded ? 'expanded' : ''}`}>
         <Paper elevation={3} square>
-          <Toolbar>
+          <Toolbar
+            sx={{
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: 'unset',
+              paddingTop: 1,
+              paddingBottom: 1,
+            }}
+          >
             <IconButton
               edge="start"
               sx={{ mr: 2 }}
@@ -260,17 +275,19 @@ const ReplayPage = () => {
             >
               <Typography
                 variant="subtitle1"
-                align="center"
-                noWrap
+                onClick={() => setTitleExpanded((prev) => !prev)}
+                noWrap={!titleExpanded}
                 sx={{
                   maxWidth: '100%',
                   overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
+                  textOverflow: titleExpanded ? 'unset' : 'ellipsis',
+                  whiteSpace: titleExpanded ? 'normal' : 'nowrap',
+                  wordBreak: 'break-word',
+                  lineHeight: 1.3,
                   fontWeight: 'bold',
                   cursor: 'pointer',
+                  flexGrow: 1,
                 }}
-                className={classes.title}
               >
                 {t('reportReplay')}
                 {deviceName ? ` - ${deviceName}` : ''}

@@ -18,7 +18,6 @@ import PauseIcon from '@mui/icons-material/Pause';
 import FastForwardIcon from '@mui/icons-material/FastForward';
 import FastRewindIcon from '@mui/icons-material/FastRewind';
 import DownloadIcon from '@mui/icons-material/Download';
-import { ArrowBack } from '@mui/icons-material';
 import { formatTime } from '../../common/util/formatter';
 import { useTranslation } from '../../common/components/LocalizationProvider';
 import { prefixString } from '../../common/util/stringUtils';
@@ -46,11 +45,19 @@ const useStyles = makeStyles((theme) => ({
     top: 0,
     margin: theme.spacing(1.5),
     width: theme.dimensions.drawerWidthDesktop,
+    maxWidth: '90vw',
+    transition: 'width 0.3s ease',
+
+    '&.expanded': {
+      width: 600,
+    },
+
     [theme.breakpoints.down('md')]: {
       width: '100%',
       margin: 0,
     },
   },
+
   title: {
     flexGrow: 1,
   },
@@ -117,7 +124,7 @@ const ReplayControl = ({
   const [showCard, setShowCard] = useState(false);
   const [speed, setSpeed] = useState(initialSpeed);
   const [interpolatedPosition, setInterpolatedPosition] = useState(null);
-
+  const [expanded, setExpanded] = useState(false);
   const getInterval = () => 500 / speed;
 
   useEffect(() => {
@@ -244,9 +251,19 @@ const ReplayControl = ({
       <MapCamera positions={replayPositions} />
 
       {/* Sidebar */}
-      <div className={classes.sidebar}>
+      <div
+        className={`${classes.sidebar} ${expanded ? 'expanded' : ''}`}
+      >
         <Paper elevation={3} square>
-          <Toolbar>
+          <Toolbar
+            sx={{
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: 'unset',
+              paddingTop: 1,
+              paddingBottom: 1,
+            }}
+          >
             <IconButton edge="start" sx={{ mr: 2 }} onClick={handleClose}>
               <ArrowBackIcon />
             </IconButton>
@@ -257,23 +274,24 @@ const ReplayControl = ({
             >
               <Typography
                 variant="subtitle1"
-                align="center"
-                noWrap
+                onClick={() => setExpanded((prev) => !prev)}
+                noWrap={!expanded}
                 sx={{
                   maxWidth: '100%',
                   overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
+                  textOverflow: expanded ? 'unset' : 'ellipsis',
+                  whiteSpace: expanded ? 'normal' : 'nowrap',
+                  wordBreak: 'break-word', // 👈 IMPORTANT
+                  lineHeight: 1.3,
                   fontWeight: 'bold',
                   cursor: 'pointer',
+                  flexGrow: 1,
                 }}
-                className={classes.title}
               >
                 {t('reportReplay')}
                 {deviceName ? ` - ${deviceName}` : ''}
               </Typography>
             </Tooltip>
-
             <IconButton onClick={handleDownload} disabled={replayPositions.length === 0}>
               <DownloadIcon />
             </IconButton>
