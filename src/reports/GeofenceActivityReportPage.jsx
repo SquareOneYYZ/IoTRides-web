@@ -109,10 +109,10 @@ const GeofenceDistanceReportPage = () => {
     }
 
     if (type === 'export') {
-      window.location.assign(`/api/devicegeofencedistances/xlsx?${query.toString()}`);
+      window.location.assign(`/api/reports/devicegeofencedistances/xlsx?${query.toString()}`);
     } else if (type === 'mail') {
       const response = await fetch(
-        `/api/devicegeofencedistances/mail?${query.toString()}`,
+        `/api/reports/devicegeofencedistances/mail?${query.toString()}`,
       );
       if (!response.ok) {
         throw Error(await response.text());
@@ -121,7 +121,7 @@ const GeofenceDistanceReportPage = () => {
       setLoading(true);
       try {
         const response = await fetch(
-          `/api/devicegeofencedistances?${query.toString()}`,
+          `/api/reports/devicegeofencedistances?${query.toString()}`,
           {
             headers: { Accept: 'application/json' },
           },
