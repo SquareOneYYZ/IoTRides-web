@@ -9,6 +9,10 @@ import {
   TableRow,
   TableCell,
   TableBody,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import { useSelector } from 'react-redux';
 import {
@@ -41,6 +45,12 @@ const columnsArray = [
 
 const columnsMap = new Map(columnsArray);
 
+const allEventTypes = [
+  ['allTypes', 'sharedAll'],
+  ['enter', 'geofenceEnter'],
+  ['exit', 'geofenceExit'],
+];
+
 const GeofenceDistanceReportPage = () => {
   const navigate = useNavigate();
   const classes = useReportStyles();
@@ -66,6 +76,7 @@ const GeofenceDistanceReportPage = () => {
   const [items, setItems] = useState([]);
   const [geofences, setGeofences] = useState({});
   const [loading, setLoading] = useState(false);
+  const [selectedTypes, setSelectedTypes] = useState(['allTypes']);
 
   useEffect(() => {
     const fetchGeofences = async () => {
@@ -92,6 +103,11 @@ const GeofenceDistanceReportPage = () => {
   const handleSubmit = useCatch(async ({ deviceId, from, to, type }) => {
     const query = new URLSearchParams({ deviceId, from, to });
 
+    // Add type filters if not "all"
+    if (selectedTypes[0] !== 'allTypes') {
+      selectedTypes.forEach((eventType) => query.append('type', eventType));
+    }
+
     if (type === 'export') {
       window.location.assign(`/api/devicegeofencedistances/xlsx?${query.toString()}`);
     } else if (type === 'mail') {
@@ -111,7 +127,13 @@ const GeofenceDistanceReportPage = () => {
           },
         );
         if (response.ok) {
-          const data = await response.json();
+          let data = await response.json();
+
+          // Client-side filtering if API doesn't filter
+          if (selectedTypes[0] !== 'allTypes') {
+            data = data.filter((item) => selectedTypes.includes(item.type));
+          }
+
           setItems(data);
           setFilterRange({ from, to });
         } else {
@@ -153,8 +175,8 @@ const GeofenceDistanceReportPage = () => {
           : 'N/A';
 
       case 'type':
-        if (value === 'enter') return 'Entered Geofence';
-        if (value === 'exit') return 'Exited Geofence';
+        if (value === 'enter') return t('geofenceEnter');
+        if (value === 'exit') return t('geofenceExit');
         return value;
 
       case 'totalDistance':
@@ -188,6 +210,30 @@ const GeofenceDistanceReportPage = () => {
               handleSchedule={handleSchedule}
               loading={loading}
             >
+              <div className={classes.filterItem}>
+                <FormControl fullWidth>
+                  <InputLabel>{t('sharedType')}</InputLabel>
+                  <Select
+                    label={t('sharedType')}
+                    value={selectedTypes}
+                    onChange={(e, child) => {
+                      let values = e.target.value;
+                      const clicked = child.props.value;
+                      if (values.includes('allTypes') && values.length > 1) {
+                        values = [clicked];
+                      }
+                      setSelectedTypes(values);
+                    }}
+                    multiple
+                  >
+                    {allEventTypes.map(([key, string]) => (
+                      <MenuItem key={key} value={key}>
+                        {t(string)}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </div>
               <ColumnSelect
                 columns={columns}
                 setColumns={setColumns}
