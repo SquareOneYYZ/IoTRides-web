@@ -114,6 +114,16 @@ const useStyles = makeStyles((theme) => ({
     boxShadow: theme.shadows[6],
     width: 'fit-content',
     maxWidth: '90vw',
+    overflowX: 'auto',
+    whiteSpace: 'nowrap',
+    scrollbarWidth: 'thin',
+    '&::-webkit-scrollbar': {
+      height: 6,
+    },
+    '&::-webkit-scrollbar-thumb': {
+      backgroundColor: '#aaa',
+      borderRadius: 4,
+    },
     [theme.breakpoints.down('md')]: {
       bottom: theme.spacing(2),
       gap: theme.spacing(1.5),
@@ -329,7 +339,7 @@ const ReplayMediaPage = () => {
   const classes = useStyles();
   const reportClasses = useReportStyles();
   const theme = useTheme();
-
+  const mediaBarRef = useRef(null);
   const timerRef = useRef();
   const abortControllerRef = useRef(null);
 
@@ -376,6 +386,62 @@ const ReplayMediaPage = () => {
     };
   }, [desktop, miniVariant]);
 
+  const handleMediaScroll = useCallback(() => {
+    if (!mediaBarRef.current || !mediaTimeline.length) return;
+
+    const container = mediaBarRef.current;
+    const centerX = container.scrollLeft + container.clientWidth / 2;
+
+    let closestIndex = -1;
+    let smallestDiff = Infinity;
+
+    Array.from(container.children).forEach((child, idx) => {
+      const childCenter = child.offsetLeft + child.offsetWidth / 2;
+
+      const diff = Math.abs(centerX - childCenter);
+      if (diff < smallestDiff) {
+        smallestDiff = diff;
+        closestIndex = idx;
+      }
+    });
+
+    if (
+      closestIndex !== -1
+    && closestIndex !== activeMediaIndex
+    ) {
+      const media = mediaTimeline[closestIndex];
+      if (!media) return;
+
+      setActiveMediaIndex(closestIndex);
+      setPlaying(false);
+
+      const mediaTime = new Date(media.eventTime).getTime();
+      let closestPosIndex = 0;
+      let minDiff = Infinity;
+
+      positions.forEach((pos, idx) => {
+        const posTime = new Date(pos.fixTime).getTime();
+        const diff = Math.abs(mediaTime - posTime);
+        if (diff < minDiff) {
+          minDiff = diff;
+          closestPosIndex = idx;
+        }
+      });
+
+      setIndex(closestPosIndex);
+      setAnimationProgress(0);
+    }
+  }, [mediaTimeline, activeMediaIndex, positions]);
+
+  useEffect(() => {
+    const el = mediaBarRef.current;
+    if (!el) return;
+
+    el.addEventListener('scroll', handleMediaScroll, {
+      passive: true,
+    });
+  }, [handleMediaScroll]);
+  
   useEffect(() => {
     if (!positions.length || !mediaTimeline.length || openMedia) return;
 
@@ -644,7 +710,7 @@ const ReplayMediaPage = () => {
         </div>
 
         {mediaTimeline.length > 0 && (
-          <Paper className={classes.mediaBar} style={mediaBarStyle} elevation={6}>
+          <Paper ref={mediaBarRef} className={classes.mediaBar} style={mediaBarStyle} elevation={6}>
             <Box className={`${classes.section} ${classes.leftSection}`}>
               {displayedMedia.left.map((media) => (
                 <Box key={media.id} className={classes.thumb}>
