@@ -671,5 +671,6 @@
 	"notificationDeviceRegionCityExit": "Vehicle exited city",
 	"eventDeviceCustomToll": "Custom Toll Road Alert",
 	"notificationDeviceCustomToll": "Vehicle passed through custom toll",
-	"attributeCustomRoadEvent": "Custom Toll Roads for Alert"
+	"attributeCustomRoadEvent": "Custom Toll Roads for Alert",
+	"eventSpeedCamera": "Speed Camera Violation"
 }
