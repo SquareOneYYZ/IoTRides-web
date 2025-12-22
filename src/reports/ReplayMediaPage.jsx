@@ -13,7 +13,6 @@ import {
   Typography,
   Slider,
   useMediaQuery,
-  CircularProgress,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import makeStyles from '@mui/styles/makeStyles';
@@ -22,8 +21,6 @@ import PauseIcon from '@mui/icons-material/Pause';
 import FastForwardIcon from '@mui/icons-material/FastForward';
 import FastRewindIcon from '@mui/icons-material/FastRewind';
 import CloseIcon from '@mui/icons-material/Close';
-import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
-import ImageIcon from '@mui/icons-material/Image';
 import { useSelector, useDispatch } from 'react-redux';
 import MapView from '../map/core/MapView';
 import MapRoutePath from '../map/MapRoutePath';
@@ -42,6 +39,7 @@ import ReportsMenu from './components/ReportsMenu';
 import useReportStyles from './common/useReportStyles';
 import { devicesActions } from '../store';
 import MediaPreview from './components/MediaPreview';
+import MediaBar from './components/MediaBar';
 
 const useStyles = makeStyles((theme) => ({
   container: {
@@ -98,110 +96,6 @@ const useStyles = makeStyles((theme) => ({
       gap: theme.spacing(0.5),
     },
   },
-  mediaBar: {
-    position: 'fixed',
-    bottom: theme.spacing(10),
-    left: '50%',
-    transform: 'translateX(-50%)',
-    zIndex: 1,
-    display: 'grid',
-    gridTemplateColumns: '1fr auto 1fr',
-    alignItems: 'center',
-    gap: theme.spacing(2),
-    padding: theme.spacing(2),
-    background: theme.palette.background.paper,
-    borderRadius: theme.shape.borderRadius,
-    boxShadow: theme.shadows[6],
-    width: 'fit-content',
-    maxWidth: '90vw',
-    overflowX: 'auto',
-    whiteSpace: 'nowrap',
-    scrollbarWidth: 'thin',
-    '&::-webkit-scrollbar': {
-      height: 6,
-    },
-    '&::-webkit-scrollbar-thumb': {
-      backgroundColor: '#aaa',
-      borderRadius: 4,
-    },
-    [theme.breakpoints.down('md')]: {
-      bottom: theme.spacing(2),
-      gap: theme.spacing(1.5),
-      padding: theme.spacing(1.5),
-    },
-    [theme.breakpoints.down('sm')]: {
-      bottom: theme.spacing(20),
-      gap: theme.spacing(1),
-      padding: theme.spacing(1),
-    },
-  },
-  thumb: {
-    borderRadius: 4,
-    overflow: 'hidden',
-    border: '2px solid transparent',
-    transition: 'all 0.3s ease',
-    flexShrink: 0,
-    position: 'relative',
-    backgroundColor: '#1e1e1e',
-    width: 120,
-    height: 75,
-    [theme.breakpoints.down('md')]: {
-      width: 100,
-      height: 65,
-    },
-    [theme.breakpoints.down('sm')]: {
-      width: 80,
-      height: 60,
-      borderRadius: 3,
-    },
-  },
-  thumbCenter: {
-    cursor: 'pointer',
-    border: `3px solid ${theme.palette.secondary.main}`,
-    transform: 'scale(1.1)',
-    boxShadow: `0 0 20px ${theme.palette.secondary.main}`,
-    width: 140,
-    height: 90,
-    [theme.breakpoints.down('md')]: {
-      width: 120,
-      height: 75,
-    },
-    [theme.breakpoints.down('sm')]: {
-      width: 90,
-      height: 65,
-      border: `2px solid ${theme.palette.secondary.main}`,
-    },
-    '&:hover': {
-      transform: 'scale(1.15)',
-      boxShadow: `0 0 25px ${theme.palette.secondary.main}`,
-    },
-  },
-  section: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: theme.spacing(1.5),
-    minHeight: 90,
-    [theme.breakpoints.down('md')]: {
-      minHeight: 75,
-      gap: theme.spacing(1.2),
-    },
-    [theme.breakpoints.down('sm')]: {
-      minHeight: 65,
-      gap: theme.spacing(1),
-    },
-  },
-  leftSection: {
-    justifyContent: 'flex-end',
-    opacity: 0.6,
-  },
-  centerSection: {
-    justifyContent: 'center',
-    opacity: 1,
-  },
-  rightSection: {
-    justifyContent: 'flex-start',
-    opacity: 0.6,
-  },
   toolbarTitle: {
     [theme.breakpoints.down('sm')]: {
       fontSize: '0.9rem',
@@ -223,132 +117,18 @@ const isImageFile = (filename) => {
 
 const thumbnailCache = new Map();
 
-const MediaThumbnail = React.memo(({ url, isVideo, isImage }) => {
-  const [thumbnail, setThumbnail] = useState(() => thumbnailCache.get(url));
-  const [loading, setLoading] = useState(!thumbnailCache.has(url));
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    if (!url || thumbnailCache.has(url)) return;
-
-    if (isImage) {
-      thumbnailCache.set(url, url);
-      setThumbnail(url);
-      setLoading(false);
-      return;
-    }
-
-    if (!isVideo) {
-      setError(true);
-      setLoading(false);
-      return;
-    }
-
-    const video = document.createElement('video');
-    video.src = url;
-    video.crossOrigin = 'anonymous';
-    video.muted = true;
-    video.playsInline = true;
-    video.preload = 'metadata';
-
-    const cleanup = () => {
-      video.src = '';
-      video.load();
-    };
-
-    const timeout = setTimeout(() => {
-      setError(true);
-      setLoading(false);
-      cleanup();
-    }, 5000);
-
-    const onLoadedData = () => {
-      video.currentTime = Math.min(0.5, video.duration * 0.1);
-    };
-
-    const onSeeked = () => {
-      try {
-        const canvas = document.createElement('canvas');
-        const aspect = video.videoWidth / video.videoHeight;
-        canvas.width = 320;
-        canvas.height = 320 / aspect;
-
-        const ctx = canvas.getContext('2d', { alpha: false });
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-        thumbnailCache.set(url, dataUrl);
-        setThumbnail(dataUrl);
-        setLoading(false);
-        clearTimeout(timeout);
-        cleanup();
-      } catch (err) {
-        setError(true);
-        setLoading(false);
-        clearTimeout(timeout);
-        cleanup();
-      }
-    };
-
-    const onError = () => {
-      setError(true);
-      setLoading(false);
-      clearTimeout(timeout);
-      cleanup();
-    };
-
-    video.addEventListener('loadeddata', onLoadedData);
-    video.addEventListener('seeked', onSeeked);
-    video.addEventListener('error', onError);
-  }, [url, isVideo, isImage]);
-
-  if (loading) {
-    return (
-      <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000' }}>
-        <CircularProgress size={24} sx={{ color: '#888' }} />
-      </Box>
-    );
-  }
-
-  if (error || !thumbnail) {
-    return (
-      <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000' }}>
-        {isVideo ? <PlayCircleOutlineIcon sx={{ fontSize: 40, color: '#555' }} /> : <ImageIcon sx={{ fontSize: 40, color: '#555' }} />}
-      </Box>
-    );
-  }
-
-  return (
-    <Box sx={{ position: 'relative', width: '100%', height: '100%', backgroundColor: '#000' }}>
-      <img src={thumbnail} alt="media" style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover' }} />
-      {isVideo && (
-        <Box sx={{
-          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}
-        >
-          <PlayCircleOutlineIcon sx={{ fontSize: 20, color: 'white' }} />
-        </Box>
-      )}
-    </Box>
-  );
-});
-
 const ReplayMediaPage = () => {
   const t = useTranslation();
   const dispatch = useDispatch();
   const classes = useStyles();
   const reportClasses = useReportStyles();
   const theme = useTheme();
-  const mediaBarRef = useRef(null);
   const timerRef = useRef();
   const abortControllerRef = useRef(null);
-
   const devices = useSelector((state) => state.devices.items);
   const defaultDeviceId = useSelector((state) => state.devices.selectedId);
   const selectedDeviceIdFromRedux = useSelector((state) => state.devices.selectedId);
-
   const desktop = useMediaQuery(theme.breakpoints.up('md'));
-
   const [positions, setPositions] = useState([]);
   const [index, setIndex] = useState(0);
   const [selectedDeviceId, setSelectedDeviceId] = useState(defaultDeviceId);
@@ -387,6 +167,12 @@ const ReplayMediaPage = () => {
   }, [desktop, miniVariant]);
 
   const handleMediaScroll = useCallback(() => {
+    // This will be passed to MediaBar component
+    // MediaBar will get its ref and handle scroll internally
+    // But we need the logic here to update state
+  }, []);
+
+  const onMediaBarScroll = useCallback((mediaBarRef) => {
     if (!mediaBarRef.current || !mediaTimeline.length) return;
 
     const container = mediaBarRef.current;
@@ -433,15 +219,6 @@ const ReplayMediaPage = () => {
     }
   }, [mediaTimeline, activeMediaIndex, positions]);
 
-  useEffect(() => {
-    const el = mediaBarRef.current;
-    if (!el) return;
-
-    el.addEventListener('scroll', handleMediaScroll, {
-      passive: true,
-    });
-  }, [handleMediaScroll]);
-  
   useEffect(() => {
     if (!positions.length || !mediaTimeline.length || openMedia) return;
 
@@ -709,33 +486,15 @@ const ReplayMediaPage = () => {
           </Paper>
         </div>
 
-        {mediaTimeline.length > 0 && (
-          <Paper ref={mediaBarRef} className={classes.mediaBar} style={mediaBarStyle} elevation={6}>
-            <Box className={`${classes.section} ${classes.leftSection}`}>
-              {displayedMedia.left.map((media) => (
-                <Box key={media.id} className={classes.thumb}>
-                  <MediaThumbnail url={media.url} isVideo={media.isVideo} isImage={media.isImage} />
-                </Box>
-              ))}
-            </Box>
-
-            <Box className={`${classes.section} ${classes.centerSection}`}>
-              {displayedMedia.center && (
-                <Box className={`${classes.thumb} ${classes.thumbCenter}`} onClick={() => handleMediaClick(displayedMedia.center)}>
-                  <MediaThumbnail url={displayedMedia.center.url} isVideo={displayedMedia.center.isVideo} isImage={displayedMedia.center.isImage} />
-                </Box>
-              )}
-            </Box>
-
-            <Box className={`${classes.section} ${classes.rightSection}`}>
-              {displayedMedia.right.map((media) => (
-                <Box key={media.id} className={classes.thumb}>
-                  <MediaThumbnail url={media.url} isVideo={media.isVideo} isImage={media.isImage} />
-                </Box>
-              ))}
-            </Box>
-          </Paper>
-        )}
+        <MediaBar
+          mediaTimeline={mediaTimeline}
+          displayedMedia={displayedMedia}
+          thumbnailCache={thumbnailCache}
+          onMediaClick={handleMediaClick}
+          onScroll={onMediaBarScroll}
+          mediaBarStyle={mediaBarStyle}
+          desktop={desktop}
+        />
 
         {openMedia && <MediaPreview open={!!openMedia} mediaUrl={openMedia.url} onClose={() => setOpenMedia(null)} />}
 
@@ -749,6 +508,7 @@ const ReplayMediaPage = () => {
           />
         )}
       </div>
+
     </PageLayout>
   );
 };
