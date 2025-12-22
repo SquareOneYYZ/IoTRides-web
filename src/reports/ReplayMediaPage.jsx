@@ -129,6 +129,7 @@ const ReplayMediaPage = () => {
   const defaultDeviceId = useSelector((state) => state.devices.selectedId);
   const selectedDeviceIdFromRedux = useSelector((state) => state.devices.selectedId);
   const desktop = useMediaQuery(theme.breakpoints.up('md'));
+
   const [positions, setPositions] = useState([]);
   const [index, setIndex] = useState(0);
   const [selectedDeviceId, setSelectedDeviceId] = useState(defaultDeviceId);
@@ -140,6 +141,7 @@ const ReplayMediaPage = () => {
   const [mediaTimeline, setMediaTimeline] = useState([]);
   const [miniVariant, setMiniVariant] = useState(false);
   const [activeMediaIndex, setActiveMediaIndex] = useState(-1);
+  const [isMediaBarEnabled, setIsMediaBarEnabled] = useState(false);
 
   const deviceName = useMemo(
     () => selectedDeviceId && devices[selectedDeviceId]?.name,
@@ -166,61 +168,9 @@ const ReplayMediaPage = () => {
     };
   }, [desktop, miniVariant]);
 
-  const handleMediaScroll = useCallback(() => {
-    // This will be passed to MediaBar component
-    // MediaBar will get its ref and handle scroll internally
-    // But we need the logic here to update state
-  }, []);
-
-  const onMediaBarScroll = useCallback((mediaBarRef) => {
-    if (!mediaBarRef.current || !mediaTimeline.length) return;
-
-    const container = mediaBarRef.current;
-    const centerX = container.scrollLeft + container.clientWidth / 2;
-
-    let closestIndex = -1;
-    let smallestDiff = Infinity;
-
-    Array.from(container.children).forEach((child, idx) => {
-      const childCenter = child.offsetLeft + child.offsetWidth / 2;
-
-      const diff = Math.abs(centerX - childCenter);
-      if (diff < smallestDiff) {
-        smallestDiff = diff;
-        closestIndex = idx;
-      }
-    });
-
-    if (
-      closestIndex !== -1
-    && closestIndex !== activeMediaIndex
-    ) {
-      const media = mediaTimeline[closestIndex];
-      if (!media) return;
-
-      setActiveMediaIndex(closestIndex);
-      setPlaying(false);
-
-      const mediaTime = new Date(media.eventTime).getTime();
-      let closestPosIndex = 0;
-      let minDiff = Infinity;
-
-      positions.forEach((pos, idx) => {
-        const posTime = new Date(pos.fixTime).getTime();
-        const diff = Math.abs(mediaTime - posTime);
-        if (diff < minDiff) {
-          minDiff = diff;
-          closestPosIndex = idx;
-        }
-      });
-
-      setIndex(closestPosIndex);
-      setAnimationProgress(0);
-    }
-  }, [mediaTimeline, activeMediaIndex, positions]);
-
+  // Sync: Position Index → Active Media Index
   useEffect(() => {
-    if (!positions.length || !mediaTimeline.length || openMedia) return;
+    if (!positions.length || !mediaTimeline.length) return;
 
     const currentPos = positions[index];
     if (!currentPos) return;
@@ -231,37 +181,27 @@ const ReplayMediaPage = () => {
 
     mediaTimeline.forEach((media, idx) => {
       const mediaTime = new Date(media.eventTime).getTime();
-      const diff = currentTime - mediaTime;
-      if (diff >= 0 && diff < smallestDiff) {
-        smallestDiff = diff;
+      const diff = Math.abs(currentTime - mediaTime);
+
+      // Find the closest media that's at or before current position
+      if (mediaTime <= currentTime && currentTime - mediaTime < smallestDiff) {
+        smallestDiff = currentTime - mediaTime;
         closestIndex = idx;
       }
     });
 
-    setActiveMediaIndex(closestIndex);
-  }, [positions, index, mediaTimeline, openMedia]);
-
-  const displayedMedia = useMemo(() => {
-    const result = { left: [], center: null, right: [] };
-
-    if (activeMediaIndex >= 0 && mediaTimeline[activeMediaIndex]) {
-      result.center = mediaTimeline[activeMediaIndex];
-      if (activeMediaIndex >= 2) {
-        result.left.push(mediaTimeline[activeMediaIndex - 2]);
-        result.left.push(mediaTimeline[activeMediaIndex - 1]);
-      } else if (activeMediaIndex === 1) {
-        result.left.push(mediaTimeline[0]);
-      }
-      if (activeMediaIndex < mediaTimeline.length - 2) {
-        result.right.push(mediaTimeline[activeMediaIndex + 1]);
-        result.right.push(mediaTimeline[activeMediaIndex + 2]);
-      } else if (activeMediaIndex === mediaTimeline.length - 2) {
-        result.right.push(mediaTimeline[activeMediaIndex + 1]);
+    // If no media before current position, take the first one if it's close enough
+    if (closestIndex === -1 && mediaTimeline.length > 0) {
+      const firstMediaTime = new Date(mediaTimeline[0].eventTime).getTime();
+      if (Math.abs(currentTime - firstMediaTime) < 30000) { // Within 30 seconds
+        closestIndex = 0;
       }
     }
 
-    return result;
-  }, [activeMediaIndex, mediaTimeline]);
+    if (closestIndex !== activeMediaIndex) {
+      setActiveMediaIndex(closestIndex);
+    }
+  }, [positions, index, mediaTimeline]);
 
   const handleSubmit = useCatch(async ({ deviceId, from, to }) => {
     if (abortControllerRef.current) abortControllerRef.current.abort();
@@ -274,6 +214,7 @@ const ReplayMediaPage = () => {
     setAnimationProgress(0);
     setPlaying(false);
     setActiveMediaIndex(-1);
+    setIsMediaBarEnabled(false); // Reset on new data load
     dispatch(devicesActions.selectId(null));
 
     try {
@@ -318,6 +259,7 @@ const ReplayMediaPage = () => {
     }
   });
 
+  // Animation loop for smooth playback
   useEffect(() => {
     if (playing && positions.length > 0) {
       timerRef.current = setInterval(() => {
@@ -343,6 +285,7 @@ const ReplayMediaPage = () => {
     return () => clearInterval(timerRef.current);
   }, [playing, positions.length]);
 
+  // Calculate smooth position for animation
   useEffect(() => {
     if (!positions.length) {
       setSmoothPosition(null);
@@ -367,10 +310,14 @@ const ReplayMediaPage = () => {
     setPlaying(false);
   }, []);
 
-  const handleMediaClick = useCallback((media) => {
+  // Handle media thumbnail click - Sync: MediaBar → Position Index
+  const handleMediaClick = useCallback((media, mediaIndex) => {
     if (!media) return;
+
+    // Open media preview
     setOpenMedia(media);
 
+    // Find closest position to this media's timestamp
     const mediaTime = new Date(media.eventTime).getTime();
     let closestIndex = 0;
     let smallestDiff = Infinity;
@@ -384,10 +331,20 @@ const ReplayMediaPage = () => {
       }
     });
 
+    // Update position and stop playback
     setIndex(closestIndex);
     setAnimationProgress(0);
     setPlaying(false);
+    setActiveMediaIndex(mediaIndex);
   }, [positions]);
+
+  // Handle play button - Enable MediaBar on first play
+  const handlePlayPause = useCallback(() => {
+    if (!playing && !isMediaBarEnabled && mediaTimeline.length > 0) {
+      setIsMediaBarEnabled(true); // Enable MediaBar on first play
+    }
+    setPlaying((p) => !p);
+  }, [playing, isMediaBarEnabled, mediaTimeline.length]);
 
   const handleClose = useCallback(() => {
     setPositions([]);
@@ -397,6 +354,7 @@ const ReplayMediaPage = () => {
     setPlaying(false);
     setOpenMedia(null);
     setActiveMediaIndex(-1);
+    setIsMediaBarEnabled(false);
     dispatch(devicesActions.selectId(null));
   }, [dispatch]);
 
@@ -443,6 +401,7 @@ const ReplayMediaPage = () => {
                 {t('reportReplay')}
                 {' '}
                 -
+                {' '}
                 {deviceName || t('sharedDevice')}
               </Typography>
               <IconButton onClick={handleClose}>
@@ -470,7 +429,10 @@ const ReplayMediaPage = () => {
               <IconButton onClick={() => setIndex((i) => Math.max(0, i - 1))} disabled={index <= 0}>
                 <FastRewindIcon />
               </IconButton>
-              <IconButton onClick={() => setPlaying((p) => !p)} disabled={index >= positions.length - 1 && !playing}>
+              <IconButton
+                onClick={handlePlayPause}
+                disabled={index >= positions.length - 1 && !playing}
+              >
                 {playing ? <PauseIcon /> : <PlayArrowIcon />}
               </IconButton>
               <IconButton onClick={() => setIndex((i) => Math.min(i + 1, positions.length - 1))} disabled={index >= positions.length - 1}>
@@ -480,6 +442,7 @@ const ReplayMediaPage = () => {
                 {index + 1}
                 {' '}
                 /
+                {' '}
                 {positions.length}
               </Typography>
             </Box>
@@ -488,12 +451,11 @@ const ReplayMediaPage = () => {
 
         <MediaBar
           mediaTimeline={mediaTimeline}
-          displayedMedia={displayedMedia}
+          activeMediaIndex={activeMediaIndex}
           thumbnailCache={thumbnailCache}
           onMediaClick={handleMediaClick}
-          onScroll={onMediaBarScroll}
           mediaBarStyle={mediaBarStyle}
-          desktop={desktop}
+          isEnabled={isMediaBarEnabled}
         />
 
         {openMedia && <MediaPreview open={!!openMedia} mediaUrl={openMedia.url} onClose={() => setOpenMedia(null)} />}

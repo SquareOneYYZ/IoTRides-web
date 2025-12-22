@@ -257,6 +257,16 @@ const MediaBar = ({
     el.addEventListener('scroll', onScroll, { passive: true });
   }, [onScroll]);
 
+  const PLACEHOLDERS_LEFT = [
+    { id: 'ph-left-1' },
+    { id: 'ph-left-2' },
+  ];
+
+  const PLACEHOLDERS_RIGHT = [
+    { id: 'ph-right-1' },
+    { id: 'ph-right-2' },
+  ];
+
   return (
     <Paper
       ref={mediaBarRef}
@@ -266,36 +276,35 @@ const MediaBar = ({
       style={mediaBarStyle}
       elevation={6}
     >
-      {/* LEFT */}
       <Box className={`${classes.section} ${classes.leftSection}`}>
-        {(mediaTimeline.length === 0
-          ? placeholderItems.slice(0, 2)
-          : displayedMedia.left
-        ).map((item, idx) => (mediaTimeline.length === 0 ? (
-          <Box key={idx} className={classes.placeholderThumb}>
-            <ImageIcon sx={{ fontSize: 32, color: '#777' }} />
-          </Box>
-        ) : (
-          <Box key={item.id} className={classes.thumb}>
-            <MediaThumbnail
-              url={item.url}
-              isVideo={item.isVideo}
-              isImage={item.isImage}
-              thumbnailCache={thumbnailCache}
-            />
-          </Box>
-        )))}
+        {mediaTimeline.length === 0
+          ? PLACEHOLDERS_LEFT.map((item) => (
+            <Box key={item.id} className={classes.placeholderThumb}>
+              <ImageIcon sx={{ fontSize: 32, color: '#777' }} />
+            </Box>
+          ))
+          : displayedMedia.left.map((item) => (
+            <Box key={item.id} className={classes.thumb}>
+              <MediaThumbnail
+                url={item.url}
+                isVideo={item.isVideo}
+                isImage={item.isImage}
+                thumbnailCache={thumbnailCache}
+              />
+            </Box>
+          ))}
       </Box>
 
       {/* CENTER */}
       <Box className={`${classes.section} ${classes.centerSection}`}>
         {mediaTimeline.length === 0 ? (
-          <Box className={classes.placeholderThumb}>
+          <Box key="ph-center" className={classes.placeholderThumb}>
             <ImageIcon sx={{ fontSize: 36, color: '#777' }} />
           </Box>
         ) : (
           displayedMedia.center && (
           <Box
+            key={displayedMedia.center.id}
             className={`${classes.thumb} ${classes.thumbCenter}`}
             onClick={() => onMediaClick(displayedMedia.center)}
           >
@@ -312,24 +321,24 @@ const MediaBar = ({
 
       {/* RIGHT */}
       <Box className={`${classes.section} ${classes.rightSection}`}>
-        {(mediaTimeline.length === 0
-          ? placeholderItems.slice(0, 2)
-          : displayedMedia.right
-        ).map((item, idx) => (mediaTimeline.length === 0 ? (
-          <Box key={idx} className={classes.placeholderThumb}>
-            <ImageIcon sx={{ fontSize: 32, color: '#777' }} />
-          </Box>
-        ) : (
-          <Box key={item.id} className={classes.thumb}>
-            <MediaThumbnail
-              url={item.url}
-              isVideo={item.isVideo}
-              isImage={item.isImage}
-              thumbnailCache={thumbnailCache}
-            />
-          </Box>
-        )))}
+        {mediaTimeline.length === 0
+          ? PLACEHOLDERS_RIGHT.map((item) => (
+            <Box key={item.id} className={classes.placeholderThumb}>
+              <ImageIcon sx={{ fontSize: 32, color: '#777' }} />
+            </Box>
+          ))
+          : displayedMedia.right.map((item) => (
+            <Box key={item.id} className={classes.thumb}>
+              <MediaThumbnail
+                url={item.url}
+                isVideo={item.isVideo}
+                isImage={item.isImage}
+                thumbnailCache={thumbnailCache}
+              />
+            </Box>
+          ))}
       </Box>
+
     </Paper>
   );
 };
