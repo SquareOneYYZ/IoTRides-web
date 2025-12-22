@@ -51,6 +51,7 @@
 	"sharedDistance": "Distance",
 	"sharedAll": "All Types",
 	"sharedType": "Type",
+	"segmentType": "Segment Type",
 	"geofenceEnter": "Entered Geofence",
 	"geofenceExit": "Exited Geofence",
 	"sharedStartDistance": "Odometer Start",

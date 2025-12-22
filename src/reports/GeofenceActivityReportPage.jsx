@@ -13,6 +13,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  TextField,
 } from '@mui/material';
 import { useSelector } from 'react-redux';
 import {
@@ -34,6 +35,7 @@ import scheduleReport from './common/scheduleReport';
 const columnsArray = [
   ['deviceId', 'sharedDevice'],
   ['geofenceId', 'sharedGeofence'],
+  ['segmentType', 'segmentType'],
   ['startTime', 'reportStartTime'],
   ['endTime', 'reportEndTime'],
   ['type', 'sharedType'],
@@ -51,6 +53,12 @@ const allEventTypes = [
   ['exit', 'geofenceExit'],
 ];
 
+const segmentTypes = [
+  ['all', 'All Segments'],
+  ['open', 'Open Segments Only'],
+  ['reentry', 'Re-Entries Only'],
+];
+
 const GeofenceDistanceReportPage = () => {
   const navigate = useNavigate();
   const classes = useReportStyles();
@@ -64,6 +72,7 @@ const GeofenceDistanceReportPage = () => {
   const [columns, setColumns] = usePersistedState('geofenceDistanceColumns', [
     'deviceId',
     'geofenceId',
+    'segmentType',
     'startTime',
     'endTime',
     'type',
@@ -77,6 +86,8 @@ const GeofenceDistanceReportPage = () => {
   const [geofences, setGeofences] = useState({});
   const [loading, setLoading] = useState(false);
   const [selectedTypes, setSelectedTypes] = useState(['allTypes']);
+  const [selectedSegmentType, setSelectedSegmentType] = useState('all');
+  const [minDistance, setMinDistance] = useState('');
 
   useEffect(() => {
     const fetchGeofences = async () => {
@@ -109,10 +120,10 @@ const GeofenceDistanceReportPage = () => {
     }
 
     if (type === 'export') {
-      window.location.assign(`/api/reports/devicegeofencedistances/xlsx?${query.toString()}`);
+      window.location.assign(`/api/devicegeofencedistances/xlsx?${query.toString()}`);
     } else if (type === 'mail') {
       const response = await fetch(
-        `/api/reports/devicegeofencedistances/mail?${query.toString()}`,
+        `/api/devicegeofencedistances/mail?${query.toString()}`,
       );
       if (!response.ok) {
         throw Error(await response.text());
@@ -121,7 +132,7 @@ const GeofenceDistanceReportPage = () => {
       setLoading(true);
       try {
         const response = await fetch(
-          `/api/reports/devicegeofencedistances?${query.toString()}`,
+          `/api/devicegeofencedistances?${query.toString()}`,
           {
             headers: { Accept: 'application/json' },
           },
@@ -132,6 +143,19 @@ const GeofenceDistanceReportPage = () => {
           // Client-side filtering if API doesn't filter
           if (selectedTypes[0] !== 'allTypes') {
             data = data.filter((item) => selectedTypes.includes(item.type));
+          }
+
+          // Filter by segment type
+          if (selectedSegmentType === 'open') {
+            data = data.filter((item) => item.open === true);
+          } else if (selectedSegmentType === 'reentry') {
+            data = data.filter((item) => item.open === false);
+          }
+
+          // Filter by minimum distance (in km)
+          if (minDistance && !Number.isNaN(parseFloat(minDistance))) {
+            const minDistanceMeters = parseFloat(minDistance) * 1000;
+            data = data.filter((item) => item.distance >= minDistanceMeters);
           }
 
           setItems(data);
@@ -164,31 +188,46 @@ const GeofenceDistanceReportPage = () => {
       case 'geofenceId':
         return geofences[value]?.name || value;
 
+      case 'segmentType':
+        return item.open ? 'Open Segment' : 'Re-Entry';
+
       case 'startTime':
-        return filterRange.from
-          ? formatTime(filterRange.from, 'minutes')
+        return item.startTime
+          ? formatTime(item.startTime, 'minutes')
           : 'N/A';
 
       case 'endTime':
-        return filterRange.to
-          ? formatTime(filterRange.to, 'minutes')
+        return item.endTime
+          ? formatTime(item.endTime, 'minutes')
           : 'N/A';
 
       case 'type':
         if (value === 'enter') return t('geofenceEnter');
         if (value === 'exit') return t('geofenceExit');
+        if (value === 'Inside') return 'Inside';
         return value;
 
       case 'totalDistance':
+        if (item.distance !== null && item.distance !== undefined) {
+          return formatDistance(item.distance, distanceUnit, t);
+        }
+        return 'N/A';
+
       case 'startDistance':
+        if (item.odoStart !== null && item.odoStart !== undefined) {
+          return formatDistance(item.odoStart, distanceUnit, t);
+        }
+        return 'N/A';
+
       case 'endDistance':
-        if (value === null || value === undefined) return 'N/A';
-        return formatDistance(value, distanceUnit, t);
+        if (item.odoEnd !== null && item.odoEnd !== undefined) {
+          return formatDistance(item.odoEnd, distanceUnit, t);
+        }
+        return 'N/A';
 
       case 'distanceTraveled':
-        if (item.startDistance !== null && item.endDistance !== null) {
-          const distanceTraveled = item.endDistance - item.startDistance;
-          return formatDistance(distanceTraveled, distanceUnit, t);
+        if (item.distance !== null && item.distance !== undefined) {
+          return formatDistance(item.distance, distanceUnit, t);
         }
         return 'N/A';
 
@@ -210,6 +249,32 @@ const GeofenceDistanceReportPage = () => {
               handleSchedule={handleSchedule}
               loading={loading}
             >
+              <div className={classes.filterItem}>
+                <FormControl fullWidth>
+                  <InputLabel>Segment Type</InputLabel>
+                  <Select
+                    label="Segment Type"
+                    value={selectedSegmentType}
+                    onChange={(e) => setSelectedSegmentType(e.target.value)}
+                  >
+                    {segmentTypes.map(([key, label]) => (
+                      <MenuItem key={key} value={key}>
+                        {label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </div>
+              <div className={classes.filterItem}>
+                <TextField
+                  fullWidth
+                  label="Minimum Distance (km)"
+                  type="number"
+                  value={minDistance}
+                  onChange={(e) => setMinDistance(e.target.value)}
+                  inputProps={{ min: 0, step: 0.1 }}
+                />
+              </div>
               <div className={classes.filterItem}>
                 <FormControl fullWidth>
                   <InputLabel>{t('sharedType')}</InputLabel>
