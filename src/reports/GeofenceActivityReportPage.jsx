@@ -35,7 +35,6 @@ import scheduleReport from './common/scheduleReport';
 const columnsArray = [
   ['deviceId', 'sharedDevice'],
   ['geofenceId', 'sharedGeofence'],
-  ['segmentType', 'segmentType'],
   ['startTime', 'reportStartTime'],
   ['endTime', 'reportEndTime'],
   ['type', 'sharedType'],
