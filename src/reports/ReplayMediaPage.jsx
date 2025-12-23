@@ -148,6 +148,12 @@ const ReplayMediaPage = () => {
     [selectedDeviceId, devices],
   );
 
+  const DISABLED_DISPLAYED_MEDIA = {
+    left: [],
+    center: { id: 'ph-center' },
+    right: [{ id: 'ph-r-1' }, { id: 'ph-r-2' }],
+  };
+
   useEffect(() => {
     const handleDrawerChange = (event) => {
       setMiniVariant(event.detail.miniVariant);
@@ -155,6 +161,24 @@ const ReplayMediaPage = () => {
     window.addEventListener('drawerStateChange', handleDrawerChange);
     return () => window.removeEventListener('drawerStateChange', handleDrawerChange);
   }, []);
+
+  const activeDisplayedMedia = useMemo(() => {
+    if (activeMediaIndex === -1 || !mediaTimeline.length) return null;
+
+    return {
+      left: mediaTimeline.slice(
+        Math.max(0, activeMediaIndex - 2),
+        activeMediaIndex,
+      ),
+      center: mediaTimeline[activeMediaIndex],
+      right: mediaTimeline.slice(
+        activeMediaIndex + 1,
+        activeMediaIndex + 3,
+      ),
+    };
+  }, [mediaTimeline, activeMediaIndex]);
+
+  const displayedMedia = activeDisplayedMedia || DISABLED_DISPLAYED_MEDIA;
 
   const mediaBarStyle = useMemo(() => {
     if (!desktop) return {};
@@ -451,6 +475,7 @@ const ReplayMediaPage = () => {
 
         <MediaBar
           mediaTimeline={mediaTimeline}
+          displayedMedia={displayedMedia}
           activeMediaIndex={activeMediaIndex}
           thumbnailCache={thumbnailCache}
           onMediaClick={handleMediaClick}

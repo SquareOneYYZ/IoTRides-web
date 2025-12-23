@@ -1,18 +1,33 @@
 import React, {
-  useRef, useCallback, useMemo, useEffect,
+  useRef, useEffect,
 } from 'react';
-import { Paper, Box, CircularProgress } from '@mui/material';
+import {
+  Paper, Box, CircularProgress, Slider,
+} from '@mui/material';
 import makeStyles from '@mui/styles/makeStyles';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import ImageIcon from '@mui/icons-material/Image';
 
 const useStyles = makeStyles((theme) => ({
-  mediaBar: {
+  mediaBarContainer: {
     position: 'fixed',
     bottom: theme.spacing(10),
     left: '50%',
     transform: 'translateX(-50%)',
     zIndex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: theme.spacing(1),
+    width: 'fit-content',
+    maxWidth: '90vw',
+    [theme.breakpoints.down('md')]: {
+      bottom: theme.spacing(2),
+    },
+    [theme.breakpoints.down('sm')]: {
+      bottom: theme.spacing(20),
+    },
+  },
+  mediaBar: {
     display: 'grid',
     gridTemplateColumns: '1fr auto 1fr',
     alignItems: 'center',
@@ -21,8 +36,6 @@ const useStyles = makeStyles((theme) => ({
     background: theme.palette.background.paper,
     borderRadius: theme.shape.borderRadius,
     boxShadow: theme.shadows[6],
-    width: 'fit-content',
-    maxWidth: '90vw',
     overflowX: 'auto',
     whiteSpace: 'nowrap',
     scrollbarWidth: 'thin',
@@ -34,18 +47,32 @@ const useStyles = makeStyles((theme) => ({
       borderRadius: 4,
     },
     [theme.breakpoints.down('md')]: {
-      bottom: theme.spacing(2),
       gap: theme.spacing(1.5),
       padding: theme.spacing(1.5),
     },
     [theme.breakpoints.down('sm')]: {
-      bottom: theme.spacing(20),
       gap: theme.spacing(1),
       padding: theme.spacing(1),
     },
   },
   mediaBarDisabled: {
-    opacity: 0.4,
+    opacity: 0.1,
+    pointerEvents: 'none',
+  },
+  scrollbarContainer: {
+    padding: `${theme.spacing(1)} ${theme.spacing(2)}`,
+    background: theme.palette.background.paper,
+    borderRadius: theme.shape.borderRadius,
+    boxShadow: theme.shadows[4],
+    [theme.breakpoints.down('md')]: {
+      padding: `${theme.spacing(0.5)} ${theme.spacing(1.5)}`,
+    },
+    [theme.breakpoints.down('sm')]: {
+      padding: `${theme.spacing(0.5)} ${theme.spacing(1)}`,
+    },
+  },
+  scrollbarDisabled: {
+    opacity: 0.1,
     pointerEvents: 'none',
   },
   placeholderThumb: {
@@ -96,6 +123,26 @@ const useStyles = makeStyles((theme) => ({
     '&:hover': {
       transform: 'scale(1.15)',
       boxShadow: `0 0 25px ${theme.palette.secondary.main}`,
+    },
+  },
+  thumbCenterDisabled: {
+    border: '2px solid transparent',
+    transform: 'scale(1)',
+    boxShadow: 'none',
+    width: 120,
+    height: 75,
+    cursor: 'default',
+    [theme.breakpoints.down('md')]: {
+      width: 100,
+      height: 65,
+    },
+    [theme.breakpoints.down('sm')]: {
+      width: 80,
+      height: 60,
+    },
+    '&:hover': {
+      transform: 'scale(1)',
+      boxShadow: 'none',
     },
   },
   section: {
@@ -236,16 +283,16 @@ const MediaThumbnail = React.memo(({ url, isVideo, isImage, thumbnailCache }) =>
   );
 });
 
-const placeholderItems = Array.from({ length: 5 });
-
 const MediaBar = ({
   mediaTimeline,
   displayedMedia,
+  activeMediaIndex,
   thumbnailCache,
   onMediaClick,
+  onScrollbarChange,
   onScroll,
   mediaBarStyle,
-  desktop,
+  isEnabled,
 }) => {
   const classes = useStyles();
   const mediaBarRef = useRef(null);
@@ -257,33 +304,26 @@ const MediaBar = ({
     el.addEventListener('scroll', onScroll, { passive: true });
   }, [onScroll]);
 
-  const PLACEHOLDERS_LEFT = [
-    { id: 'ph-left-1' },
-    { id: 'ph-left-2' },
-  ];
-
-  const PLACEHOLDERS_RIGHT = [
-    { id: 'ph-right-1' },
-    { id: 'ph-right-2' },
-  ];
+  if (!mediaTimeline || mediaTimeline.length === 0) {
+    return null;
+  }
 
   return (
-    <Paper
-      ref={mediaBarRef}
-      className={`${classes.mediaBar} ${
-        mediaTimeline.length === 0 ? classes.mediaBarDisabled : ''
-      }`}
+    <Box
+      className={classes.mediaBarContainer}
       style={mediaBarStyle}
-      elevation={6}
     >
-      <Box className={`${classes.section} ${classes.leftSection}`}>
-        {mediaTimeline.length === 0
-          ? PLACEHOLDERS_LEFT.map((item) => (
-            <Box key={item.id} className={classes.placeholderThumb}>
-              <ImageIcon sx={{ fontSize: 32, color: '#777' }} />
-            </Box>
-          ))
-          : displayedMedia.left.map((item) => (
+      {/* Main MediaBar with 2-1-2 display */}
+      <Paper
+        ref={mediaBarRef}
+        className={`${classes.mediaBar} ${
+          !isEnabled ? classes.mediaBarDisabled : ''
+        }`}
+        elevation={6}
+      >
+        {/* LEFT */}
+        <Box className={`${classes.section} ${classes.leftSection}`}>
+          {(displayedMedia?.left || []).map((item) => (
             <Box key={item.id} className={classes.thumb}>
               <MediaThumbnail
                 url={item.url}
@@ -293,41 +333,31 @@ const MediaBar = ({
               />
             </Box>
           ))}
-      </Box>
+        </Box>
 
-      {/* CENTER */}
-      <Box className={`${classes.section} ${classes.centerSection}`}>
-        {mediaTimeline.length === 0 ? (
-          <Box key="ph-center" className={classes.placeholderThumb}>
-            <ImageIcon sx={{ fontSize: 36, color: '#777' }} />
-          </Box>
-        ) : (
-          displayedMedia.center && (
-          <Box
-            key={displayedMedia.center.id}
-            className={`${classes.thumb} ${classes.thumbCenter}`}
-            onClick={() => onMediaClick(displayedMedia.center)}
-          >
-            <MediaThumbnail
-              url={displayedMedia.center.url}
-              isVideo={displayedMedia.center.isVideo}
-              isImage={displayedMedia.center.isImage}
-              thumbnailCache={thumbnailCache}
-            />
-          </Box>
-          )
-        )}
-      </Box>
-
-      {/* RIGHT */}
-      <Box className={`${classes.section} ${classes.rightSection}`}>
-        {mediaTimeline.length === 0
-          ? PLACEHOLDERS_RIGHT.map((item) => (
-            <Box key={item.id} className={classes.placeholderThumb}>
-              <ImageIcon sx={{ fontSize: 32, color: '#777' }} />
+        {/* CENTER */}
+        <Box className={`${classes.section} ${classes.centerSection}`}>
+          {displayedMedia?.center && (
+            <Box
+              key={displayedMedia.center.id}
+              className={`${classes.thumb} ${
+                isEnabled ? classes.thumbCenter : classes.thumbCenterDisabled
+              }`}
+              onClick={() => isEnabled && onMediaClick(displayedMedia.center, activeMediaIndex)}
+            >
+              <MediaThumbnail
+                url={displayedMedia.center.url}
+                isVideo={displayedMedia.center.isVideo}
+                isImage={displayedMedia.center.isImage}
+                thumbnailCache={thumbnailCache}
+              />
             </Box>
-          ))
-          : displayedMedia.right.map((item) => (
+          )}
+        </Box>
+
+        {/* RIGHT */}
+        <Box className={`${classes.section} ${classes.rightSection}`}>
+          {(displayedMedia?.right || []).map((item) => (
             <Box key={item.id} className={classes.thumb}>
               <MediaThumbnail
                 url={item.url}
@@ -337,9 +367,43 @@ const MediaBar = ({
               />
             </Box>
           ))}
-      </Box>
+        </Box>
+      </Paper>
 
-    </Paper>
+      {/* Simple Scrollbar - ALL media items */}
+      {mediaTimeline.length > 1 && (
+        <Paper
+          className={`${classes.scrollbarContainer} ${
+            !isEnabled ? classes.scrollbarDisabled : ''
+          }`}
+          elevation={4}
+        >
+          <Slider
+            value={activeMediaIndex >= 0 ? activeMediaIndex : 0}
+            min={0}
+            max={mediaTimeline.length - 1}
+            step={1}
+            disabled={!isEnabled}
+            onChange={(_, newValue) => {
+              if (isEnabled && onScrollbarChange) {
+                onScrollbarChange(newValue);
+              }
+            }}
+            sx={{
+              height: 4,
+              padding: '8px 0',
+              '& .MuiSlider-thumb': {
+                width: 12,
+                height: 12,
+              },
+              '& .MuiSlider-rail': {
+                opacity: 0.3,
+              },
+            }}
+          />
+        </Paper>
+      )}
+    </Box>
   );
 };
 
