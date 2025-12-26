@@ -1,10 +1,15 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  IconButton, Table, TableBody, TableCell, TableHead, TableRow,
+  IconButton, Table, TableBody, Tooltip, TableCell, TableHead, TableRow, Link,
 } from '@mui/material';
 import GpsFixedIcon from '@mui/icons-material/GpsFixed';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
+import WarningIcon from '@mui/icons-material/Warning';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import Collapse from '@mui/material/Collapse';
+import Box from '@mui/material/Box';
+import { useSelector } from 'react-redux';
 import {
   formatDistance, formatSpeed, formatVolume, formatTime, formatNumericHours,
 } from '../common/util/formatter';
@@ -27,6 +32,7 @@ import MapGeofence from '../map/MapGeofence';
 import scheduleReport from './common/scheduleReport';
 import MapScale from '../map/MapScale';
 import useResizableMap from './common/useResizableMap';
+import { prefixString } from '../common/util/stringUtils';
 
 const columnsArray = [
   ['startTime', 'reportStartTime'],
@@ -44,6 +50,115 @@ const columnsArray = [
 ];
 const columnsMap = new Map(columnsArray);
 
+const EventsTable = React.memo(({ events, t, speedUnit, distanceUnit }) => {
+  const devices = useSelector((state) => state.devices.items);
+
+  const formatEventData = (event) => {
+    if (!event.attributes || Object.keys(event.attributes).length === 0) {
+      return 'N/A';
+    }
+
+    switch (event.type) {
+      case 'alarm':
+        return t(prefixString('alarm', event.attributes.alarm));
+
+      case 'deviceOverspeed':
+        return formatSpeed(event.attributes.speed, speedUnit, t);
+
+      case 'driverChanged':
+        return event.attributes.driverUniqueId || 'N/A';
+
+      case 'commandResult':
+        return event.attributes.result || 'N/A';
+
+      case 'media':
+        return (
+          <Link
+            href={`/api/media/${devices[event.deviceId]?.uniqueId}/${event.attributes.file}`}
+            target="_blank"
+          >
+            {event.attributes.file}
+          </Link>
+        );
+
+      case 'deviceTollRouteExit': {
+        const parts = [];
+        if ('tollName' in event.attributes) {
+          parts.push(`Toll name: ${event.attributes.tollName}`);
+        }
+        if ('tollDistance' in event.attributes) {
+          parts.push(`Toll Distance: ${formatDistance(event.attributes.tollDistance, distanceUnit, t)}`);
+        }
+        return parts.length > 0 ? parts.join(' | ') : 'N/A';
+      }
+
+      case 'deviceTollRouteEnter': {
+        const parts = [];
+        if ('tollName' in event.attributes) {
+          parts.push(`Toll name: ${event.attributes.tollName}`);
+        }
+        if ('tollRef' in event.attributes) {
+          parts.push(`Toll Reference: ${event.attributes.tollRef}`);
+        }
+        return parts.length > 0 ? parts.join(' | ') : 'N/A';
+      }
+
+      default:
+        return Object.entries(event.attributes)
+          .map(([key, value]) => `${key}: ${String(value)}`)
+          .join(', ');
+    }
+  };
+
+  const formatSpeedLimit = (event) => {
+    if (event.type === 'deviceOverspeed' && event.attributes?.speedLimit) {
+      return formatSpeed(event.attributes.speedLimit, speedUnit, t);
+    }
+    return 'N/A';
+  };
+
+  if (!events || events.length === 0) {
+    return (
+      <Box sx={{ padding: 2, textAlign: 'center', color: '#666' }}>
+        No events found for this trip
+      </Box>
+    );
+  }
+
+  return (
+    <Box sx={{ margin: 2, marginLeft: 6 }}>
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            <TableCell sx={{ fontWeight: 600 }}>Fix Time</TableCell>
+            <TableCell sx={{ fontWeight: 600 }}>Type</TableCell>
+            <TableCell sx={{ fontWeight: 600 }}>Data</TableCell>
+            <TableCell sx={{ fontWeight: 600 }}>Speed Limit</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {events.map((event) => (
+            <TableRow key={event.id} hover>
+              <TableCell>
+                {formatTime(event.eventTime, 'seconds')}
+              </TableCell>
+              <TableCell>
+                {event.type ? t(prefixString('event', event.type)) : 'N/A'}
+              </TableCell>
+              <TableCell>
+                {formatEventData(event)}
+              </TableCell>
+              <TableCell>
+                {formatSpeedLimit(event)}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </Box>
+  );
+});
+
 const TripReportPage = () => {
   const navigate = useNavigate();
   const classes = useReportStyles();
@@ -58,19 +173,24 @@ const TripReportPage = () => {
   const [loading, setLoading] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [route, setRoute] = useState(null);
+  const [tripEventsMap, setTripEventsMap] = useState({});
+  const [openTrips, setOpenTrips] = useState({});
 
-  const createMarkers = () => ([
-    {
-      latitude: selectedItem.startLat,
-      longitude: selectedItem.startLon,
-      image: 'start-success',
-    },
-    {
-      latitude: selectedItem.endLat,
-      longitude: selectedItem.endLon,
-      image: 'finish-error',
-    },
-  ]);
+  const createMarkers = useMemo(() => {
+    if (!selectedItem) return [];
+    return [
+      {
+        latitude: selectedItem.startLat,
+        longitude: selectedItem.startLon,
+        image: 'start-success',
+      },
+      {
+        latitude: selectedItem.endLat,
+        longitude: selectedItem.endLon,
+        image: 'finish-error',
+      },
+    ];
+  }, [selectedItem]);
 
   useEffectAsync(async () => {
     if (selectedItem) {
@@ -93,6 +213,45 @@ const TripReportPage = () => {
       setRoute(null);
     }
   }, [selectedItem]);
+
+  const fetchTripEvents = async (trip) => {
+    const query = new URLSearchParams({
+      deviceId: trip.deviceId,
+      from: trip.startTime,
+      to: trip.endTime,
+    });
+
+    try {
+      const response = await fetch(`/api/reports/events?${query.toString()}`, {
+        headers: { Accept: 'application/json' },
+      });
+
+      if (response.ok) {
+        const events = await response.json();
+        setTripEventsMap((prev) => ({
+          ...prev,
+          [trip.startPositionId]: events,
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching events for trip:', error);
+    }
+  };
+
+  useEffect(() => {
+    items.forEach((trip) => {
+      if (!tripEventsMap[trip.startPositionId]) {
+        fetchTripEvents(trip);
+      }
+    });
+  }, [items]);
+
+  const toggleTrip = (tripId) => {
+    setOpenTrips((prev) => ({
+      ...prev,
+      [tripId]: !prev[tripId],
+    }));
+  };
 
   const handleSubmit = useCatch(async ({ deviceId, from, to, type }) => {
     const query = new URLSearchParams({ deviceId, from, to });
@@ -184,7 +343,7 @@ const TripReportPage = () => {
               {route && (
               <>
                 <MapRoutePath positions={route} />
-                <MapMarkers markers={createMarkers()} />
+                <MapMarkers markers={createMarkers} />
                 <MapCamera positions={route} />
               </>
               )}
@@ -244,31 +403,82 @@ const TripReportPage = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {!loading ? items.map((item) => (
-                <TableRow key={item.startPositionId}>
-                  <TableCell className={classes.columnAction} padding="none">
-                    {selectedItem === item ? (
-                      <IconButton size="small" onClick={() => setSelectedItem(null)}>
-                        <GpsFixedIcon fontSize="small" />
-                      </IconButton>
-                    ) : (
-                      <IconButton size="small" onClick={() => setSelectedItem(item)}>
-                        <LocationSearchingIcon fontSize="small" />
-                      </IconButton>
+              {!loading ? items.map((item) => {
+                const events = tripEventsMap[item.startPositionId] || [];
+                const isOpen = openTrips[item.startPositionId];
+                const hasEvents = events.length > 0;
+
+                return (
+                  <React.Fragment key={item.startPositionId}>
+                    <TableRow>
+                      <TableCell className={classes.columnAction} padding="none">
+                        {selectedItem === item ? (
+                          <IconButton size="small" onClick={() => setSelectedItem(null)}>
+                            <GpsFixedIcon fontSize="small" />
+                          </IconButton>
+                        ) : (
+                          <IconButton size="small" onClick={() => setSelectedItem(item)}>
+                            <LocationSearchingIcon fontSize="small" />
+                          </IconButton>
+                        )}
+                      </TableCell>
+
+                      {columns.map((key, index) => (
+                        <TableCell key={key}>
+                          {index === 0 && hasEvents ? (
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Tooltip title={isOpen ? 'Hide Events' : 'Show Events'}>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => toggleTrip(item.startPositionId)}
+                                  sx={{
+                                    transition: 'all 0.2s ease',
+                                    '&:hover': { transform: 'scale(1.1)' },
+                                  }}
+                                >
+                                  {isOpen ? <WarningAmberIcon color="warning" /> : <WarningIcon color="action" />}
+                                </IconButton>
+                              </Tooltip>
+                              {formatValue(item, key)}
+                            </Box>
+                          ) : (
+                            formatValue(item, key)
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+
+                    {hasEvents && (
+                    <TableRow>
+                      <TableCell
+                        colSpan={columns.length + 1}
+                        style={{ padding: 0 }}
+                      >
+                        <Collapse
+                          in={isOpen}
+                          timeout={300}
+                          unmountOnExit
+                        >
+                          <EventsTable
+                            events={events}
+                            t={t}
+                            speedUnit={speedUnit}
+                            distanceUnit={distanceUnit}
+                          />
+                        </Collapse>
+                      </TableCell>
+                    </TableRow>
                     )}
-                  </TableCell>
-                  {columns.map((key) => (
-                    <TableCell key={key}>
-                      {formatValue(item, key)}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              )) : (<TableShimmer columns={columns.length + 1} startAction />)}
+                  </React.Fragment>
+                );
+              }) : (
+                <TableShimmer columns={columns.length + 1} startAction />
+              )}
+
             </TableBody>
           </Table>
         </div>
       </div>
-
     </PageLayout>
   );
 };
