@@ -51,8 +51,19 @@ const useStyles = makeStyles((theme) => ({
     },
 
     [theme.breakpoints.down('md')]: {
+      width: 'calc(100% - 16px)',
+      maxWidth: 'calc(100% - 16px)',
+      margin: theme.spacing(1),
+      left: 0,
+      right: 0,
+    },
+
+    [theme.breakpoints.down('sm')]: {
       width: '100%',
+      maxWidth: '100%',
       margin: 0,
+      left: 0,
+      right: 0,
     },
   },
   title: {
@@ -91,11 +102,10 @@ const useStyles = makeStyles((theme) => ({
     display: 'flex',
     flexDirection: 'column',
     padding: theme.spacing(2),
+    marginTop: theme.spacing(1),
     [theme.breakpoints.down('md')]: {
-      margin: theme.spacing(1),
-    },
-    [theme.breakpoints.up('md')]: {
-      marginTop: theme.spacing(1),
+      padding: theme.spacing(2),
+      margin: theme.spacing(1.5),
     },
   },
 }));
