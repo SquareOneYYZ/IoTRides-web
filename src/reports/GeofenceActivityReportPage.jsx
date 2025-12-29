@@ -44,9 +44,9 @@ import useResizableMap from './common/useResizableMap';
 const columnsArray = [
   ['deviceId', 'sharedDevice'],
   ['geofenceId', 'sharedGeofence'],
+  ['type', 'sharedType'],
   ['startTime', 'reportStartTime'],
   ['endTime', 'reportEndTime'],
-  ['type', 'sharedType'],
   ['totalDistance', 'sharedTotalDistance'],
   ['startDistance', 'sharedStartDistance'],
   ['endDistance', 'sharedEndDistance'],
@@ -57,8 +57,8 @@ const columnsMap = new Map(columnsArray);
 
 const allEventTypes = [
   ['allTypes', 'sharedAll'],
-  ['enter', 'geofenceEnter'],
-  ['exit', 'geofenceExit'],
+  ['Inside', 'inside'],
+  ['Outside', 'outside'],
 ];
 
 const segmentTypes = [
@@ -92,9 +92,11 @@ const GeofenceDistanceReportPage = () => {
 
   const [items, setItems] = useState([]);
   const [geofences, setGeofences] = useState({});
+  const [allGeofences, setAllGeofences] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedTypes, setSelectedTypes] = useState(['allTypes']);
   const [selectedSegmentType, setSelectedSegmentType] = useState('all');
+  const [selectedGeofences, setSelectedGeofences] = useState(['allGeofences']);
   const [minDistance, setMinDistance] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
   const [position, setPosition] = useState(null);
@@ -112,6 +114,7 @@ const GeofenceDistanceReportPage = () => {
             geofenceMap[geofence.id] = geofence;
           });
           setGeofences(geofenceMap);
+          setAllGeofences(data);
         }
       } catch (error) {
         console.error('Error fetching geofences:', error);
@@ -182,6 +185,31 @@ const GeofenceDistanceReportPage = () => {
             data = data.filter((item) => item.distance >= minDistanceMeters);
           }
 
+          if (selectedGeofences[0] !== 'allGeofences') {
+            const selectedGeofenceIds = selectedGeofences.map(Number);
+            const existingData = data.filter((item) => selectedGeofenceIds.includes(item.geofenceId));
+
+            const existingGeofenceIds = new Set(existingData.map((item) => item.geofenceId));
+            const missingGeofenceIds = selectedGeofenceIds.filter(
+              (id) => !existingGeofenceIds.has(id),
+            );
+
+            const placeholderRows = missingGeofenceIds.map((geofenceId, index) => ({
+              id: `placeholder-${geofenceId}-${index}`,
+              deviceId,
+              geofenceId,
+              type: 'N/A',
+              startTime: null,
+              endTime: null,
+              distance: 0,
+              odoStart: 0,
+              odoEnd: 0,
+              isPlaceholder: true,
+            }));
+
+            data = [...existingData, ...placeholderRows];
+          }
+
           setItems(data);
           setFilterRange({ from, to });
         } else {
@@ -204,6 +232,25 @@ const GeofenceDistanceReportPage = () => {
   });
 
   const formatValue = (item, key) => {
+    if (item.isPlaceholder) {
+      switch (key) {
+        case 'deviceId':
+          return devices[item.deviceId]?.name || item.deviceId;
+        case 'geofenceId':
+          return geofences[item.geofenceId]?.name || item.geofenceId;
+        case 'type':
+        case 'startTime':
+        case 'endTime':
+        case 'totalDistance':
+        case 'startDistance':
+        case 'endDistance':
+        case 'distanceTraveled':
+          return 'N/A';
+        default:
+          return 'N/A';
+      }
+    }
+
     const value = item[key];
     switch (key) {
       case 'deviceId':
@@ -257,7 +304,6 @@ const GeofenceDistanceReportPage = () => {
     }
   };
 
-  // Check if any items have positionId to determine if we need the action column
   const hasPositionIds = items.some((item) => item.positionId);
 
   return (
@@ -392,6 +438,33 @@ const GeofenceDistanceReportPage = () => {
                       {allEventTypes.map(([key, string]) => (
                         <MenuItem key={key} value={key}>
                           {t(string)}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </div>
+                <div className={classes.filterItem}>
+                  <FormControl fullWidth>
+                    <InputLabel>{t('sharedGeofence')}</InputLabel>
+                    <Select
+                      label={t('sharedGeofence')}
+                      value={selectedGeofences}
+                      onChange={(e, child) => {
+                        let values = e.target.value;
+                        const clicked = child.props.value;
+                        if (values.includes('allGeofences') && values.length > 1) {
+                          values = [clicked];
+                        }
+                        setSelectedGeofences(values);
+                      }}
+                      multiple
+                    >
+                      <MenuItem key="allGeofences" value="allGeofences">
+                        All Geofences
+                      </MenuItem>
+                      {allGeofences.map((geofence) => (
+                        <MenuItem key={geofence.id} value={geofence.id.toString()}>
+                          {geofence.name}
                         </MenuItem>
                       ))}
                     </Select>
