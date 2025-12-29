@@ -248,18 +248,6 @@ const DevicesPage = () => {
     </TableSortLabel>
   );
 
-  const getStatusColor = (status) => {
-    if (!status) return 'default';
-    switch (status.toLowerCase()) {
-      case 'online':
-        return 'primary';
-      case 'unknown':
-        return 'default';
-      default:
-        return 'default';
-    }
-  };
-
   const getRelativeTime = (timestamp) => {
     if (!timestamp) return '-';
 
@@ -468,7 +456,6 @@ const DevicesPage = () => {
                 <TableCell>{getSortLabel('phone')}</TableCell>
                 <TableCell>{getSortLabel('model')}</TableCell>
                 <TableCell>{getSortLabel('contact')}</TableCell>
-                <TableCell>{getSortLabel('status')}</TableCell>
                 <TableCell>{getSortLabel('lastUpdate')}</TableCell>
                 <TableCell>{getSortLabel('expirationTime')}</TableCell>
                 <TableCell>{getSortLabel('vin')}</TableCell>
@@ -490,18 +477,6 @@ const DevicesPage = () => {
                     <TableCell>{item.phone}</TableCell>
                     <TableCell>{item.model}</TableCell>
                     <TableCell>{item.contact}</TableCell>
-                    <TableCell>
-                      {item.status ? (
-                        <Chip
-                          size="small"
-                          label={item.status}
-                          color={getStatusColor(item.status)}
-                          sx={{ textTransform: 'capitalize' }}
-                        />
-                      ) : (
-                        '-'
-                      )}
-                    </TableCell>
                     <TableCell>
                       {getRelativeTime(item.lastUpdate)}
                     </TableCell>
