@@ -36,7 +36,7 @@ import { useAttributePreference } from '../common/util/preferences';
 import scheduleReport from './common/scheduleReport';
 import MapView from '../map/core/MapView';
 import MapGeofence from '../map/MapGeofence';
-import MapPositions from '../map/MapPositions';
+import MapMarkers from '../map/MapMarkers';
 import MapCamera from '../map/MapCamera';
 import MapScale from '../map/MapScale';
 import useResizableMap from './common/useResizableMap';
@@ -99,7 +99,7 @@ const GeofenceDistanceReportPage = () => {
   const [selectedGeofences, setSelectedGeofences] = useState(['allGeofences']);
   const [minDistance, setMinDistance] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
-  const [position, setPosition] = useState(null);
+  const [positions, setPositions] = useState([]);
 
   useEffect(() => {
     const fetchGeofences = async () => {
@@ -124,21 +124,59 @@ const GeofenceDistanceReportPage = () => {
     fetchGeofences();
   }, []);
 
+  const createMarkers = () => {
+    const markers = [];
+    if (positions.length > 0) {
+      markers.push({
+        latitude: positions[0].latitude,
+        longitude: positions[0].longitude,
+        image: 'start-success',
+      });
+    }
+    if (positions.length > 1) {
+      markers.push({
+        latitude: positions[1].latitude,
+        longitude: positions[1].longitude,
+        image: 'finish-error',
+      });
+    }
+    return markers;
+  };
+
   useEffectAsync(async () => {
     if (selectedItem) {
-      const response = await fetch(
-        `/api/positions?id=${selectedItem.positionId}`,
-      );
-      if (response.ok) {
-        const positions = await response.json();
-        if (positions.length > 0) {
-          setPosition(positions[0]);
-        }
+      const positionsToFetch = [];
+
+      if (selectedItem.enterPositionId) {
+        positionsToFetch.push(selectedItem.enterPositionId);
+      }
+      if (selectedItem.exitPositionId) {
+        positionsToFetch.push(selectedItem.exitPositionId);
+      }
+
+      if (positionsToFetch.length > 0) {
+        const fetchedPositions = [];
+        await Promise.all(
+          positionsToFetch.map(async (posId) => {
+            const response = await fetch(`/api/positions?id=${posId}`);
+
+            if (!response.ok) {
+              throw Error(await response.text());
+            }
+
+            const posData = await response.json();
+            if (posData?.length) {
+              fetchedPositions.push(posData[0]);
+            }
+          }),
+        );
+
+        setPositions(fetchedPositions);
       } else {
-        throw Error(await response.text());
+        setPositions([]);
       }
     } else {
-      setPosition(null);
+      setPositions([]);
     }
   }, [selectedItem]);
 
@@ -304,8 +342,6 @@ const GeofenceDistanceReportPage = () => {
     }
   };
 
-  const hasPositionIds = items.some((item) => item.positionId);
-
   return (
     <PageLayout
       menu={<ReportsMenu />}
@@ -334,17 +370,14 @@ const GeofenceDistanceReportPage = () => {
             >
               <MapView>
                 <MapGeofence />
-                {position && (
-                  <MapPositions positions={[position]} titleField="fixTime" />
+                {positions.length > 0 && (
+                  <>
+                    <MapMarkers markers={createMarkers()} />
+                    <MapCamera positions={positions} />
+                  </>
                 )}
               </MapView>
               <MapScale />
-              {position && (
-                <MapCamera
-                  latitude={position.latitude}
-                  longitude={position.longitude}
-                />
-              )}
             </div>
 
             <button
@@ -480,7 +513,7 @@ const GeofenceDistanceReportPage = () => {
             <Table>
               <TableHead>
                 <TableRow>
-                  {hasPositionIds && <TableCell className={classes.columnAction} />}
+                  <TableCell className={classes.columnAction} />
                   {columns.map((key) => (
                     <TableCell key={key}>{t(columnsMap.get(key))}</TableCell>
                   ))}
@@ -490,34 +523,32 @@ const GeofenceDistanceReportPage = () => {
                 {!loading ? (
                   items.map((item) => (
                     <TableRow key={item.id}>
-                      {hasPositionIds && (
-                        <TableCell className={classes.columnAction} padding="none">
-                          {item.positionId && (
-                            selectedItem === item ? (
-                              <IconButton
-                                size="small"
-                                onClick={() => setSelectedItem(null)}
-                              >
-                                <GpsFixedIcon fontSize="small" />
-                              </IconButton>
-                            ) : (
-                              <IconButton
-                                size="small"
-                                onClick={() => setSelectedItem(item)}
-                              >
-                                <LocationSearchingIcon fontSize="small" />
-                              </IconButton>
-                            )
-                          )}
-                        </TableCell>
-                      )}
+                      <TableCell className={classes.columnAction} padding="none">
+                        {!item.isPlaceholder && (item.enterPositionId || item.exitPositionId) && (
+                          selectedItem === item ? (
+                            <IconButton
+                              size="small"
+                              onClick={() => setSelectedItem(null)}
+                            >
+                              <GpsFixedIcon fontSize="small" />
+                            </IconButton>
+                          ) : (
+                            <IconButton
+                              size="small"
+                              onClick={() => setSelectedItem(item)}
+                            >
+                              <LocationSearchingIcon fontSize="small" />
+                            </IconButton>
+                          )
+                        )}
+                      </TableCell>
                       {columns.map((key) => (
                         <TableCell key={key}>{formatValue(item, key)}</TableCell>
                       ))}
                     </TableRow>
                   ))
                 ) : (
-                  <TableShimmer columns={columns.length + (hasPositionIds ? 1 : 0)} />
+                  <TableShimmer columns={columns.length + 1} startAction />
                 )}
               </TableBody>
             </Table>
