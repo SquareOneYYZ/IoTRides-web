@@ -18,7 +18,7 @@ import { prefixString } from '../common/util/stringUtils';
 import MapMarkers from '../map/MapMarkers';
 import MapRouteCoordinates from '../map/MapRouteCoordinates';
 import MapScale from '../map/MapScale';
-import useResizableMap from './common/useResizableMap'; // 👈 your new hook
+import useResizableMap from './common/useResizableMap';
 
 const CombinedReportPage = () => {
   const classes = useReportStyles();
@@ -94,31 +94,45 @@ const CombinedReportPage = () => {
               <MapCamera coordinates={itemsCoordinates} />
             </div>
 
-            <button
-              type="button"
-              onMouseDown={handleMouseDown}
+            <div
               style={{
                 height: '8px',
-                backgroundColor: '#e0e0e0',
-                cursor: 'row-resize',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                position: 'relative',
                 flexShrink: 0,
-                borderTop: '1px solid #ccc',
-                borderBottom: '1px solid #ccc',
+                pointerEvents: 'none',
               }}
             >
-              {' '}
-              <div
+              <button
+                aria-label="button"
+                type="button"
+                onMouseDown={handleMouseDown}
                 style={{
-                  width: '40px',
-                  height: '4px',
-                  backgroundColor: '#999',
-                  borderRadius: '2px',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: '100%',
+                  backgroundColor: '#e0e0e0',
+                  cursor: 'row-resize',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderTop: '1px solid #ccc',
+                  borderBottom: '1px solid #ccc',
+                  border: 'none',
+                  pointerEvents: 'auto',
                 }}
-              />
-            </button>
+              >
+                <div
+                  style={{
+                    width: '40px',
+                    height: '4px',
+                    backgroundColor: '#999',
+                    borderRadius: '2px',
+                  }}
+                />
+              </button>
+            </div>
           </>
         )}
 
