@@ -324,6 +324,9 @@ const GeofenceDistanceReportPage = () => {
           : 'N/A';
 
       case 'endTime':
+        if (item.open === true) {
+          return 'In Progress';
+        }
         return item.endTime
           ? formatTime(item.endTime, 'minutes')
           : 'N/A';
@@ -354,7 +357,8 @@ const GeofenceDistanceReportPage = () => {
 
       case 'distanceTraveled':
         if (item.distance !== null && item.distance !== undefined) {
-          return formatDistance(item.distance, distanceUnit, t);
+          const formattedDistance = formatDistance(item.distance, distanceUnit, t);
+          return item.open === true ? `${formattedDistance} (current)` : formattedDistance;
         }
         return 'N/A';
 
