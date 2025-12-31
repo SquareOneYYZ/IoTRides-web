@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import {
   Table, TableBody, TableCell, TableHead, TableRow,
@@ -15,9 +15,10 @@ import MapCamera from '../map/MapCamera';
 import MapGeofence from '../map/MapGeofence';
 import { formatTime } from '../common/util/formatter';
 import { prefixString } from '../common/util/stringUtils';
-import MapMarkers from '../map/MapMarkers';
+import MapPositions from '../map/MapPositions';
 import MapRouteCoordinates from '../map/MapRouteCoordinates';
 import MapScale from '../map/MapScale';
+import StatusCard from '../common/components/StatusCard';
 import useResizableMap from './common/useResizableMap';
 
 const CombinedReportPage = () => {
@@ -26,17 +27,38 @@ const CombinedReportPage = () => {
   const devices = useSelector((state) => state.devices.items);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [showCard, setShowCard] = useState(false);
+  const [selectedPositionId, setSelectedPositionId] = useState(null);
 
   const { containerRef, mapHeight, handleMouseDown } = useResizableMap(60, 20, 80);
 
   const itemsCoordinates = useMemo(() => items.flatMap((item) => item.route), [items]);
-  const createMarkers = () => items.flatMap((item) => item.events
+
+  // Create positions array for MapPositions component
+  const markerPositions = useMemo(() => items.flatMap((item) => item.events
     .map((event) => item.positions.find((p) => event.positionId === p.id))
-    .filter((position) => position != null)
-    .map((position) => ({
-      latitude: position.latitude,
-      longitude: position.longitude,
-    })));
+    .filter((position) => position != null)), [items]);
+
+  // Find selected position and its device
+  const selectedPositionData = useMemo(() => {
+    if (!selectedPositionId) return null;
+
+    for (const item of items) {
+      const position = item.positions.find((p) => p.id === selectedPositionId);
+      if (position) {
+        return {
+          position,
+          deviceId: item.deviceId,
+        };
+      }
+    }
+    return null;
+  }, [selectedPositionId, items]);
+
+  const onMarkerClick = useCallback((positionId) => {
+    setSelectedPositionId(positionId);
+    setShowCard(!!positionId);
+  }, []);
 
   const handleSubmit = useCatch(async ({ deviceIds, groupIds, from, to }) => {
     const query = new URLSearchParams({ from, to });
@@ -88,7 +110,11 @@ const CombinedReportPage = () => {
                     deviceId={item.deviceId}
                   />
                 ))}
-                <MapMarkers markers={createMarkers()} />
+                <MapPositions
+                  positions={markerPositions}
+                  onClick={onMarkerClick}
+                  titleField="fixTime"
+                />
               </MapView>
               <MapScale />
               <MapCamera coordinates={itemsCoordinates} />
@@ -142,6 +168,7 @@ const CombinedReportPage = () => {
             flex: 1,
             overflow: 'auto',
             minHeight: '150px',
+            position: 'relative',
           }}
         >
           <div className={classes.header}>
@@ -175,6 +202,25 @@ const CombinedReportPage = () => {
               )}
             </TableBody>
           </Table>
+
+          {showCard && selectedPositionData && (
+            <div
+              style={{
+                position: 'absolute',
+                bottom: 0,
+                right: 0,
+                zIndex: 5,
+                margin: '16px',
+              }}
+            >
+              <StatusCard
+                deviceId={selectedPositionData.deviceId}
+                position={selectedPositionData.position}
+                onClose={() => setShowCard(false)}
+                disableActions
+              />
+            </div>
+          )}
         </div>
       </div>
     </PageLayout>
