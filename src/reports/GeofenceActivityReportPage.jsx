@@ -48,7 +48,6 @@ const columnsArray = [
   ['type', 'sharedType'],
   ['startTime', 'reportStartTime'],
   ['endTime', 'reportEndTime'],
-  ['totalDistance', 'sharedTotalDistance'],
   ['startDistance', 'sharedStartDistance'],
   ['endDistance', 'sharedEndDistance'],
   ['distanceTraveled', 'sharedDistanceTraveled'],
@@ -334,7 +333,8 @@ const GeofenceDistanceReportPage = () => {
       case 'type':
         if (value === 'enter') return t('geofenceEnter');
         if (value === 'exit') return t('geofenceExit');
-        if (value === 'Inside') return 'Inside';
+        if (value === 'Inside' || value === 'inside') return 'Inside';
+        if (value === 'Outside' || value === 'outside') return 'Outside';
         return value;
 
       case 'totalDistance':
