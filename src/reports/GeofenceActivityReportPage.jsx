@@ -337,12 +337,6 @@ const GeofenceDistanceReportPage = () => {
         if (value === 'Outside' || value === 'outside') return 'Outside';
         return value;
 
-      case 'totalDistance':
-        if (item.distance !== null && item.distance !== undefined) {
-          return formatDistance(item.distance, distanceUnit, t);
-        }
-        return 'N/A';
-
       case 'startDistance':
         if (item.odoStart !== null && item.odoStart !== undefined) {
           return formatDistance(item.odoStart, distanceUnit, t);
