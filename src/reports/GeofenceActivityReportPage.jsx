@@ -36,6 +36,7 @@ import { useAttributePreference } from '../common/util/preferences';
 import scheduleReport from './common/scheduleReport';
 import MapView from '../map/core/MapView';
 import MapGeofence from '../map/MapGeofence';
+import MapRoutePath from '../map/MapRoutePath';
 import MapMarkers from '../map/MapMarkers';
 import MapCamera from '../map/MapCamera';
 import MapScale from '../map/MapScale';
@@ -100,6 +101,7 @@ const GeofenceDistanceReportPage = () => {
   const [minDistance, setMinDistance] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
   const [positions, setPositions] = useState([]);
+  const [route, setRoute] = useState(null);
 
   useEffect(() => {
     const fetchGeofences = async () => {
@@ -155,28 +157,47 @@ const GeofenceDistanceReportPage = () => {
       }
 
       if (positionsToFetch.length > 0) {
-        const fetchedPositions = [];
-        await Promise.all(
+        const responses = await Promise.all(
           positionsToFetch.map(async (posId) => {
             const response = await fetch(`/api/positions?id=${posId}`);
 
             if (!response.ok) {
-              throw Error(await response.text());
+              throw new Error(await response.text());
             }
 
             const posData = await response.json();
-            if (posData?.length) {
-              fetchedPositions.push(posData[0]);
-            }
+            return posData.length > 0 ? posData[0] : null;
           }),
         );
 
+        const fetchedPositions = responses.filter(Boolean);
+
         setPositions(fetchedPositions);
+
+        if (selectedItem.startTime && selectedItem.endTime) {
+          const query = new URLSearchParams({
+            deviceId: selectedItem.deviceId,
+            from: selectedItem.startTime,
+            to: selectedItem.endTime,
+          });
+          const routeResponse = await fetch(`/api/reports/route?${query.toString()}`, {
+            headers: { Accept: 'application/json' },
+          });
+          if (routeResponse.ok) {
+            setRoute(await routeResponse.json());
+          } else {
+            setRoute(null);
+          }
+        } else {
+          setRoute(null);
+        }
       } else {
         setPositions([]);
+        setRoute(null);
       }
     } else {
       setPositions([]);
+      setRoute(null);
     }
   }, [selectedItem]);
 
@@ -370,10 +391,11 @@ const GeofenceDistanceReportPage = () => {
             >
               <MapView>
                 <MapGeofence />
-                {positions.length > 0 && (
+                {route && (
                   <>
+                    <MapRoutePath positions={route} />
                     <MapMarkers markers={createMarkers()} />
-                    <MapCamera positions={positions} />
+                    <MapCamera positions={route} />
                   </>
                 )}
               </MapView>
