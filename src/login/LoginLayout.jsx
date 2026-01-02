@@ -53,7 +53,7 @@ const useStyles = makeStyles((theme) => ({
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
-    alignItems: 'start',
+    alignItems: 'center',
     flex: 1,
     backgroundColor: 'transparent',
     position: 'absolute',
