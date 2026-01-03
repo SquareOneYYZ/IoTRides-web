@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  FormControl, InputLabel, MenuItem, Select, Autocomplete, TextField,
+  FormControl, InputLabel, MenuItem, Select, Autocomplete, TextField, Tooltip,
 } from '@mui/material';
 import { useEffectAsync } from '../../reactHelper';
 
@@ -16,7 +16,8 @@ const SelectField = ({
   data,
   keyGetter = (item) => item.id,
   titleGetter = (item) => item.name,
-
+  renderValue,
+  MenuProps,
 }) => {
   const [items, setItems] = useState();
 
@@ -59,9 +60,24 @@ const SelectField = ({
               multiple
               value={value}
               onChange={onChange}
+              renderValue={renderValue}
+              MenuProps={MenuProps}
             >
               {items.map((item) => (
-                <MenuItem key={keyGetter(item)} value={keyGetter(item)}>{titleGetter(item)}</MenuItem>
+                <MenuItem key={keyGetter(item)} value={keyGetter(item)}>
+                  <Tooltip title={titleGetter(item)} placement="right" arrow>
+                    <span style={{
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      display: 'block',
+                      width: '100%',
+                    }}
+                    >
+                      {titleGetter(item)}
+                    </span>
+                  </Tooltip>
+                </MenuItem>
               ))}
             </Select>
           </>
@@ -71,12 +87,32 @@ const SelectField = ({
             options={items}
             getOptionLabel={getOptionLabel}
             renderOption={(props, option) => (
-              <MenuItem {...props} key={keyGetter(option)} value={keyGetter(option)}>{titleGetter(option)}</MenuItem>
+              <MenuItem {...props} key={keyGetter(option)} value={keyGetter(option)}>
+                <Tooltip title={titleGetter(option)} placement="right" arrow>
+                  <span style={{
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    display: 'block',
+                    width: '100%',
+                  }}
+                  >
+                    {titleGetter(option)}
+                  </span>
+                </Tooltip>
+              </MenuItem>
             )}
             isOptionEqualToValue={(option, value) => keyGetter(option) === value}
             value={value}
             onChange={(_, value) => onChange({ target: { value: value ? keyGetter(value) : emptyValue } })}
-            renderInput={(params) => <TextField {...params} label={label} />}
+            renderInput={(params) => {
+              const displayValue = getOptionLabel(value);
+              return (
+                <Tooltip title={displayValue || ''} placement="bottom-start" arrow>
+                  <TextField {...params} label={label} />
+                </Tooltip>
+              );
+            }}
           />
         )}
       </FormControl>

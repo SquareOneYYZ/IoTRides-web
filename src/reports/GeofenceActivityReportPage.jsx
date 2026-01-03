@@ -15,6 +15,7 @@ import {
   MenuItem,
   TextField,
   IconButton,
+  Tooltip,
 } from '@mui/material';
 import GpsFixedIcon from '@mui/icons-material/GpsFixed';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
@@ -57,8 +58,8 @@ const columnsMap = new Map(columnsArray);
 
 const allEventTypes = [
   ['allTypes', 'sharedAll'],
-  ['Inside', 'Inside'],
-  ['Outside', 'Outside'],
+  ['inside', 'inside'],
+  ['outside', 'outside'],
 ];
 
 const segmentTypes = [
