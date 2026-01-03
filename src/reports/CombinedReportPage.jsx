@@ -39,20 +39,19 @@ const CombinedReportPage = () => {
     .map((event) => item.positions.find((p) => event.positionId === p.id))
     .filter((position) => position != null)), [items]);
 
-  // Find selected position and its device
   const selectedPositionData = useMemo(() => {
     if (!selectedPositionId) return null;
 
-    for (const item of items) {
-      const position = item.positions.find((p) => p.id === selectedPositionId);
-      if (position) {
-        return {
-          position,
-          deviceId: item.deviceId,
-        };
-      }
+    const foundItem = items.find((item) => item.positions.some((p) => p.id === selectedPositionId));
+
+    if (!foundItem) {
+      return undefined;
     }
-    return null;
+
+    return {
+      position: foundItem.positions.find((p) => p.id === selectedPositionId),
+      deviceId: foundItem.deviceId,
+    };
   }, [selectedPositionId, items]);
 
   const onMarkerClick = useCallback((positionId) => {
@@ -204,22 +203,13 @@ const CombinedReportPage = () => {
           </Table>
 
           {showCard && selectedPositionData && (
-            <div
-              style={{
-                position: 'absolute',
-                bottom: 0,
-                right: 0,
-                zIndex: 5,
-                margin: '16px',
-              }}
-            >
-              <StatusCard
-                deviceId={selectedPositionData.deviceId}
-                position={selectedPositionData.position}
-                onClose={() => setShowCard(false)}
-                disableActions
-              />
-            </div>
+          <StatusCard
+            deviceId={selectedPositionData.deviceId}
+            position={selectedPositionData.position}
+            onClose={() => setShowCard(false)}
+            disableActions
+            hideCardActions
+          />
           )}
         </div>
       </div>
