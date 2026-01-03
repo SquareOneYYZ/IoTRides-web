@@ -59,12 +59,10 @@ const useStyles = makeStyles((theme) => ({
     position: 'absolute',
     inset: 0,
     zIndex: 1,
-    // Move to the left on larger screens
     [theme.breakpoints.up('lg')]: {
       padding: theme.spacing(0, 25, 0, 0),
       paddingLeft: theme.spacing(10),
     },
-    // Center on medium and small screens
     [theme.breakpoints.down('lg')]: {
       alignItems: 'center',
       justifyContent: 'center',
@@ -75,7 +73,6 @@ const useStyles = makeStyles((theme) => ({
     maxWidth: theme.spacing(52),
     padding: theme.spacing(5),
     width: '100%',
-    // Ensure form is properly sized on mobile
     [theme.breakpoints.down('sm')]: {
       maxWidth: '100%',
       padding: theme.spacing(3),
