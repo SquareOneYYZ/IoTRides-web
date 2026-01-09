@@ -14,11 +14,11 @@ import {
   MoreVert,
   BarChart,
   PieChart,
-  PersonIcon,
 } from '@mui/icons-material';
 import {
   LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
+import PersonIcon from '@mui/icons-material/Person';
 
 const styles = {
   container: {
@@ -81,7 +81,7 @@ const styles = {
     padding: '8px 12px',
     borderRadius: '8px',
     fontSize: '14px',
-    color: '#9ca3af',
+    color: '#fff',
     textDecoration: 'none',
     transition: 'background-color 0.2s',
     cursor: 'pointer',
@@ -219,15 +219,19 @@ const styles = {
   },
   timeRangeButtons: {
     display: 'flex',
-    gap: '8px',
+    borderRadius: '8px',
+    border: '1px solid #616161',
   },
   timeRangeBtn: {
-    padding: '8px 16px',
-    borderRadius: '8px',
-    fontSize: '14px',
+    padding: '8px 12px',
     border: 'none',
+    overflow: 'hidden',
+    fontSize: '14px',
     cursor: 'pointer',
-    transition: 'background-color 0.2s',
+    backgroundColor: 'transparent',
+    color: '#94a3b8',
+    transition: 'background-color 0.2s, color 0.2s',
+    minWidth: '110px',
   },
   tableSection: {
     backgroundColor: '#1B1B1B',
@@ -239,7 +243,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: '24px',
-    borderBottom: '1px solid #334155',
+    borderBottom: '1px solid #3F3E3E',
   },
   tabButtons: {
     display: 'flex',
@@ -247,7 +251,7 @@ const styles = {
   },
   tabBtn: {
     padding: '8px 16px',
-    borderRadius: '8px',
+    borderRadius: '5px',
     fontSize: '14px',
     border: 'none',
     cursor: 'pointer',
@@ -265,13 +269,13 @@ const styles = {
     padding: '12px 16px',
     textAlign: 'left',
     fontSize: '14px',
-    color: '#94a3b8',
+    color: '#ffffff',
     fontWeight: 500,
-    borderBottom: '1px solid #334155',
+    borderBottom: '1px solid #3F3E3E',
   },
   td: {
     padding: '16px',
-    borderTop: '1px solid #334155',
+    borderTop: '1px solid #3F3E3E',
   },
 };
 
@@ -373,6 +377,8 @@ const TableRow = ({ item, status, target, limit, reviewer }) => (
 const Dashboard = () => {
   const [timeRange, setTimeRange] = useState('Last 7 days');
   const [activeNav, setActiveNav] = useState('dashboard');
+  const ranges = ['Last 3 months', 'Last 30 days', 'Last 7 days'];
+
   const sidebarItems = [
     {
       key: 'dashboard',
@@ -429,14 +435,7 @@ const Dashboard = () => {
       <div style={styles.sidebar}>
         <div style={styles.sidebarHeader}>
           <Navigation style={styles.logo} />
-          <span style={styles.brandName}>Traccar Inc.</span>
-        </div>
-
-        <div style={{ padding: '12px' }}>
-          <button type="button" style={styles.quickCreateBtn} onMouseEnter={(e) => e.target.style.backgroundColor = '#374151'} onMouseLeave={(e) => e.target.style.backgroundColor = '#1f2937'}>
-            <Menu style={{ fontSize: 16 }} />
-            <span>Quick Create</span>
-          </button>
+          <span style={styles.brandName}>IOT Rides</span>
         </div>
 
         <nav style={styles.nav}>
@@ -549,39 +548,32 @@ const Dashboard = () => {
                 <p style={{ fontSize: 14, color: '#94a3b8', margin: 0 }}>Total for the last 3 months</p>
               </div>
               <div style={styles.timeRangeButtons}>
-                <button
-                  type="button"
-                  onClick={() => setTimeRange('Last 3 months')}
-                  style={{
-                    ...styles.timeRangeBtn,
-                    backgroundColor: timeRange === 'Last 3 months' ? '#334155' : '#0f172a',
-                    color: timeRange === 'Last 3 months' ? '#ffffff' : '#94a3b8',
-                  }}
-                >
-                  Last 3 months
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTimeRange('Last 30 days')}
-                  style={{
-                    ...styles.timeRangeBtn,
-                    backgroundColor: timeRange === 'Last 30 days' ? '#334155' : '#0f172a',
-                    color: timeRange === 'Last 30 days' ? '#ffffff' : '#94a3b8',
-                  }}
-                >
-                  Last 30 days
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTimeRange('Last 7 days')}
-                  style={{
-                    ...styles.timeRangeBtn,
-                    backgroundColor: timeRange === 'Last 7 days' ? '#334155' : '#0f172a',
-                    color: timeRange === 'Last 7 days' ? '#ffffff' : '#94a3b8',
-                  }}
-                >
-                  Last 7 days
-                </button>
+                {ranges.map((range, index) => {
+                  const isActive = timeRange === range;
+                  const isFirst = index === 0;
+                  const isLast = index === ranges.length - 1;
+
+                  return (
+                    <button
+                      key={range}
+                      type="button"
+                      onClick={() => setTimeRange(range)}
+                      style={{
+                        ...styles.timeRangeBtn,
+                        backgroundColor: isActive ? '#404040' : 'transparent',
+                        color: isActive ? '#ffffff' : '#94a3b8',
+
+                        borderTopLeftRadius: isFirst ? '8px' : 0,
+                        borderBottomLeftRadius: isFirst ? '8px' : 0,
+                        borderTopRightRadius: isLast ? '8px' : 0,
+                        borderBottomRightRadius: isLast ? '8px' : 0,
+                        borderLeft: index !== 0 ? '1px solid #404040' : 'none',
+                      }}
+                    >
+                      {range}
+                    </button>
+                  );
+                })}
               </div>
             </div>
             <ResponsiveContainer width="100%" height={300}>
@@ -601,8 +593,8 @@ const Dashboard = () => {
                 <YAxis stroke="#64748b" style={{ fontSize: '12px' }} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#1e293b',
-                    border: '1px solid #334155',
+                    backgroundColor: '#000000',
+                    border: '1px solid #272727',
                     borderRadius: '8px',
                     color: '#fff',
                   }}
@@ -619,19 +611,19 @@ const Dashboard = () => {
               <div style={styles.tabButtons}>
                 <button
                   type="button"
-                  style={{ ...styles.tabBtn, backgroundColor: '#334155', color: '#ffffff' }}
+                  style={{ ...styles.tabBtn, backgroundColor: '#404040', color: '#ffffff' }}
                 >
                   Outline
                 </button>
                 <button type="button" style={{ ...styles.tabBtn, backgroundColor: 'transparent', color: '#94a3b8' }}>
                   Past Performance
                   {' '}
-                  <span style={{ marginLeft: 4, fontSize: 12, backgroundColor: '#334155', padding: '2px 6px', borderRadius: 4 }}>3</span>
+                  <span style={{ marginLeft: 4, fontSize: 12, backgroundColor: '#404040', padding: '2px 6px', borderRadius: 4 }}>3</span>
                 </button>
                 <button type="button" style={{ ...styles.tabBtn, backgroundColor: 'transparent', color: '#94a3b8' }}>
                   Key Vehicles
                   {' '}
-                  <span style={{ marginLeft: 4, fontSize: 12, backgroundColor: '#334155', padding: '2px 6px', borderRadius: 4 }}>2</span>
+                  <span style={{ marginLeft: 4, fontSize: 12, backgroundColor: '#404040', padding: '2px 6px', borderRadius: 4 }}>2</span>
                 </button>
                 <button type="button" style={{ ...styles.tabBtn, backgroundColor: 'transparent', color: '#94a3b8' }}>
                   Focus Documents
@@ -642,7 +634,7 @@ const Dashboard = () => {
                   type="button"
                   style={{
                     padding: '8px 16px',
-                    border: '1px solid #475569',
+                    border: '1px solid #4C4B4B',
                     backgroundColor: 'transparent',
                     color: '#cbd5e1',
                     borderRadius: '8px',
@@ -660,7 +652,7 @@ const Dashboard = () => {
                   type="button"
                   style={{
                     padding: '8px 16px',
-                    backgroundColor: '#334155',
+                    backgroundColor: '#404040',
                     color: '#ffffff',
                     border: 'none',
                     borderRadius: '8px',
