@@ -33,7 +33,7 @@ const styles = {
     left: 0,
     top: 0,
     height: '100vh',
-    width: '224px',
+    width: '235px',
     backgroundColor: '#212121',
     display: 'flex',
     flexDirection: 'column',
@@ -78,9 +78,9 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '12px',
-    padding: '8px 12px',
+    padding: '10px 12px',
     borderRadius: '8px',
-    fontSize: '14px',
+    fontSize: '16px',
     color: '#fff',
     textDecoration: 'none',
     transition: 'background-color 0.2s',
@@ -393,8 +393,8 @@ const Dashboard = () => {
       icon: Place,
     },
     {
-      key: 'analytics',
-      label: 'Analytics',
+      key: 'mapView',
+      label: 'Map View',
       href: '#',
       icon: BarChart,
     },
@@ -452,15 +452,16 @@ const Dashboard = () => {
                 }}
                 onClick={() => setActiveNav(item.key)}
                 onMouseEnter={(e) => {
-                  if (!isActive) e.target.style.backgroundColor = '#313131ff';
+                  if (!isActive) e.currentTarget.style.backgroundColor = '#313131ff';
                 }}
                 onMouseLeave={(e) => {
-                  if (!isActive) e.target.style.backgroundColor = 'transparent';
+                  if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
                 }}
+
               >
                 <Icon
                   style={{
-                    fontSize: 16,
+                    fontSize: 20,
                     color: isActive ? '#000' : '#9ca3af',
                   }}
                 />
@@ -471,20 +472,20 @@ const Dashboard = () => {
         </nav>
 
         <div style={styles.sidebarFooter}>
-          <a href="#" style={styles.navLink} onMouseEnter={(e) => e.target.style.backgroundColor = '#313131ff'} onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}>
-            <Settings style={{ fontSize: 16 }} />
+          <a href="#" style={styles.navLink} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#313131ff'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+            <Settings style={{ fontSize: 20 }} />
             <span>Settings</span>
           </a>
-          <a href="#" style={styles.navLink} onMouseEnter={(e) => e.target.style.backgroundColor = '#313131ff'} onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}>
-            <Help style={{ fontSize: 16 }} />
+          <a href="#" style={styles.navLink} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#313131ff'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+            <Help style={{ fontSize: 20 }} />
             <span>Get Help</span>
           </a>
-          <a href="#" style={styles.navLink} onMouseEnter={(e) => e.target.style.backgroundColor = '#313131ff'} onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}>
-            <Search style={{ fontSize: 16 }} />
+          <a href="#" style={styles.navLink} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#313131ff'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+            <Search style={{ fontSize: 20 }} />
             <span>Search</span>
           </a>
-          <a href="#" style={styles.navLink} onMouseEnter={(e) => e.target.style.backgroundColor = '#313131ff'} onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}>
-            <PersonIcon style={{ fontSize: 16 }} />
+          <a href="#" style={styles.navLink} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#313131ff'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+            <PersonIcon style={{ fontSize: 20 }} />
             <span>Logout</span>
           </a>
         </div>
