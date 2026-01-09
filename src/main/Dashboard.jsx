@@ -2,178 +2,78 @@ import React, { useState } from 'react';
 import {
   TrendingUp,
   TrendingDown,
-  People,
-  DirectionsCar,
-  Navigation,
-  Place,
-  Settings,
   Description,
-  Help,
-  Search,
   Menu,
   MoreVert,
-  BarChart,
-  PieChart,
+  Settings,
 } from '@mui/icons-material';
 import {
-  LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
 } from 'recharts';
-import PersonIcon from '@mui/icons-material/Person';
+import { DashboardSidebar } from '../common/components/DashboardSidebar';
 
 const styles = {
   container: {
     minHeight: '100vh',
     backgroundColor: '#212121',
-    padding: 15,
     color: '#ffffff',
     fontFamily: '-apple-system, BlinkMacSystemFont, "Geist", Roboto, sans-serif',
   },
-  sidebar: {
+  overlay: {
     position: 'fixed',
-    left: 0,
     top: 0,
-    height: '100vh',
-    width: '235px',
-    backgroundColor: '#212121',
-    display: 'flex',
-    flexDirection: 'column',
-    overflowY: 'auto',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    zIndex: 999,
+    display: 'none',
   },
-  sidebarHeader: {
-    padding: '16px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-  },
-  logo: {
-    color: '#3b82f6',
-    fontSize: '24px',
-  },
-  brandName: {
-    fontWeight: 600,
-    fontSize: '18px',
-  },
-  quickCreateBtn: {
-    width: '100%',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    padding: '8px 12px',
-    backgroundColor: '#212121',
-    borderRadius: '8px',
-    fontSize: '14px',
-    border: 'none',
-    color: '#fff',
-    cursor: 'pointer',
-    transition: 'background-color 0.2s',
-  },
-  nav: {
-    flex: 1,
-    padding: '8px 12px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '4px',
-  },
-  navLink: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    padding: '10px 12px',
-    borderRadius: '8px',
-    fontSize: '16px',
-    color: '#fff',
-    textDecoration: 'none',
-    transition: 'background-color 0.2s',
-    cursor: 'pointer',
-    border: 'none',
-    width: '100%',
-    backgroundColor: 'transparent',
-  },
-  activeNavStyle: {
-    backgroundColor: '#f5f5f5',
-    color: '#000',
-    fontWeight: 500,
-  },
-  activeIconStyle: {
-    color: '#000',
-  },
-  sectionTitle: {
-    fontSize: '12px',
-    color: '#6b7280',
-    padding: '0 12px',
-    marginTop: '16px',
-    marginBottom: '8px',
-  },
-  sidebarFooter: {
-    padding: '12px',
-    borderTop: '1px solid #1f2937',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-  },
-  userSection: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    padding: '8px 12px',
-  },
-  avatar: {
-    width: '32px',
-    height: '32px',
-    borderRadius: '50%',
-    backgroundColor: '#374151',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '14px',
-    fontWeight: 600,
+  overlayVisible: {
+    display: 'block',
   },
   mainContent: {
-    marginLeft: '224px',
+    marginLeft: '250px',
+    transition: 'margin-left 0.3s ease-in-out',
   },
   header: {
     borderBottom: '1px solid #1f2937',
-    padding: '16px 32px',
+    padding: '16px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#0A0A0A',
     borderRadius: '20px 20px 0px 0px',
   },
-  headerLeft: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '16px',
+  hamburger: {
+    display: 'none',
+    background: 'none',
+    border: 'none',
+    color: '#fff',
+    cursor: 'pointer',
+    padding: '8px',
   },
   content: {
-    padding: '32px',
+    padding: '16px',
     backgroundColor: '#0A0A0A',
   },
   statsGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(4, 1fr)',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
     gap: '16px',
     marginBottom: '32px',
   },
   statCard: {
     backgroundColor: '#1B1B1B',
     borderRadius: '12px',
-    padding: '24px',
+    padding: '20px',
     border: '1px solid #4c4b4bff',
-  },
-  statHeader: {
-    display: 'flex',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    marginBottom: '16px',
-  },
-  statIconWrapper: {
-    padding: '8px',
-    backgroundColor: '#334155',
-    borderRadius: '8px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   statTitle: {
     color: '#94a3b8',
@@ -181,7 +81,7 @@ const styles = {
     marginBottom: '4px',
   },
   statValue: {
-    fontSize: '30px',
+    fontSize: '24px',
     fontWeight: 600,
     color: '#ffffff',
     marginRight: '8px',
@@ -192,62 +92,53 @@ const styles = {
     alignItems: 'center',
     gap: '4px',
   },
-  statSubtitle: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    fontSize: '14px',
-    color: '#ffffff',
-    marginBottom: '4px',
-  },
-  statDescription: {
-    fontSize: '14px',
-    color: '#64748b',
-  },
   chartSection: {
     backgroundColor: '#1B1B1B',
     borderRadius: '12px',
-    padding: '24px',
+    padding: '16px',
     border: '1px solid #4c4b4bff',
     marginBottom: '32px',
   },
   chartHeader: {
     display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: 'column',
+    gap: '16px',
     marginBottom: '24px',
   },
   timeRangeButtons: {
     display: 'flex',
+    flexWrap: 'wrap',
     borderRadius: '8px',
     border: '1px solid #616161',
+    width: 'fit-content',
   },
   timeRangeBtn: {
     padding: '8px 12px',
     border: 'none',
-    overflow: 'hidden',
-    fontSize: '14px',
+    fontSize: '13px',
     cursor: 'pointer',
     backgroundColor: 'transparent',
     color: '#94a3b8',
     transition: 'background-color 0.2s, color 0.2s',
-    minWidth: '110px',
+    minWidth: '90px',
   },
   tableSection: {
     backgroundColor: '#1B1B1B',
     borderRadius: '12px',
     border: '1px solid #4c4b4bff',
+    overflowX: 'auto',
   },
   tableHeader: {
     display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '24px',
+    flexDirection: 'column',
+    gap: '16px',
+    padding: '16px',
     borderBottom: '1px solid #3F3E3E',
   },
   tabButtons: {
     display: 'flex',
     gap: '8px',
+    flexWrap: 'wrap',
   },
   tabBtn: {
     padding: '8px 16px',
@@ -256,14 +147,17 @@ const styles = {
     border: 'none',
     cursor: 'pointer',
     transition: 'background-color 0.2s',
+    whiteSpace: 'nowrap',
   },
   actionButtons: {
     display: 'flex',
     gap: '8px',
+    flexWrap: 'wrap',
   },
   table: {
     width: '100%',
     borderCollapse: 'collapse',
+    minWidth: '600px',
   },
   th: {
     padding: '12px 16px',
@@ -279,33 +173,26 @@ const styles = {
   },
 };
 
-const StatCard = ({ title, value, change, trend, subtitle, description, icon: Icon }) => (
+const StatCard = ({ title, value, change, trend, subtitle, description }) => (
   <div style={styles.statCard}>
-    <div style={styles.statHeader}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <div>
-          <div style={styles.statTitle}>{title}</div>
-          <div style={{ display: 'flex', alignItems: 'center', marginTop: '4px' }}>
-            <span style={styles.statValue}>{value}</span>
-            <span style={{
-              ...styles.statChange,
-              color: trend === 'up' ? '#4ade80' : '#f87171',
-            }}
-            >
-              {trend === 'up' ? <TrendingUp style={{ fontSize: 16 }} /> : <TrendingDown style={{ fontSize: 16 }} />}
-              {change}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div>
-      <div style={styles.statSubtitle}>
+    <div style={styles.statTitle}>{title}</div>
+    <div style={{ display: 'flex', alignItems: 'center', marginTop: '8px', marginBottom: '12px' }}>
+      <span style={styles.statValue}>{value}</span>
+      <span
+        style={{
+          ...styles.statChange,
+          color: trend === 'up' ? '#4ade80' : '#f87171',
+        }}
+      >
         {trend === 'up' ? <TrendingUp style={{ fontSize: 16 }} /> : <TrendingDown style={{ fontSize: 16 }} />}
-        {subtitle}
-      </div>
-      <div style={styles.statDescription}>{description}</div>
+        {change}
+      </span>
     </div>
+    <div style={{ fontSize: '14px', color: '#ffffff', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+      {trend === 'up' ? <TrendingUp style={{ fontSize: 16 }} /> : <TrendingDown style={{ fontSize: 16 }} />}
+      {subtitle}
+    </div>
+    <div style={{ fontSize: '14px', color: '#64748b' }}>{description}</div>
   </div>
 );
 
@@ -314,17 +201,7 @@ const TableRow = ({ item, status, target, limit, reviewer }) => (
     <td style={styles.td}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         <input type="checkbox" style={{ width: 16, height: 16, cursor: 'pointer' }} />
-        <button
-          type="button"
-          style={{
-            background: 'none',
-            border: 'none',
-            color: '#6b7280',
-            cursor: 'pointer',
-            padding: 0,
-            display: 'flex',
-          }}
-        >
+        <button type="button" style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', padding: 0, display: 'flex' }}>
           <Menu style={{ fontSize: 16 }} />
         </button>
         <span style={{ color: '#e2e8f0' }}>{item}</span>
@@ -332,23 +209,25 @@ const TableRow = ({ item, status, target, limit, reviewer }) => (
     </td>
     <td style={{ ...styles.td, color: '#94a3b8' }}>{item}</td>
     <td style={styles.td}>
-      <span style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '4px',
-        padding: '4px 8px',
-        borderRadius: '6px',
-        fontSize: '12px',
-        backgroundColor: status === 'Done' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(234, 179, 8, 0.1)',
-        color: status === 'Done' ? '#4ade80' : '#fbbf24',
-      }}
-      >
-        <div style={{
-          width: 8,
-          height: 8,
-          borderRadius: '50%',
-          backgroundColor: status === 'Done' ? '#4ade80' : '#fbbf24',
+      <span
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '4px',
+          padding: '4px 8px',
+          borderRadius: '6px',
+          fontSize: '12px',
+          backgroundColor: status === 'Done' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(234, 179, 8, 0.1)',
+          color: status === 'Done' ? '#4ade80' : '#fbbf24',
         }}
+      >
+        <div
+          style={{
+            width: 8,
+            height: 8,
+            borderRadius: '50%',
+            backgroundColor: status === 'Done' ? '#4ade80' : '#fbbf24',
+          }}
         />
         {status}
       </span>
@@ -357,60 +236,18 @@ const TableRow = ({ item, status, target, limit, reviewer }) => (
     <td style={{ ...styles.td, color: '#e2e8f0' }}>{limit}</td>
     <td style={{ ...styles.td, color: '#e2e8f0' }}>{reviewer}</td>
     <td style={styles.td}>
-      <button
-        type="button"
-        style={{
-          background: 'none',
-          border: 'none',
-          color: '#6b7280',
-          cursor: 'pointer',
-          padding: 0,
-          display: 'flex',
-        }}
-      >
+      <button type="button" style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', padding: 0, display: 'flex' }}>
         <MoreVert style={{ fontSize: 16 }} />
       </button>
     </td>
   </tr>
 );
 
-const Dashboard = () => {
+export const DashboardPage = () => {
   const [timeRange, setTimeRange] = useState('Last 7 days');
   const [activeNav, setActiveNav] = useState('dashboard');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const ranges = ['Last 3 months', 'Last 30 days', 'Last 7 days'];
-
-  const sidebarItems = [
-    {
-      key: 'dashboard',
-      label: 'Dashboard',
-      href: '#',
-      icon: BarChart,
-    },
-    {
-      key: 'devices',
-      label: 'Devices',
-      href: '#',
-      icon: Place,
-    },
-    {
-      key: 'mapView',
-      label: 'Map View',
-      href: '#',
-      icon: BarChart,
-    },
-    {
-      key: 'projects',
-      label: 'Projects',
-      href: '#',
-      icon: PieChart,
-    },
-    {
-      key: 'team',
-      label: 'Team',
-      href: '#',
-      icon: People,
-    },
-  ];
 
   const visitorData = [
     { date: 'Apr 7', value: 320, vehicles: 180 },
@@ -431,70 +268,61 @@ const Dashboard = () => {
 
   return (
     <div style={styles.container}>
+      <style>
+        {`
+          @media (max-width: 767px) {
+            .main-content-mobile {
+              margin-left: 0 !important;
+            }
+          }
+          @media (min-width: 768px) and (max-width: 1024px) {
+            .stats-grid {
+              grid-template-columns: repeat(2, 1fr) !important;
+            }
+          }
+          @media (max-width: 640px) {
+            .stats-grid {
+              grid-template-columns: 1fr !important;
+            }
+            .chart-header {
+              align-items: flex-start !important;
+            }
+            .table-header {
+              align-items: flex-start !important;
+            }
+          }
+        `}
+      </style>
+
+      {/* Overlay */}
+      {sidebarOpen && (
+        <div
+          aria-hidden="true"
+          style={{ ...styles.overlay, ...styles.overlayVisible }}
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <div style={styles.sidebar}>
-        <div style={styles.sidebarHeader}>
-          <Navigation style={styles.logo} />
-          <span style={styles.brandName}>IOT Rides</span>
-        </div>
-
-        <nav style={styles.nav}>
-          {sidebarItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeNav === item.key;
-
-            return (
-              <a
-                href={item.href}
-                style={{
-                  ...styles.navLink,
-                  ...(isActive ? styles.activeNavStyle : {}),
-                }}
-                onClick={() => setActiveNav(item.key)}
-                onMouseEnter={(e) => {
-                  if (!isActive) e.currentTarget.style.backgroundColor = '#313131ff';
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
-                }}
-
-              >
-                <Icon
-                  style={{
-                    fontSize: 20,
-                    color: isActive ? '#000' : '#9ca3af',
-                  }}
-                />
-                <span>{item.label}</span>
-              </a>
-            );
-          })}
-        </nav>
-
-        <div style={styles.sidebarFooter}>
-          <a href="#" style={styles.navLink} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#313131ff'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-            <Settings style={{ fontSize: 20 }} />
-            <span>Settings</span>
-          </a>
-          <a href="#" style={styles.navLink} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#313131ff'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-            <Help style={{ fontSize: 20 }} />
-            <span>Get Help</span>
-          </a>
-          <a href="#" style={styles.navLink} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#313131ff'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-            <Search style={{ fontSize: 20 }} />
-            <span>Search</span>
-          </a>
-          <a href="#" style={styles.navLink} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#313131ff'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-            <PersonIcon style={{ fontSize: 20 }} />
-            <span>Logout</span>
-          </a>
-        </div>
-      </div>
+      <DashboardSidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        activeNav={activeNav}
+        setActiveNav={setActiveNav}
+      />
 
       {/* Main Content */}
-      <div style={styles.mainContent}>
+      <div style={styles.mainContent} className="main-content-mobile">
         <div style={styles.header}>
-          <div style={styles.headerLeft}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(true)}
+              className="hamburger-btn"
+              style={styles.hamburger}
+            >
+              <Menu style={{ fontSize: 24 }} />
+            </button>
             <Description style={{ fontSize: 20 }} />
             <h1 style={{ fontSize: '20px', fontWeight: 600, margin: 0 }}>Dashboard</h1>
           </div>
@@ -502,7 +330,7 @@ const Dashboard = () => {
 
         <div style={styles.content}>
           {/* Stats Grid */}
-          <div style={styles.statsGrid}>
+          <div style={styles.statsGrid} className="stats-grid">
             <StatCard
               title="Total Active Vehicles"
               value="1,250"
@@ -510,7 +338,6 @@ const Dashboard = () => {
               trend="up"
               subtitle="Trending up this month"
               description="Vehicles tracked in last 6 months"
-              icon={Navigation}
             />
             <StatCard
               title="Active Trips"
@@ -519,7 +346,6 @@ const Dashboard = () => {
               trend="down"
               subtitle="Down 20% this period"
               description="Trip monitoring needs attention"
-              icon={Place}
             />
             <StatCard
               title="Total Distance (km)"
@@ -528,7 +354,6 @@ const Dashboard = () => {
               trend="up"
               subtitle="Strong performance"
               description="Distance exceeds targets"
-              icon={DirectionsCar}
             />
             <StatCard
               title="Fleet Efficiency"
@@ -537,13 +362,12 @@ const Dashboard = () => {
               trend="up"
               subtitle="Steady performance increase"
               description="Meets efficiency projections"
-              icon={TrendingUp}
             />
           </div>
 
           {/* Chart Section */}
           <div style={styles.chartSection}>
-            <div style={styles.chartHeader}>
+            <div style={styles.chartHeader} className="chart-header">
               <div>
                 <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Vehicle Activity</h2>
                 <p style={{ fontSize: 14, color: '#94a3b8', margin: 0 }}>Total for the last 3 months</p>
@@ -563,7 +387,6 @@ const Dashboard = () => {
                         ...styles.timeRangeBtn,
                         backgroundColor: isActive ? '#404040' : 'transparent',
                         color: isActive ? '#ffffff' : '#94a3b8',
-
                         borderTopLeftRadius: isFirst ? '8px' : 0,
                         borderBottomLeftRadius: isFirst ? '8px' : 0,
                         borderTopRightRadius: isLast ? '8px' : 0,
@@ -608,12 +431,9 @@ const Dashboard = () => {
 
           {/* Table Section */}
           <div style={styles.tableSection}>
-            <div style={styles.tableHeader}>
+            <div style={styles.tableHeader} className="table-header">
               <div style={styles.tabButtons}>
-                <button
-                  type="button"
-                  style={{ ...styles.tabBtn, backgroundColor: '#404040', color: '#ffffff' }}
-                >
+                <button type="button" style={{ ...styles.tabBtn, backgroundColor: '#404040', color: '#ffffff' }}>
                   Outline
                 </button>
                 <button type="button" style={{ ...styles.tabBtn, backgroundColor: 'transparent', color: '#94a3b8' }}>
@@ -647,7 +467,7 @@ const Dashboard = () => {
                   }}
                 >
                   <Settings style={{ fontSize: 16 }} />
-                  Customize Columns
+                  Customize
                 </button>
                 <button
                   type="button"
@@ -680,31 +500,13 @@ const Dashboard = () => {
                   <th style={styles.th}>Target</th>
                   <th style={styles.th}>Limit</th>
                   <th style={styles.th}>Reviewer</th>
-                  <th aria-label="demo-text" style={styles.th} />
+                  <th aria-label="actions" style={styles.th} />
                 </tr>
               </thead>
               <tbody>
-                <TableRow
-                  item="Cover page"
-                  status="In Process"
-                  target="18"
-                  limit="5"
-                  reviewer="Eddie Lake"
-                />
-                <TableRow
-                  item="Table of contents"
-                  status="Done"
-                  target="29"
-                  limit="24"
-                  reviewer="Eddie Lake"
-                />
-                <TableRow
-                  item="Executive summary"
-                  status="Done"
-                  target="10"
-                  limit="13"
-                  reviewer="Eddie Lake"
-                />
+                <TableRow item="Cover page" status="In Process" target="18" limit="5" reviewer="Eddie Lake" />
+                <TableRow item="Table of contents" status="Done" target="29" limit="24" reviewer="Eddie Lake" />
+                <TableRow item="Executive summary" status="Done" target="10" limit="13" reviewer="Eddie Lake" />
               </tbody>
             </table>
           </div>
@@ -714,4 +516,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default DashboardPage;
