@@ -23,7 +23,8 @@ const styles = {
     minHeight: '100vh',
     backgroundColor: '#212121',
     color: '#ffffff',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Geist", Roboto, sans-serif',
+    fontFamily:
+      '-apple-system, BlinkMacSystemFont, "Geist", Roboto, sans-serif',
   },
   overlay: {
     position: 'fixed',
@@ -39,6 +40,7 @@ const styles = {
     display: 'block',
   },
   mainContent: {
+    padding: '18px',
     marginLeft: '250px',
     transition: 'margin-left 0.3s ease-in-out',
   },
@@ -62,6 +64,8 @@ const styles = {
   content: {
     padding: '16px',
     backgroundColor: '#0A0A0A',
+    borderRadius: '0px 0px 20px 20px',
+
   },
   statsGrid: {
     display: 'grid',
@@ -101,7 +105,8 @@ const styles = {
   },
   chartHeader: {
     display: 'flex',
-    flexDirection: 'column',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     gap: '16px',
     marginBottom: '24px',
   },
@@ -109,6 +114,7 @@ const styles = {
     display: 'flex',
     flexWrap: 'wrap',
     borderRadius: '8px',
+    height: '36px',
     border: '1px solid #616161',
     width: 'fit-content',
   },
@@ -120,7 +126,7 @@ const styles = {
     backgroundColor: 'transparent',
     color: '#94a3b8',
     transition: 'background-color 0.2s, color 0.2s',
-    minWidth: '90px',
+    minWidth: '100px',
   },
   tableSection: {
     backgroundColor: '#1B1B1B',
@@ -130,7 +136,8 @@ const styles = {
   },
   tableHeader: {
     display: 'flex',
-    flexDirection: 'column',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     gap: '16px',
     padding: '16px',
     borderBottom: '1px solid #3F3E3E',
@@ -176,7 +183,14 @@ const styles = {
 const StatCard = ({ title, value, change, trend, subtitle, description }) => (
   <div style={styles.statCard}>
     <div style={styles.statTitle}>{title}</div>
-    <div style={{ display: 'flex', alignItems: 'center', marginTop: '8px', marginBottom: '12px' }}>
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        marginTop: '8px',
+        marginBottom: '12px',
+      }}
+    >
       <span style={styles.statValue}>{value}</span>
       <span
         style={{
@@ -184,12 +198,29 @@ const StatCard = ({ title, value, change, trend, subtitle, description }) => (
           color: trend === 'up' ? '#4ade80' : '#f87171',
         }}
       >
-        {trend === 'up' ? <TrendingUp style={{ fontSize: 16 }} /> : <TrendingDown style={{ fontSize: 16 }} />}
+        {trend === 'up' ? (
+          <TrendingUp style={{ fontSize: 16 }} />
+        ) : (
+          <TrendingDown style={{ fontSize: 16 }} />
+        )}
         {change}
       </span>
     </div>
-    <div style={{ fontSize: '14px', color: '#ffffff', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-      {trend === 'up' ? <TrendingUp style={{ fontSize: 16 }} /> : <TrendingDown style={{ fontSize: 16 }} />}
+    <div
+      style={{
+        fontSize: '14px',
+        color: '#ffffff',
+        marginBottom: '4px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+      }}
+    >
+      {trend === 'up' ? (
+        <TrendingUp style={{ fontSize: 16 }} />
+      ) : (
+        <TrendingDown style={{ fontSize: 16 }} />
+      )}
       {subtitle}
     </div>
     <div style={{ fontSize: '14px', color: '#64748b' }}>{description}</div>
@@ -200,8 +231,21 @@ const TableRow = ({ item, status, target, limit, reviewer }) => (
   <tr style={{ transition: 'background-color 0.2s' }}>
     <td style={styles.td}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <input type="checkbox" style={{ width: 16, height: 16, cursor: 'pointer' }} />
-        <button type="button" style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', padding: 0, display: 'flex' }}>
+        <input
+          type="checkbox"
+          style={{ width: 16, height: 16, cursor: 'pointer' }}
+        />
+        <button
+          type="button"
+          style={{
+            background: 'none',
+            border: 'none',
+            color: '#6b7280',
+            cursor: 'pointer',
+            padding: 0,
+            display: 'flex',
+          }}
+        >
           <Menu style={{ fontSize: 16 }} />
         </button>
         <span style={{ color: '#e2e8f0' }}>{item}</span>
@@ -217,7 +261,10 @@ const TableRow = ({ item, status, target, limit, reviewer }) => (
           padding: '4px 8px',
           borderRadius: '6px',
           fontSize: '12px',
-          backgroundColor: status === 'Done' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(234, 179, 8, 0.1)',
+          backgroundColor:
+            status === 'Done'
+              ? 'rgba(34, 197, 94, 0.1)'
+              : 'rgba(234, 179, 8, 0.1)',
           color: status === 'Done' ? '#4ade80' : '#fbbf24',
         }}
       >
@@ -236,7 +283,17 @@ const TableRow = ({ item, status, target, limit, reviewer }) => (
     <td style={{ ...styles.td, color: '#e2e8f0' }}>{limit}</td>
     <td style={{ ...styles.td, color: '#e2e8f0' }}>{reviewer}</td>
     <td style={styles.td}>
-      <button type="button" style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', padding: 0, display: 'flex' }}>
+      <button
+        type="button"
+        style={{
+          background: 'none',
+          border: 'none',
+          color: '#6b7280',
+          cursor: 'pointer',
+          padding: 0,
+          display: 'flex',
+        }}
+      >
         <MoreVert style={{ fontSize: 16 }} />
       </button>
     </td>
@@ -324,7 +381,9 @@ export const DashboardPage = () => {
               <Menu style={{ fontSize: 24 }} />
             </button>
             <Description style={{ fontSize: 20 }} />
-            <h1 style={{ fontSize: '20px', fontWeight: 600, margin: 0 }}>Dashboard</h1>
+            <h1 style={{ fontSize: '20px', fontWeight: 600, margin: 0 }}>
+              Dashboard
+            </h1>
           </div>
         </div>
 
@@ -369,8 +428,12 @@ export const DashboardPage = () => {
           <div style={styles.chartSection}>
             <div style={styles.chartHeader} className="chart-header">
               <div>
-                <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Vehicle Activity</h2>
-                <p style={{ fontSize: 14, color: '#94a3b8', margin: 0 }}>Total for the last 3 months</p>
+                <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>
+                  Vehicle Activity
+                </h2>
+                <p style={{ fontSize: 14, color: '#94a3b8', margin: 0 }}>
+                  Total for the last 3 months
+                </p>
               </div>
               <div style={styles.timeRangeButtons}>
                 {ranges.map((range, index) => {
@@ -407,13 +470,23 @@ export const DashboardPage = () => {
                     <stop offset="5%" stopColor="#6b7280" stopOpacity={0.3} />
                     <stop offset="95%" stopColor="#6b7280" stopOpacity={0} />
                   </linearGradient>
-                  <linearGradient id="colorVehicles" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient
+                    id="colorVehicles"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
                     <stop offset="5%" stopColor="#9ca3af" stopOpacity={0.2} />
                     <stop offset="95%" stopColor="#9ca3af" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis dataKey="date" stroke="#64748b" style={{ fontSize: '12px' }} />
+                <XAxis
+                  dataKey="date"
+                  stroke="#64748b"
+                  style={{ fontSize: '12px' }}
+                />
                 <YAxis stroke="#64748b" style={{ fontSize: '12px' }} />
                 <Tooltip
                   contentStyle={{
@@ -423,8 +496,22 @@ export const DashboardPage = () => {
                     color: '#fff',
                   }}
                 />
-                <Area type="monotone" dataKey="vehicles" stroke="#9ca3af" fillOpacity={1} fill="url(#colorVehicles)" strokeWidth={2} />
-                <Area type="monotone" dataKey="value" stroke="#6b7280" fillOpacity={1} fill="url(#colorValue)" strokeWidth={2} />
+                <Area
+                  type="monotone"
+                  dataKey="vehicles"
+                  stroke="#9ca3af"
+                  fillOpacity={1}
+                  fill="url(#colorVehicles)"
+                  strokeWidth={2}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="value"
+                  stroke="#6b7280"
+                  fillOpacity={1}
+                  fill="url(#colorValue)"
+                  strokeWidth={2}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -433,20 +520,68 @@ export const DashboardPage = () => {
           <div style={styles.tableSection}>
             <div style={styles.tableHeader} className="table-header">
               <div style={styles.tabButtons}>
-                <button type="button" style={{ ...styles.tabBtn, backgroundColor: '#404040', color: '#ffffff' }}>
+                <button
+                  type="button"
+                  style={{
+                    ...styles.tabBtn,
+                    backgroundColor: '#404040',
+                    color: '#ffffff',
+                  }}
+                >
                   Outline
                 </button>
-                <button type="button" style={{ ...styles.tabBtn, backgroundColor: 'transparent', color: '#94a3b8' }}>
+                <button
+                  type="button"
+                  style={{
+                    ...styles.tabBtn,
+                    backgroundColor: 'transparent',
+                    color: '#94a3b8',
+                  }}
+                >
                   Past Performance
                   {' '}
-                  <span style={{ marginLeft: 4, fontSize: 12, backgroundColor: '#404040', padding: '2px 6px', borderRadius: 4 }}>3</span>
+                  <span
+                    style={{
+                      marginLeft: 4,
+                      fontSize: 12,
+                      backgroundColor: '#404040',
+                      padding: '2px 6px',
+                      borderRadius: 4,
+                    }}
+                  >
+                    3
+                  </span>
                 </button>
-                <button type="button" style={{ ...styles.tabBtn, backgroundColor: 'transparent', color: '#94a3b8' }}>
+                <button
+                  type="button"
+                  style={{
+                    ...styles.tabBtn,
+                    backgroundColor: 'transparent',
+                    color: '#94a3b8',
+                  }}
+                >
                   Key Vehicles
                   {' '}
-                  <span style={{ marginLeft: 4, fontSize: 12, backgroundColor: '#404040', padding: '2px 6px', borderRadius: 4 }}>2</span>
+                  <span
+                    style={{
+                      marginLeft: 4,
+                      fontSize: 12,
+                      backgroundColor: '#404040',
+                      padding: '2px 6px',
+                      borderRadius: 4,
+                    }}
+                  >
+                    2
+                  </span>
                 </button>
-                <button type="button" style={{ ...styles.tabBtn, backgroundColor: 'transparent', color: '#94a3b8' }}>
+                <button
+                  type="button"
+                  style={{
+                    ...styles.tabBtn,
+                    backgroundColor: 'transparent',
+                    color: '#94a3b8',
+                  }}
+                >
                   Focus Documents
                 </button>
               </div>
@@ -504,9 +639,27 @@ export const DashboardPage = () => {
                 </tr>
               </thead>
               <tbody>
-                <TableRow item="Cover page" status="In Process" target="18" limit="5" reviewer="Eddie Lake" />
-                <TableRow item="Table of contents" status="Done" target="29" limit="24" reviewer="Eddie Lake" />
-                <TableRow item="Executive summary" status="Done" target="10" limit="13" reviewer="Eddie Lake" />
+                <TableRow
+                  item="Cover page"
+                  status="In Process"
+                  target="18"
+                  limit="5"
+                  reviewer="Eddie Lake"
+                />
+                <TableRow
+                  item="Table of contents"
+                  status="Done"
+                  target="29"
+                  limit="24"
+                  reviewer="Eddie Lake"
+                />
+                <TableRow
+                  item="Executive summary"
+                  status="Done"
+                  target="10"
+                  limit="13"
+                  reviewer="Eddie Lake"
+                />
               </tbody>
             </table>
           </div>
