@@ -18,7 +18,9 @@ import { prefixString } from '../common/util/stringUtils';
 import MapMarkers from '../map/MapMarkers';
 import MapRouteCoordinates from '../map/MapRouteCoordinates';
 import MapScale from '../map/MapScale';
-import useResizableMap from './common/useResizableMap'; // 👈 your new hook
+import useResizableMap from './common/useResizableMap';
+import RecentReportsWrapper from './components/RecentReportWrapper';
+import { saveReportToHistory, getPeriodLabel } from './components/ReportUtills';
 
 const CombinedReportPage = () => {
   const classes = useReportStyles();
@@ -26,7 +28,7 @@ const CombinedReportPage = () => {
   const devices = useSelector((state) => state.devices.items);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
-
+  const userId = useSelector((state) => state.session.user?.id || 1);
   const { containerRef, mapHeight, handleMouseDown } = useResizableMap(60, 20, 80);
 
   const itemsCoordinates = useMemo(() => items.flatMap((item) => item.route), [items]);
@@ -42,11 +44,24 @@ const CombinedReportPage = () => {
     const query = new URLSearchParams({ from, to });
     deviceIds.forEach((deviceId) => query.append('deviceId', deviceId));
     groupIds.forEach((groupId) => query.append('groupId', groupId));
+
     setLoading(true);
     try {
       const response = await fetch(`/api/reports/combined?${query.toString()}`);
       if (response.ok) {
-        setItems(await response.json());
+        const data = await response.json();
+        setItems(data);
+
+        await saveReportToHistory({
+          userId,
+          reportType: 'combined',
+          deviceIds,
+          groupIds,
+          from,
+          to,
+          period: getPeriodLabel(from, to),
+          additionalParams: {},
+        });
       } else {
         throw Error(await response.text());
       }
@@ -54,6 +69,17 @@ const CombinedReportPage = () => {
       setLoading(false);
     }
   });
+
+  const handleReRunReport = (config) => {
+    if (config) {
+      handleSubmit({
+        deviceIds: config.deviceIds,
+        groupIds: config.groupIds,
+        from: config.from,
+        to: config.to,
+      });
+    }
+  };
 
   return (
     <PageLayout menu={<ReportsMenu />} breadcrumbs={['reportTitle', 'reportCombined']}>
@@ -67,6 +93,7 @@ const CombinedReportPage = () => {
           overflow: 'hidden',
         }}
       >
+        {/* Map Section - Only show if items exist */}
         {Boolean(items.length) && (
           <>
             <div
@@ -96,6 +123,7 @@ const CombinedReportPage = () => {
 
             <button
               type="button"
+              aria-label="test"
               onMouseDown={handleMouseDown}
               style={{
                 height: '8px',
@@ -109,7 +137,6 @@ const CombinedReportPage = () => {
                 borderBottom: '1px solid #ccc',
               }}
             >
-              {' '}
               <div
                 style={{
                   width: '40px',
@@ -122,6 +149,7 @@ const CombinedReportPage = () => {
           </>
         )}
 
+        {/* Main Content Section */}
         <div
           className={classes.containerMain}
           style={{
@@ -130,6 +158,7 @@ const CombinedReportPage = () => {
             minHeight: '150px',
           }}
         >
+          {/* Report Filter - ALWAYS VISIBLE */}
           <div className={classes.header}>
             <ReportFilter
               handleSubmit={handleSubmit}
@@ -139,28 +168,45 @@ const CombinedReportPage = () => {
               loading={loading}
             />
           </div>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>{t('sharedDevice')}</TableCell>
-                <TableCell>{t('positionFixTime')}</TableCell>
-                <TableCell>{t('sharedType')}</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {!loading ? (
-                items.flatMap((item) => item.events.map((event, index) => (
-                  <TableRow key={event.id}>
-                    <TableCell>{index ? '' : devices[item.deviceId].name}</TableCell>
-                    <TableCell>{formatTime(event.eventTime, 'seconds')}</TableCell>
-                    <TableCell>{t(prefixString('event', event.type))}</TableCell>
-                  </TableRow>
-                )))
-              ) : (
-                <TableShimmer columns={3} />
-              )}
-            </TableBody>
-          </Table>
+
+          {/* Show Recent Reports if no items */}
+          {!loading && items.length === 0 && (
+            <RecentReportsWrapper
+              reportType="combined"
+              onReRunReport={handleReRunReport}
+            />
+          )}
+
+          {/* Show Table if items exist */}
+          {items.length > 0 && (
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>{t('sharedDevice')}</TableCell>
+                  <TableCell>{t('positionFixTime')}</TableCell>
+                  <TableCell>{t('sharedType')}</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {!loading ? (
+                  items.flatMap((item) => item.events.map((event, index) => (
+                    <TableRow key={event.id}>
+                      <TableCell>{index ? '' : devices[item.deviceId].name}</TableCell>
+                      <TableCell>{formatTime(event.eventTime, 'seconds')}</TableCell>
+                      <TableCell>{t(prefixString('event', event.type))}</TableCell>
+                    </TableRow>
+                  )))
+                ) : (
+                  <TableShimmer columns={3} />
+                )}
+              </TableBody>
+            </Table>
+          )}
+
+          {/* Show Loading State */}
+          {loading && items.length === 0 && (
+            <TableShimmer columns={3} />
+          )}
         </div>
       </div>
     </PageLayout>
