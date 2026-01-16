@@ -114,6 +114,7 @@ const StatCard = () => {
           {formatKm(weeklyData.weeklyDistanceTraveled)}
           {' '}
           km week of
+          {' '}
           {formatWeekText(new Date())}
         </div>
 
