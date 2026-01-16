@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   TrendingUp,
   TrendingDown,
@@ -17,6 +17,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { DashboardSidebar } from '../common/components/DashboardSidebar';
+import StatCard from '../common/components/StatCard';
 
 const styles = {
   container: {
@@ -40,7 +41,7 @@ const styles = {
     display: 'block',
   },
   mainContent: {
-    padding: '18px',
+    padding: '12px',
     marginLeft: '250px',
     transition: 'margin-left 0.3s ease-in-out',
   },
@@ -72,29 +73,6 @@ const styles = {
     gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
     gap: '16px',
     marginBottom: '32px',
-  },
-  statCard: {
-    backgroundColor: '#1B1B1B',
-    borderRadius: '12px',
-    padding: '20px',
-    border: '1px solid #4c4b4bff',
-  },
-  statTitle: {
-    color: '#94a3b8',
-    fontSize: '14px',
-    marginBottom: '4px',
-  },
-  statValue: {
-    fontSize: '24px',
-    fontWeight: 600,
-    color: '#ffffff',
-    marginRight: '8px',
-  },
-  statChange: {
-    fontSize: '14px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '4px',
   },
   chartSection: {
     backgroundColor: '#1B1B1B',
@@ -180,53 +158,6 @@ const styles = {
   },
 };
 
-const StatCard = ({ title, value, change, trend, subtitle, description }) => (
-  <div style={styles.statCard}>
-    <div style={styles.statTitle}>{title}</div>
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        marginTop: '8px',
-        marginBottom: '12px',
-      }}
-    >
-      <span style={styles.statValue}>{value}</span>
-      <span
-        style={{
-          ...styles.statChange,
-          color: trend === 'up' ? '#4ade80' : '#f87171',
-        }}
-      >
-        {trend === 'up' ? (
-          <TrendingUp style={{ fontSize: 16 }} />
-        ) : (
-          <TrendingDown style={{ fontSize: 16 }} />
-        )}
-        {change}
-      </span>
-    </div>
-    <div
-      style={{
-        fontSize: '14px',
-        color: '#ffffff',
-        marginBottom: '4px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-      }}
-    >
-      {trend === 'up' ? (
-        <TrendingUp style={{ fontSize: 16 }} />
-      ) : (
-        <TrendingDown style={{ fontSize: 16 }} />
-      )}
-      {subtitle}
-    </div>
-    <div style={{ fontSize: '14px', color: '#64748b' }}>{description}</div>
-  </div>
-);
-
 const TableRow = ({ item, status, target, limit, reviewer }) => (
   <tr style={{ transition: 'background-color 0.2s' }}>
     <td style={styles.td}>
@@ -304,7 +235,37 @@ export const DashboardPage = () => {
   const [timeRange, setTimeRange] = useState('Last 7 days');
   const [activeNav, setActiveNav] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [vehicleStatus, setVehicleStatus] = useState({
+    totalOnline: 0,
+    totalOffline: 0,
+    totalUnknown: 0,
+    totalDriving: 0,
+    totalParked: 0,
+    totalInactive: 0,
+    totalNoData: 0,
+  });
+  const [loading, setLoading] = useState(true);
   const ranges = ['Last 3 months', 'Last 30 days', 'Last 7 days'];
+
+  useEffect(() => {
+    const fetchVehicleStatus = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/dashboard/vehiclestatus');
+        if (!response.ok) {
+          throw new Error('Failed to fetch vehicle status');
+        }
+        const data = await response.json();
+        setVehicleStatus(data);
+      } catch (error) {
+        console.error('Error fetching vehicle status:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchVehicleStatus();
+  }, []);
 
   const visitorData = [
     { date: 'Apr 7', value: 320, vehicles: 180 },
@@ -388,40 +349,10 @@ export const DashboardPage = () => {
         </div>
 
         <div style={styles.content}>
-          {/* Stats Grid */}
           <div style={styles.statsGrid} className="stats-grid">
-            <StatCard
-              title="Total Active Vehicles"
-              value="1,250"
-              change="+12.5%"
-              trend="up"
-              subtitle="Trending up this month"
-              description="Vehicles tracked in last 6 months"
-            />
-            <StatCard
-              title="Active Trips"
-              value="1,234"
-              change="-20%"
-              trend="down"
-              subtitle="Down 20% this period"
-              description="Trip monitoring needs attention"
-            />
-            <StatCard
-              title="Total Distance (km)"
-              value="45,678"
-              change="+12.5%"
-              trend="up"
-              subtitle="Strong performance"
-              description="Distance exceeds targets"
-            />
-            <StatCard
-              title="Fleet Efficiency"
-              value="94.5%"
-              change="+4.5%"
-              trend="up"
-              subtitle="Steady performance increase"
-              description="Meets efficiency projections"
-            />
+            <StatCard />
+            <StatCard />
+            <StatCard />
           </div>
 
           {/* Chart Section */}
