@@ -20,18 +20,20 @@ import MapRouteCoordinates from '../map/MapRouteCoordinates';
 import MapScale from '../map/MapScale';
 import useResizableMap from './common/useResizableMap';
 import RecentReportsWrapper from './components/RecentReportWrapper';
-import { saveReportToHistory, getPeriodLabel } from './components/ReportUtills';
+import { saveReportToHistory, getPeriodLabel } from './components/ReportUtils';
 
 const CombinedReportPage = () => {
   const classes = useReportStyles();
   const t = useTranslation();
   const devices = useSelector((state) => state.devices.items);
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(false);
   const userId = useSelector((state) => state.session.user?.id || 1);
   const { containerRef, mapHeight, handleMouseDown } = useResizableMap(60, 20, 80);
 
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(false);
+
   const itemsCoordinates = useMemo(() => items.flatMap((item) => item.route), [items]);
+
   const createMarkers = () => items.flatMap((item) => item.events
     .map((event) => item.positions.find((p) => event.positionId === p.id))
     .filter((position) => position != null)
@@ -40,7 +42,7 @@ const CombinedReportPage = () => {
       longitude: position.longitude,
     })));
 
-  const handleSubmit = useCatch(async ({ deviceIds, groupIds, from, to }) => {
+  const handleSubmit = useCatch(async ({ deviceIds, groupIds, from, to }, options = {}) => {
     const query = new URLSearchParams({ from, to });
     deviceIds.forEach((deviceId) => query.append('deviceId', deviceId));
     groupIds.forEach((groupId) => query.append('groupId', groupId));
@@ -48,10 +50,16 @@ const CombinedReportPage = () => {
     setLoading(true);
     try {
       const response = await fetch(`/api/reports/combined?${query.toString()}`);
-      if (response.ok) {
-        const data = await response.json();
-        setItems(data);
 
+      if (!response.ok) {
+        throw Error(await response.text());
+      }
+
+      const data = await response.json();
+      setItems(data);
+
+      // Save to history only if not re-running a saved report
+      if (!options.skipHistorySave) {
         await saveReportToHistory({
           userId,
           reportType: 'combined',
@@ -62,8 +70,6 @@ const CombinedReportPage = () => {
           period: getPeriodLabel(from, to),
           additionalParams: {},
         });
-      } else {
-        throw Error(await response.text());
       }
     } finally {
       setLoading(false);
@@ -71,14 +77,26 @@ const CombinedReportPage = () => {
   });
 
   const handleReRunReport = (config) => {
-    if (config) {
-      handleSubmit({
-        deviceIds: config.deviceIds,
-        groupIds: config.groupIds,
+    if (!config) {
+      console.error('No config provided');
+      return;
+    }
+
+    if (!config.from || !config.to) {
+      console.error('Missing dates in config');
+      return;
+    }
+
+    // IMPORTANT: Always pass skipHistorySave when re-running
+    handleSubmit(
+      {
+        deviceIds: config.deviceIds || [],
+        groupIds: config.groupIds || [],
         from: config.from,
         to: config.to,
-      });
-    }
+      },
+      { skipHistorySave: true }, // Don't save when viewing saved reports
+    );
   };
 
   return (
@@ -93,7 +111,6 @@ const CombinedReportPage = () => {
           overflow: 'hidden',
         }}
       >
-        {/* Map Section - Only show if items exist */}
         {Boolean(items.length) && (
           <>
             <div
@@ -123,7 +140,7 @@ const CombinedReportPage = () => {
 
             <button
               type="button"
-              aria-label="test"
+              aria-label="resize"
               onMouseDown={handleMouseDown}
               style={{
                 height: '8px',
@@ -149,7 +166,6 @@ const CombinedReportPage = () => {
           </>
         )}
 
-        {/* Main Content Section */}
         <div
           className={classes.containerMain}
           style={{
@@ -158,7 +174,6 @@ const CombinedReportPage = () => {
             minHeight: '150px',
           }}
         >
-          {/* Report Filter - ALWAYS VISIBLE */}
           <div className={classes.header}>
             <ReportFilter
               handleSubmit={handleSubmit}
@@ -169,7 +184,6 @@ const CombinedReportPage = () => {
             />
           </div>
 
-          {/* Show Recent Reports if no items */}
           {!loading && items.length === 0 && (
             <RecentReportsWrapper
               reportType="combined"
@@ -177,7 +191,6 @@ const CombinedReportPage = () => {
             />
           )}
 
-          {/* Show Table if items exist */}
           {items.length > 0 && (
             <Table>
               <TableHead>
@@ -203,7 +216,6 @@ const CombinedReportPage = () => {
             </Table>
           )}
 
-          {/* Show Loading State */}
           {loading && items.length === 0 && (
             <TableShimmer columns={3} />
           )}

@@ -1,6 +1,3 @@
-// RecentReportsWrapper.js
-// Reusable component to show recent reports
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { makeStyles } from '@mui/styles';
@@ -8,7 +5,6 @@ import {
   Paper,
   Typography,
   IconButton,
-  Chip,
   Box,
 } from '@mui/material';
 import {
@@ -19,6 +15,13 @@ import {
   CalendarToday as CalendarIcon,
   Settings as SettingsIcon,
 } from '@mui/icons-material';
+import {
+  fetchReportHistory,
+  fetchFavoriteReports,
+  deleteReportHistory,
+  deleteFavoriteReport,
+  parseReportConfig,
+} from './ReportUtils';
 
 const useStyles = makeStyles((theme) => ({
   wrapper: {
@@ -49,7 +52,6 @@ const useStyles = makeStyles((theme) => ({
   reportCard: {
     padding: theme.spacing(2),
     marginBottom: theme.spacing(2),
-    cursor: 'pointer',
     transition: 'all 0.2s',
     '&:hover': {
       boxShadow: theme.shadows[4],
@@ -94,8 +96,6 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const API_BASE = '/api';
-
 const formatDate = (dateString) => {
   const date = new Date(dateString);
   return date.toLocaleString('en-US', {
@@ -105,6 +105,23 @@ const formatDate = (dateString) => {
     hour: '2-digit',
     minute: '2-digit',
   });
+};
+
+const formatDateShort = (dateString) => {
+  const date = new Date(dateString);
+  return date.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+};
+
+const getPeriodDisplay = (report) => {
+  const period = report.period || 'Custom';
+  if (period.toLowerCase() === 'custom' && report.fromDate && report.toDate) {
+    return `${formatDateShort(report.fromDate)} to ${formatDateShort(report.toDate)}`;
+  }
+  return period;
 };
 
 const parseIds = (idsString) => {
@@ -131,35 +148,41 @@ const getDeviceNames = (deviceIdsString, devices) => {
   return 'N/A';
 };
 
+const getGroupNames = (groupIdsString, groups) => {
+  try {
+    const ids = JSON.parse(groupIdsString);
+    if (Array.isArray(ids) && ids.length > 0) {
+      const names = ids.map((id) => groups[id]?.name || `Group ${id}`);
+      return names.length > 2
+        ? `${names.slice(0, 2).join(', ')} +${names.length - 2}`
+        : names.join(', ');
+    }
+  } catch {
+    return 'N/A';
+  }
+  return 'N/A';
+};
+
+const capitalizeFirstLetter = (val) => String(val).charAt(0).toUpperCase() + String(val).slice(1);
+
 const ReportCard = ({
   report,
   isFavorite,
   reportType,
   devices,
+  groups,
   classes,
   onReRun,
   onDelete,
 }) => (
-  <Paper
-    className={classes.reportCard}
-    onClick={(e) => onReRun(report, e)}
-    elevation={1}
-  >
+  <Paper className={classes.reportCard} elevation={1}>
     <Box className={classes.reportHeader}>
       <Box className={classes.reportInfo}>
         <Box className={classes.reportTitle}>
-          {isFavorite && (
-            <StarIcon sx={{ color: 'warning.main' }} />
-          )}
+          {isFavorite && <StarIcon sx={{ color: 'warning.main' }} />}
           <Typography variant="h6">
-            {isFavorite ? report.name : `${reportType} Report`}
+            {capitalizeFirstLetter(isFavorite ? report.name : `${reportType} Report`)}
           </Typography>
-          <Chip
-            label={reportType}
-            size="small"
-            color="primary"
-            variant="outlined"
-          />
         </Box>
 
         {report.description && (
@@ -181,7 +204,7 @@ const ReportCard = ({
             <CalendarIcon fontSize="small" />
             <strong>Period:</strong>
             {' '}
-            {report.period || 'Custom'}
+            {getPeriodDisplay(report)}
           </Box>
           {report.deviceIds && parseIds(report.deviceIds) > 0 && (
             <Box className={classes.metaItem}>
@@ -196,7 +219,7 @@ const ReportCard = ({
               <SettingsIcon fontSize="small" />
               <strong>Groups:</strong>
               {' '}
-              {parseIds(report.groupIds)}
+              {getGroupNames(report.groupIds, groups)}
             </Box>
           )}
         </Box>
@@ -206,7 +229,10 @@ const ReportCard = ({
         <IconButton
           size="small"
           color="primary"
-          onClick={(e) => onReRun(report, e)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onReRun(report);
+          }}
           title="Re-run report"
         >
           <PlayIcon />
@@ -214,7 +240,10 @@ const ReportCard = ({
         <IconButton
           size="small"
           color="error"
-          onClick={(e) => onDelete(report.id, e)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(report.id);
+          }}
           title="Delete"
         >
           <DeleteIcon />
@@ -224,110 +253,69 @@ const ReportCard = ({
   </Paper>
 );
 
-const RecentReportsWrapper = ({
-  reportType,
-  onReRunReport,
-}) => {
+const RecentReportsWrapper = ({ reportType, onReRunReport }) => {
   const classes = useStyles();
   const devices = useSelector((state) => state.devices.items);
+  const groups = useSelector((state) => state.groups.items);
   const userId = useSelector((state) => state.session.user?.id || 1);
 
   const [recentReports, setRecentReports] = useState([]);
   const [favoriteReports, setFavoriteReports] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchReports = useCallback(async () => {
+  const loadReports = useCallback(async () => {
     setLoading(true);
     try {
-      const [recentRes, favoritesRes] = await Promise.all([
-        fetch(`${API_BASE}/reporthistory`),
-        fetch(`${API_BASE}/favoritereports?userId=${userId}&reportType=${reportType}`),
+      const [history, favorites] = await Promise.all([
+        fetchReportHistory(userId, reportType),
+        fetchFavoriteReports(userId, reportType),
       ]);
-
-      if (recentRes.ok) {
-        const recentData = await recentRes.json();
-        let filtered = [];
-        if (Array.isArray(recentData)) {
-          filtered = recentData.filter((r) => r.reportType === reportType);
-        } else if (recentData.reportType === reportType) {
-          filtered = [recentData];
-        }
-        setRecentReports(filtered);
-      }
-
-      if (favoritesRes.ok) {
-        const favoritesData = await favoritesRes.json();
-        const favorites = Array.isArray(favoritesData) ? favoritesData : [favoritesData];
-        setFavoriteReports(favorites);
-      }
+      setRecentReports(history);
+      setFavoriteReports(favorites);
     } catch (err) {
-      console.error('Failed to fetch reports:', err);
+      console.error('Failed to load reports:', err);
     } finally {
       setLoading(false);
     }
   }, [userId, reportType]);
 
   useEffect(() => {
-    fetchReports();
-  }, [fetchReports]);
+    loadReports();
+  }, [loadReports]);
 
-  const deleteRecentReport = useCallback(async (id, e) => {
-    e.stopPropagation();
-    try {
-      const res = await fetch(`${API_BASE}/reporthistory/${id}`, {
-        method: 'DELETE',
-      });
-      if (res.ok) {
-        setRecentReports((prev) => prev.filter((r) => r.id !== id));
-      }
-    } catch (err) {
-      console.error('Failed to delete report:', err);
+  const handleDeleteRecent = useCallback(async (reportId) => {
+    const success = await deleteReportHistory(reportId);
+    if (success) {
+      setRecentReports((prev) => prev.filter((r) => r.id !== reportId));
     }
   }, []);
 
-  const deleteFavoriteReport = useCallback(async (id, e) => {
-    e.stopPropagation();
-    try {
-      const res = await fetch(`${API_BASE}/favoritereports/${id}`, {
-        method: 'DELETE',
-      });
-      if (res.ok) {
-        setFavoriteReports((prev) => prev.filter((r) => r.id !== id));
-      }
-    } catch (err) {
-      console.error('Failed to delete favorite:', err);
+  const handleDeleteFavorite = useCallback(async (favoriteId) => {
+    const success = await deleteFavoriteReport(favoriteId);
+    if (success) {
+      setFavoriteReports((prev) => prev.filter((r) => r.id !== favoriteId));
     }
   }, []);
 
-  const handleReRunReport = useCallback((report, e) => {
-    e.stopPropagation();
+  const handleReRun = useCallback((report) => {
+    const config = parseReportConfig(report);
 
-    const config = {
-      deviceIds: JSON.parse(report.deviceIds || '[]'),
-      groupIds: JSON.parse(report.groupIds || '[]'),
-      from: report.fromDate,
-      to: report.toDate,
-      period: report.period,
-      additionalParams: report.additionalParams ? JSON.parse(report.additionalParams) : {},
-    };
-
-    if (onReRunReport) {
-      onReRunReport(config);
+    if (!config) {
+      console.error('Failed to parse report config');
+      return;
     }
+
+    if (!onReRunReport) {
+      console.error('onReRunReport callback not provided');
+      return;
+    }
+
+    onReRunReport(config);
   }, [onReRunReport]);
-
-  // Check if there are any reports to show
-  const hasReports = recentReports.length > 0 || favoriteReports.length > 0;
-
-  // Don't render anything if no reports and not loading
-  if (!loading && !hasReports) {
-    return null;
-  }
 
   return (
     <Box className={classes.wrapper}>
       <Box className={classes.recentReportsContainer}>
-        {/* Favorite Reports */}
         {favoriteReports.length > 0 && (
           <Box className={classes.section}>
             <Box className={classes.sectionHeader}>
@@ -343,44 +331,60 @@ const RecentReportsWrapper = ({
                 isFavorite
                 reportType={reportType}
                 devices={devices}
+                groups={groups}
                 classes={classes}
-                onReRun={handleReRunReport}
-                onDelete={deleteFavoriteReport}
+                onReRun={handleReRun}
+                onDelete={handleDeleteFavorite}
               />
             ))}
           </Box>
         )}
 
-        {/* Recent Reports */}
-        {recentReports.length > 0 && (
-          <Box className={classes.section}>
-            <Box className={classes.sectionHeader}>
-              <Box className={classes.sectionTitle}>
-                <ClockIcon color="primary" />
-                <Typography variant="h5">Recent Reports</Typography>
-              </Box>
+        <Box className={classes.section}>
+          <Box className={classes.sectionHeader}>
+            <Box className={classes.sectionTitle}>
+              <ClockIcon color="primary" />
+              <Typography variant="h5">Recent Reports</Typography>
             </Box>
-            {recentReports.map((report) => (
+          </Box>
+
+          {loading && (
+            <Box className={classes.emptyState}>
+              <Typography>Loading reports...</Typography>
+            </Box>
+          )}
+
+          {!loading && recentReports.length === 0 && (
+            <Box className={classes.emptyState}>
+              <Typography variant="body1" color="textSecondary">
+                No recent
+                {' '}
+                {reportType}
+                {' '}
+                reports found.
+              </Typography>
+              <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+                Use the filter above to generate your first report!
+              </Typography>
+            </Box>
+          )}
+
+          {!loading && recentReports.length > 0 && (
+            recentReports.map((report) => (
               <ReportCard
                 key={report.id}
                 report={report}
                 isFavorite={false}
                 reportType={reportType}
                 devices={devices}
+                groups={groups}
                 classes={classes}
-                onReRun={handleReRunReport}
-                onDelete={deleteRecentReport}
+                onReRun={handleReRun}
+                onDelete={handleDeleteRecent}
               />
-            ))}
-          </Box>
-        )}
-
-        {/* Loading State */}
-        {loading && (
-          <Box className={classes.emptyState}>
-            <Typography>Loading reports...</Typography>
-          </Box>
-        )}
+            ))
+          )}
+        </Box>
       </Box>
     </Box>
   );
