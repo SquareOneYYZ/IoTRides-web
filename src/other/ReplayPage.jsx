@@ -115,7 +115,6 @@ const ReplayPage = () => {
   const classes = useStyles();
   const navigate = useNavigate();
   const timerRef = useRef();
-
   const defaultDeviceId = useSelector((state) => state.devices.selectedId);
 
   const [positions, setPositions] = useState([]);
@@ -248,8 +247,16 @@ const ReplayPage = () => {
     <div className={classes.root}>
       <MapView>
         <MapGeofence />
-        <MapRoutePath positions={positions} />
-        <MapRoutePoints positions={positions} onClick={onPointClick} />
+        <MapRoutePath
+          positions={positions}
+          onClick={onPointClick}
+          expandPointsOnClick
+        />
+        <MapRoutePoints
+          positions={positions}
+          onClick={onPointClick}
+          useGlobalExpansion
+        />
         {smoothPosition && (
           <MapPositions
             positions={[smoothPosition]}
