@@ -63,54 +63,33 @@ export const getPeriodLabel = (from, to) => {
 };
 
 const areDuplicateReports = (report1, report2) => {
-  // Normalize dates to YYYY-MM-DD format for comparison
   const date1From = normalizeDate(report1.fromDate);
   const date1To = normalizeDate(report1.toDate);
   const date2From = normalizeDate(report2.from);
   const date2To = normalizeDate(report2.to);
 
-  console.log('Comparing dates:', {
-    report1: { from: date1From, to: date1To },
-    report2: { from: date2From, to: date2To },
-  });
-
   if (date1From !== date2From || date1To !== date2To) {
-    console.log('Dates do not match - not a duplicate');
     return false;
   }
 
-  // Normalize and compare device IDs
   const devices1 = normalizeArray(safeJsonParse(report1.deviceIds, []));
   const devices2 = normalizeArray(report2.deviceIds || []);
 
-  console.log('Comparing devices:', { devices1, devices2 });
-
   if (devices1 !== devices2) {
-    console.log('Devices do not match - not a duplicate');
     return false;
   }
 
-  // Normalize and compare group IDs
   const groups1 = normalizeArray(safeJsonParse(report1.groupIds, []));
   const groups2 = normalizeArray(report2.groupIds || []);
 
-  console.log('Comparing groups:', { groups1, groups2 });
-
   if (groups1 !== groups2) {
-    console.log('Groups do not match - not a duplicate');
     return false;
   }
 
-  // Compare additional parameters (deep comparison)
   const params1 = JSON.stringify(safeJsonParse(report1.additionalParams, {}));
   const params2 = JSON.stringify(report2.additionalParams || {});
 
-  console.log('Comparing params:', { params1, params2 });
-
-  const isDuplicate = params1 === params2;
-  console.log(isDuplicate ? 'DUPLICATE FOUND' : 'Not a duplicate');
-
-  return isDuplicate;
+  return params1 === params2;
 };
 
 export const fetchReportHistory = async (userId, reportType) => {
@@ -148,20 +127,12 @@ export const saveReportToHistory = async ({
   additionalParams = {},
   description = null,
 }) => {
-  console.log('=== SAVING TO HISTORY ===');
-  console.log('Parameters:', {
-    userId, reportType, deviceIds, groupIds, from, to, period, additionalParams,
-  });
-
   try {
     const history = await fetchReportHistory(userId, reportType);
-    console.log(`Found ${history.length} existing reports in history`);
 
     const duplicate = history.find((item) => areDuplicateReports(item, { from, to, deviceIds, groupIds, additionalParams }));
 
     if (duplicate) {
-      console.log('Duplicate found! Updating timestamp for report ID:', duplicate.id);
-
       const updateResponse = await fetch(`/api/reporthistory/${duplicate.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -174,12 +145,8 @@ export const saveReportToHistory = async ({
         throw new Error('Failed to update report history');
       }
 
-      const updated = await updateResponse.json();
-      console.log('Report timestamp updated successfully');
-      return updated;
+      return await updateResponse.json();
     }
-
-    console.log('No duplicate found - creating new history entry');
 
     const payload = {
       userId,
@@ -194,8 +161,6 @@ export const saveReportToHistory = async ({
       period,
     };
 
-    console.log('Creating new report with payload:', payload);
-
     const createResponse = await fetch('/api/reporthistory', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -206,9 +171,7 @@ export const saveReportToHistory = async ({
       throw new Error('Failed to create report history');
     }
 
-    const created = await createResponse.json();
-    console.log('New report created successfully with ID:', created.id);
-    return created;
+    return await createResponse.json();
   } catch (error) {
     console.error('Error saving report to history:', error);
     return null;
@@ -252,6 +215,8 @@ export const createFavoriteReport = async ({
   groupIds = [],
   additionalParams = {},
   period = 'Custom',
+  fromDate,
+  toDate,
 }) => {
   try {
     const payload = {
@@ -262,6 +227,8 @@ export const createFavoriteReport = async ({
       groupIds: JSON.stringify(groupIds),
       additionalParams: JSON.stringify(additionalParams),
       period,
+      fromDate,
+      toDate,
     };
 
     const response = await fetch('/api/favoritereports', {
@@ -320,22 +287,18 @@ export const parseReportConfig = (report) => {
     return null;
   }
 
-  const deviceIds = safeJsonParse(report.deviceIds, []);
-  const groupIds = safeJsonParse(report.groupIds, []);
-  const additionalParams = safeJsonParse(report.additionalParams, {});
-
   if (!report.fromDate || !report.toDate) {
-    console.error('parseReportConfig: Missing fromDate or toDate', report);
+    console.error('parseReportConfig: Missing fromDate or toDate');
     return null;
   }
 
   return {
-    deviceIds,
-    groupIds,
+    deviceIds: safeJsonParse(report.deviceIds, []),
+    groupIds: safeJsonParse(report.groupIds, []),
     from: report.fromDate,
     to: report.toDate,
     period: report.period || 'Custom',
-    additionalParams,
+    additionalParams: safeJsonParse(report.additionalParams, {}),
   };
 };
 

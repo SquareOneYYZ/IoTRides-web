@@ -10,6 +10,7 @@ import {
 import {
   AccessTime as ClockIcon,
   Star as StarIcon,
+  StarBorder as StarBorderIcon,
   PlayArrow as PlayIcon,
   Delete as DeleteIcon,
   CalendarToday as CalendarIcon,
@@ -20,6 +21,7 @@ import {
   fetchFavoriteReports,
   deleteReportHistory,
   deleteFavoriteReport,
+  createFavoriteReport,
   parseReportConfig,
 } from './ReportUtils';
 
@@ -29,25 +31,33 @@ const useStyles = makeStyles((theme) => ({
     display: 'flex',
     flexDirection: 'column',
   },
-  recentReportsContainer: {
+  reportsContainer: {
     flex: 1,
     overflow: 'auto',
     padding: theme.spacing(3),
     backgroundColor: theme.palette.background.default,
   },
-  section: {
-    marginBottom: theme.spacing(4),
+  columnsWrapper: {
+    display: 'flex',
+    gap: theme.spacing(3),
+    [theme.breakpoints.down('md')]: {
+      flexDirection: 'column',
+    },
+  },
+  column: {
+    flex: 1,
+    minWidth: 0,
   },
   sectionHeader: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: theme.spacing(2),
-  },
-  sectionTitle: {
-    display: 'flex',
-    alignItems: 'center',
     gap: theme.spacing(1),
+    marginBottom: theme.spacing(2),
+    position: 'sticky',
+    top: 0,
+    backgroundColor: theme.palette.background.default,
+    zIndex: 1,
+    paddingBottom: theme.spacing(1),
   },
   reportCard: {
     padding: theme.spacing(2),
@@ -165,23 +175,21 @@ const getGroupNames = (groupIdsString, groups) => {
 
 const capitalizeFirstLetter = (val) => String(val).charAt(0).toUpperCase() + String(val).slice(1);
 
-const ReportCard = ({
+const FavoriteReportCard = ({
   report,
-  isFavorite,
-  reportType,
   devices,
   groups,
   classes,
   onReRun,
-  onDelete,
+  onUnfavorite,
 }) => (
   <Paper className={classes.reportCard} elevation={1}>
     <Box className={classes.reportHeader}>
       <Box className={classes.reportInfo}>
         <Box className={classes.reportTitle}>
-          {isFavorite && <StarIcon sx={{ color: 'warning.main' }} />}
+          <StarIcon sx={{ color: 'warning.main' }} />
           <Typography variant="h6">
-            {capitalizeFirstLetter(isFavorite ? report.name : `${reportType} Report`)}
+            {capitalizeFirstLetter(report.name)}
           </Typography>
         </Box>
 
@@ -193,11 +201,84 @@ const ReportCard = ({
 
         <Box className={classes.reportMeta}>
           <Box className={classes.metaItem}>
+            <CalendarIcon fontSize="small" />
+            <strong>Period:</strong>
+            {' '}
+            {getPeriodDisplay(report)}
+          </Box>
+          {report.deviceIds && parseIds(report.deviceIds) > 0 && (
+            <Box className={classes.metaItem}>
+              <SettingsIcon fontSize="small" />
+              <strong>Devices:</strong>
+              {' '}
+              {getDeviceNames(report.deviceIds, devices)}
+            </Box>
+          )}
+          {report.groupIds && parseIds(report.groupIds) > 0 && (
+            <Box className={classes.metaItem}>
+              <SettingsIcon fontSize="small" />
+              <strong>Groups:</strong>
+              {' '}
+              {getGroupNames(report.groupIds, groups)}
+            </Box>
+          )}
+        </Box>
+      </Box>
+
+      <Box className={classes.actions}>
+        <IconButton
+          size="small"
+          color="primary"
+          onClick={(e) => {
+            e.stopPropagation();
+            onReRun(report);
+          }}
+          title="Run report"
+        >
+          <PlayIcon />
+        </IconButton>
+        <IconButton
+          size="small"
+          color="warning"
+          onClick={(e) => {
+            e.stopPropagation();
+            onUnfavorite(report.id);
+          }}
+          title="Remove from favorites"
+        >
+          <StarIcon />
+        </IconButton>
+      </Box>
+    </Box>
+  </Paper>
+);
+
+const RecentReportCard = ({
+  report,
+  reportType,
+  devices,
+  groups,
+  classes,
+  onReRun,
+  onFavorite,
+  onDelete,
+  isFavorite,
+}) => (
+  <Paper className={classes.reportCard} elevation={1}>
+    <Box className={classes.reportHeader}>
+      <Box className={classes.reportInfo}>
+        <Box className={classes.reportTitle}>
+          <Typography variant="h6">
+            {capitalizeFirstLetter(`${reportType} Report`)}
+          </Typography>
+        </Box>
+
+        <Box className={classes.reportMeta}>
+          <Box className={classes.metaItem}>
             <ClockIcon fontSize="small" />
             <span>
-              {isFavorite
-                ? `Created ${formatDate(report.createdAt)}`
-                : `Generated ${formatDate(report.generatedAt)}`}
+              Generated
+              {formatDate(report.generatedAt)}
             </span>
           </Box>
           <Box className={classes.metaItem}>
@@ -236,6 +317,17 @@ const ReportCard = ({
           title="Re-run report"
         >
           <PlayIcon />
+        </IconButton>
+        <IconButton
+          size="small"
+          color="warning"
+          onClick={(e) => {
+            e.stopPropagation();
+            onFavorite(report);
+          }}
+          title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+        >
+          {isFavorite ? <StarIcon /> : <StarBorderIcon />}
         </IconButton>
         <IconButton
           size="small"
@@ -290,13 +382,7 @@ const RecentReportsWrapper = ({ reportType, onReRunReport }) => {
     }
   }, []);
 
-  const handleDeleteFavorite = useCallback(async (favoriteId) => {
-    const success = await deleteFavoriteReport(favoriteId);
-    if (success) {
-      setFavoriteReports((prev) => prev.filter((r) => r.id !== favoriteId));
-    }
-  }, []);
-
+  // Fixed: Use parseReportConfig for consistent parsing
   const handleReRun = useCallback((report) => {
     const config = parseReportConfig(report);
 
@@ -305,85 +391,162 @@ const RecentReportsWrapper = ({ reportType, onReRunReport }) => {
       return;
     }
 
-    if (!onReRunReport) {
-      console.error('onReRunReport callback not provided');
-      return;
+    if (onReRunReport) {
+      onReRunReport(config);
     }
-
-    onReRunReport(config);
   }, [onReRunReport]);
+
+  // Fixed: Properly toggle favorite and update UI immediately
+  const handleToggleFavorite = useCallback(async (report) => {
+    // Check if already favorited by comparing report parameters
+    const existingFavorite = favoriteReports.find((fav) => {
+      const favDevices = JSON.parse(fav.deviceIds || '[]').sort().join(',');
+      const repDevices = JSON.parse(report.deviceIds || '[]').sort().join(',');
+      const favGroups = JSON.parse(fav.groupIds || '[]').sort().join(',');
+      const repGroups = JSON.parse(report.groupIds || '[]').sort().join(',');
+
+      return (
+        favDevices === repDevices
+        && favGroups === repGroups
+        && fav.fromDate === report.fromDate
+        && fav.toDate === report.toDate
+      );
+    });
+
+    if (existingFavorite) {
+      // Remove from favorites
+      const success = await deleteFavoriteReport(existingFavorite.id);
+      if (success) {
+        setFavoriteReports((prev) => prev.filter((r) => r.id !== existingFavorite.id));
+      }
+    } else {
+      // Add to favorites
+      const deviceIds = JSON.parse(report.deviceIds || '[]');
+      const groupIds = JSON.parse(report.groupIds || '[]');
+      const additionalParams = JSON.parse(report.additionalParams || '{}');
+
+      const newFavorite = await createFavoriteReport({
+        name: `${capitalizeFirstLetter(reportType)} Report`,
+        description: `Generated on ${formatDate(report.generatedAt)}`,
+        reportType,
+        deviceIds,
+        groupIds,
+        additionalParams,
+        period: report.period || 'Custom',
+        fromDate: report.fromDate,
+        toDate: report.toDate,
+      });
+
+      if (newFavorite) {
+        // Update state immediately with the new favorite
+        setFavoriteReports((prev) => [...prev, newFavorite]);
+      }
+    }
+  }, [favoriteReports, reportType]);
+
+  const handleUnfavorite = useCallback(async (favoriteId) => {
+    const success = await deleteFavoriteReport(favoriteId);
+    if (success) {
+      setFavoriteReports((prev) => prev.filter((r) => r.id !== favoriteId));
+    }
+  }, []);
+
+  // Fixed: Check if report is favorited by comparing parameters
+  const isReportFavorited = useCallback((report) => favoriteReports.some((fav) => {
+    const favDevices = JSON.parse(fav.deviceIds || '[]').sort().join(',');
+    const repDevices = JSON.parse(report.deviceIds || '[]').sort().join(',');
+    const favGroups = JSON.parse(fav.groupIds || '[]').sort().join(',');
+    const repGroups = JSON.parse(report.groupIds || '[]').sort().join(',');
+
+    return (
+      favDevices === repDevices
+        && favGroups === repGroups
+        && fav.fromDate === report.fromDate
+        && fav.toDate === report.toDate
+    );
+  }), [favoriteReports]);
 
   return (
     <Box className={classes.wrapper}>
-      <Box className={classes.recentReportsContainer}>
-        {favoriteReports.length > 0 && (
-          <Box className={classes.section}>
-            <Box className={classes.sectionHeader}>
-              <Box className={classes.sectionTitle}>
-                <StarIcon sx={{ color: 'warning.main' }} />
-                <Typography variant="h5">Favorite Reports</Typography>
-              </Box>
-            </Box>
-            {favoriteReports.map((report) => (
-              <ReportCard
-                key={report.id}
-                report={report}
-                isFavorite
-                reportType={reportType}
-                devices={devices}
-                groups={groups}
-                classes={classes}
-                onReRun={handleReRun}
-                onDelete={handleDeleteFavorite}
-              />
-            ))}
-          </Box>
-        )}
+      <Box className={classes.reportsContainer}>
+        <Box className={classes.columnsWrapper}>
 
-        <Box className={classes.section}>
-          <Box className={classes.sectionHeader}>
-            <Box className={classes.sectionTitle}>
+          {/* Recent Reports Column */}
+          <Box className={classes.column}>
+            <Box className={classes.sectionHeader}>
               <ClockIcon color="primary" />
               <Typography variant="h5">Recent Reports</Typography>
             </Box>
+
+            {loading && (
+              <Box className={classes.emptyState}>
+                <Typography>Loading reports...</Typography>
+              </Box>
+            )}
+
+            {!loading && recentReports.length === 0 && (
+              <Box className={classes.emptyState}>
+                <Typography variant="body1" color="textSecondary">
+                  No recent
+                  {' '}
+                  {reportType}
+                  {' '}
+                  reports found.
+                </Typography>
+                <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+                  Use the filter above to generate your first report!
+                </Typography>
+              </Box>
+            )}
+
+            {!loading && recentReports.length > 0 && (
+              recentReports.map((report) => (
+                <RecentReportCard
+                  key={report.id}
+                  report={report}
+                  reportType={reportType}
+                  devices={devices}
+                  groups={groups}
+                  classes={classes}
+                  onReRun={handleReRun}
+                  onFavorite={handleToggleFavorite}
+                  onDelete={handleDeleteRecent}
+                  isFavorite={isReportFavorited(report)}
+                />
+              ))
+            )}
           </Box>
 
-          {loading && (
-            <Box className={classes.emptyState}>
-              <Typography>Loading reports...</Typography>
+          {/* Favorite Reports Column */}
+          <Box className={classes.column}>
+            <Box className={classes.sectionHeader}>
+              <StarIcon sx={{ color: 'warning.main' }} />
+              <Typography variant="h5">Favorite Reports</Typography>
             </Box>
-          )}
 
-          {!loading && recentReports.length === 0 && (
-            <Box className={classes.emptyState}>
-              <Typography variant="body1" color="textSecondary">
-                No recent
-                {' '}
-                {reportType}
-                {' '}
-                reports found.
-              </Typography>
-              <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
-                Use the filter above to generate your first report!
-              </Typography>
-            </Box>
-          )}
+            {favoriteReports.length === 0 && (
+              <Box className={classes.emptyState}>
+                <Typography variant="body1" color="textSecondary">
+                  No favorite reports yet.
+                </Typography>
+                <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+                  Click the star icon on any recent report to add it here!
+                </Typography>
+              </Box>
+            )}
 
-          {!loading && recentReports.length > 0 && (
-            recentReports.map((report) => (
-              <ReportCard
+            {favoriteReports.map((report) => (
+              <FavoriteReportCard
                 key={report.id}
                 report={report}
-                isFavorite={false}
-                reportType={reportType}
                 devices={devices}
                 groups={groups}
                 classes={classes}
                 onReRun={handleReRun}
-                onDelete={handleDeleteRecent}
+                onUnfavorite={handleUnfavorite}
               />
-            ))
-          )}
+            ))}
+          </Box>
         </Box>
       </Box>
     </Box>
