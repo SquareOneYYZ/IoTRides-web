@@ -5,6 +5,7 @@ import {
 } from '@mui/material';
 import GpsFixedIcon from '@mui/icons-material/GpsFixed';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
+import { useSelector } from 'react-redux';
 import {
   formatDistance, formatSpeed, formatVolume, formatTime, formatNumericHours,
 } from '../common/util/formatter';
@@ -27,6 +28,8 @@ import MapGeofence from '../map/MapGeofence';
 import scheduleReport from './common/scheduleReport';
 import MapScale from '../map/MapScale';
 import useResizableMap from './common/useResizableMap';
+import RecentReportsWrapper from './components/RecentReportWrapper';
+import { saveReportToHistory, getPeriodLabel } from './components/ReportUtils';
 
 const columnsArray = [
   ['startTime', 'reportStartTime'],
@@ -52,6 +55,7 @@ const TripReportPage = () => {
   const distanceUnit = useAttributePreference('distanceUnit');
   const speedUnit = useAttributePreference('speedUnit');
   const volumeUnit = useAttributePreference('volumeUnit');
+  const userId = useSelector((state) => state.session.user?.id || 1);
 
   const [columns, setColumns] = usePersistedState('tripColumns', ['startTime', 'endTime', 'distance', 'averageSpeed']);
   const [items, setItems] = useState([]);
@@ -94,8 +98,9 @@ const TripReportPage = () => {
     }
   }, [selectedItem]);
 
-  const handleSubmit = useCatch(async ({ deviceId, from, to, type }) => {
+  const handleSubmit = useCatch(async ({ deviceId, groupIds, from, to, type, ...otherParams }, options = {}) => {
     const query = new URLSearchParams({ deviceId, from, to });
+
     if (type === 'export') {
       window.location.assign(`/api/reports/trips/xlsx?${query.toString()}`);
     } else if (type === 'mail') {
@@ -118,7 +123,41 @@ const TripReportPage = () => {
         setLoading(false);
       }
     }
+
+    // Save to history after successful report generation (only for normal reports, not export/mail)
+    if (type !== 'export' && type !== 'mail' && options.skipHistorySave !== true) {
+      await saveReportToHistory({
+        userId,
+        reportType: 'trips',
+        deviceIds: [deviceId], // Convert single deviceId to array for storage
+        groupIds: groupIds || [],
+        from,
+        to,
+        period: getPeriodLabel(from, to),
+        additionalParams: { ...otherParams },
+      });
+    }
   });
+
+  const handleReRunReport = (config) => {
+    if (!config) return;
+
+    // Convert deviceIds array back to single deviceId for the API
+    const deviceId = Array.isArray(config.deviceIds) && config.deviceIds.length > 0
+      ? config.deviceIds[0]
+      : config.deviceIds;
+
+    handleSubmit(
+      {
+        deviceId,
+        groupIds: config.groupIds || [],
+        from: config.from,
+        to: config.to,
+        ...config.additionalParams,
+      },
+      { skipHistorySave: true },
+    );
+  };
 
   const handleSchedule = useCatch(async (deviceIds, groupIds, report) => {
     report.type = 'trips';
@@ -236,6 +275,14 @@ const TripReportPage = () => {
               <ColumnSelect columns={columns} setColumns={setColumns} columnsArray={columnsArray} />
             </ReportFilter>
           </div>
+
+          {!loading && items.length === 0 && (
+            <RecentReportsWrapper
+              reportType="trips"
+              onReRunReport={handleReRunReport}
+            />
+          )}
+
           <Table>
             <TableHead>
               <TableRow>

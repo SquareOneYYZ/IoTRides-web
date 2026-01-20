@@ -58,7 +58,6 @@ const CombinedReportPage = () => {
       const data = await response.json();
       setItems(data);
 
-      // Save to history only if not re-running a saved report
       if (!options.skipHistorySave) {
         await saveReportToHistory({
           userId,

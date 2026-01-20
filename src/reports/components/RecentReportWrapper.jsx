@@ -277,7 +277,8 @@ const RecentReportCard = ({
           <Box className={classes.metaItem}>
             <ClockIcon fontSize="small" />
             <span>
-              Generated
+              <strong>Generated: </strong>
+              {' '}
               {formatDate(report.generatedAt)}
             </span>
           </Box>
@@ -382,7 +383,6 @@ const RecentReportsWrapper = ({ reportType, onReRunReport }) => {
     }
   }, []);
 
-  // Fixed: Use parseReportConfig for consistent parsing
   const handleReRun = useCallback((report) => {
     const config = parseReportConfig(report);
 
@@ -396,9 +396,7 @@ const RecentReportsWrapper = ({ reportType, onReRunReport }) => {
     }
   }, [onReRunReport]);
 
-  // Fixed: Properly toggle favorite and update UI immediately
   const handleToggleFavorite = useCallback(async (report) => {
-    // Check if already favorited by comparing report parameters
     const existingFavorite = favoriteReports.find((fav) => {
       const favDevices = JSON.parse(fav.deviceIds || '[]').sort().join(',');
       const repDevices = JSON.parse(report.deviceIds || '[]').sort().join(',');
@@ -414,13 +412,11 @@ const RecentReportsWrapper = ({ reportType, onReRunReport }) => {
     });
 
     if (existingFavorite) {
-      // Remove from favorites
       const success = await deleteFavoriteReport(existingFavorite.id);
       if (success) {
         setFavoriteReports((prev) => prev.filter((r) => r.id !== existingFavorite.id));
       }
     } else {
-      // Add to favorites
       const deviceIds = JSON.parse(report.deviceIds || '[]');
       const groupIds = JSON.parse(report.groupIds || '[]');
       const additionalParams = JSON.parse(report.additionalParams || '{}');
@@ -438,7 +434,6 @@ const RecentReportsWrapper = ({ reportType, onReRunReport }) => {
       });
 
       if (newFavorite) {
-        // Update state immediately with the new favorite
         setFavoriteReports((prev) => [...prev, newFavorite]);
       }
     }
@@ -451,7 +446,6 @@ const RecentReportsWrapper = ({ reportType, onReRunReport }) => {
     }
   }, []);
 
-  // Fixed: Check if report is favorited by comparing parameters
   const isReportFavorited = useCallback((report) => favoriteReports.some((fav) => {
     const favDevices = JSON.parse(fav.deviceIds || '[]').sort().join(',');
     const repDevices = JSON.parse(report.deviceIds || '[]').sort().join(',');
@@ -471,7 +465,6 @@ const RecentReportsWrapper = ({ reportType, onReRunReport }) => {
       <Box className={classes.reportsContainer}>
         <Box className={classes.columnsWrapper}>
 
-          {/* Recent Reports Column */}
           <Box className={classes.column}>
             <Box className={classes.sectionHeader}>
               <ClockIcon color="primary" />
