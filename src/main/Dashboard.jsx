@@ -246,9 +246,16 @@ export const DashboardPage = () => {
   });
   const [loading, setLoading] = useState(true);
   const ranges = ['Last 3 months', 'Last 30 days', 'Last 7 days'];
+  const [groups, setGroups] = useState([]);
+  const [weeklyKmData, setWeeklyKmData] = useState(null);
+  const [dayNightKmData, setDayNightKmData] = useState(null);
+  const [selectedGroup, setSelectedGroup] = useState('');
+  const [weeklyKmLoading, setWeeklyKmLoading] = useState(false);
+  const [dayNightKmLoading, setDayNightKmLoading] = useState(false);
+  const [selectedGroupForDayNight, setSelectedGroupForDayNight] = useState('');
 
   useEffect(() => {
-    const fetchVehicleStatus = async () => {
+    const fetchInitialData = async () => {
       try {
         setLoading(true);
         const response = await fetch('/api/dashboard/vehiclestatus');
@@ -262,10 +269,83 @@ export const DashboardPage = () => {
       } finally {
         setLoading(false);
       }
+
+      try {
+        const groupsResponse = await fetch('/api/groups');
+        if (groupsResponse.ok) {
+          const groupsData = await groupsResponse.json();
+          console.log('Groups data:', groupsData);
+          setGroups(groupsData);
+        }
+      } catch (error) {
+        console.error('Error fetching groups:', error);
+      }
     };
 
-    fetchVehicleStatus();
+    fetchInitialData();
   }, []);
+
+  useEffect(() => {
+    if (!selectedGroup) {
+      setWeeklyKmData(null);
+      return;
+    }
+
+    const fetchWeeklyKm = async () => {
+      setWeeklyKmLoading(true);
+      try {
+        const to = new Date();
+        const from = new Date();
+        from.setDate(to.getDate() - 7);
+
+        const url = `/api/dashboard/weeklykm?groupId=${selectedGroup}&from=${from.toISOString()}&to=${to.toISOString()}`;
+        const response = await fetch(url);
+
+        if (response.ok) {
+          const data = await response.json();
+          const firstItem = data?.[0];
+          setWeeklyKmData(firstItem);
+        }
+      } catch (error) {
+        console.error('Error fetching weekly KM:', error);
+      } finally {
+        setWeeklyKmLoading(false);
+      }
+    };
+
+    fetchWeeklyKm();
+  }, [selectedGroup]);
+
+  useEffect(() => {
+    if (!selectedGroupForDayNight) {
+      setDayNightKmData(null);
+      return;
+    }
+
+    const fetchDayNightKm = async () => {
+      setDayNightKmLoading(true);
+      try {
+        const to = new Date();
+        const from = new Date();
+        from.setDate(to.getDate() - 7);
+
+        // Changed deviceId to groupId
+        const url = `/api/dashboard/daynightkm?&from=${from.toISOString()}&to=${to.toISOString()}&groupId=${selectedGroupForDayNight}`;
+        const response = await fetch(url);
+
+        if (response.ok) {
+          const data = await response.json();
+          setDayNightKmData(data);
+        }
+      } catch (error) {
+        console.error('Error fetching day/night KM:', error);
+      } finally {
+        setDayNightKmLoading(false);
+      }
+    };
+
+    fetchDayNightKm();
+  }, [selectedGroupForDayNight]);
 
   const visitorData = [
     { date: 'Apr 7', value: 320, vehicles: 180 },
@@ -312,7 +392,6 @@ export const DashboardPage = () => {
         `}
       </style>
 
-      {/* Overlay */}
       {sidebarOpen && (
         <div
           aria-hidden="true"
@@ -321,7 +400,6 @@ export const DashboardPage = () => {
         />
       )}
 
-      {/* Sidebar */}
       <DashboardSidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
@@ -329,7 +407,6 @@ export const DashboardPage = () => {
         setActiveNav={setActiveNav}
       />
 
-      {/* Main Content */}
       <div style={styles.mainContent} className="main-content-mobile">
         <div style={styles.header}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -350,12 +427,29 @@ export const DashboardPage = () => {
 
         <div style={styles.content}>
           <div style={styles.statsGrid} className="stats-grid">
-            <StatCard />
-            <StatCard />
-            <StatCard />
+            <StatCard
+              type="vehicleStatus"
+              data={vehicleStatus}
+              loading={loading}
+            />
+            <StatCard
+              type="weeklyKm"
+              data={weeklyKmData}
+              groups={groups}
+              selectedGroup={selectedGroup}
+              onGroupChange={(e) => setSelectedGroup(e.target.value)}
+              loading={weeklyKmLoading}
+            />
+            <StatCard
+              type="dayNightKm"
+              data={dayNightKmData}
+              groups={groups} // Changed from devices to groups
+              selectedGroup={selectedGroupForDayNight} // Changed from selectedDevice
+              onGroupChange={(e) => setSelectedGroupForDayNight(e.target.value)} // Changed from onDeviceChange
+              loading={dayNightKmLoading}
+            />
           </div>
 
-          {/* Chart Section */}
           <div style={styles.chartSection}>
             <div style={styles.chartHeader} className="chart-header">
               <div>
@@ -447,7 +541,6 @@ export const DashboardPage = () => {
             </ResponsiveContainer>
           </div>
 
-          {/* Table Section */}
           <div style={styles.tableSection}>
             <div style={styles.tableHeader} className="table-header">
               <div style={styles.tabButtons}>
