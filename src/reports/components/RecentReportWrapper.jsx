@@ -6,6 +6,7 @@ import {
   Typography,
   IconButton,
   Box,
+  Divider, useMediaQuery,
 } from '@mui/material';
 import {
   AccessTime as ClockIcon,
@@ -51,6 +52,7 @@ const useStyles = makeStyles((theme) => ({
   sectionHeader: {
     display: 'flex',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: theme.spacing(1),
     marginBottom: theme.spacing(2),
     position: 'sticky',
@@ -84,7 +86,7 @@ const useStyles = makeStyles((theme) => ({
   },
   reportMeta: {
     display: 'flex',
-    flexWrap: 'wrap',
+    flexDirection: 'column',
     gap: theme.spacing(2),
     marginTop: theme.spacing(1),
     color: theme.palette.text.secondary,
@@ -193,13 +195,14 @@ const FavoriteReportCard = ({
           </Typography>
         </Box>
 
-        {report.description && (
-          <Typography variant="body2" color="textSecondary" gutterBottom>
-            {report.description}
-          </Typography>
-        )}
-
         <Box className={classes.reportMeta}>
+          <Box className={classes.metaItem}>
+            {report.description && (
+            <Typography variant="body2" color="textSecondary" gutterBottom>
+              {report.description}
+            </Typography>
+            )}
+          </Box>
           <Box className={classes.metaItem}>
             <CalendarIcon fontSize="small" />
             <strong>Period:</strong>
@@ -351,11 +354,10 @@ const RecentReportsWrapper = ({ reportType, onReRunReport }) => {
   const devices = useSelector((state) => state.devices.items);
   const groups = useSelector((state) => state.groups.items);
   const userId = useSelector((state) => state.session.user?.id || 1);
-
   const [recentReports, setRecentReports] = useState([]);
   const [favoriteReports, setFavoriteReports] = useState([]);
   const [loading, setLoading] = useState(false);
-
+  const isDesktop = useMediaQuery('(min-width:900px)');
   const loadReports = useCallback(async () => {
     setLoading(true);
     try {
@@ -509,7 +511,17 @@ const RecentReportsWrapper = ({ reportType, onReRunReport }) => {
               ))
             )}
           </Box>
-
+          {isDesktop && (
+          <Divider
+            sx={{
+              width: '2px',
+              backgroundColor: '#e0e0e013',
+              mx: 2,
+            }}
+            orientation="vertical"
+            flexItem
+          />
+          )}
           {/* Favorite Reports Column */}
           <Box className={classes.column}>
             <Box className={classes.sectionHeader}>
