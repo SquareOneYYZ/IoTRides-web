@@ -18,6 +18,8 @@ import { useCatch } from '../reactHelper';
 import useReportStyles from './common/useReportStyles';
 import TableShimmer from '../common/components/TableShimmer';
 import scheduleReport from './common/scheduleReport';
+import RecentReportsWrapper from './components/RecentReportWrapper';
+import { saveReportToHistory, getPeriodLabel } from './components/ReportUtils';
 
 const columnsArray = [
   ['startTime', 'reportStartDate'],
@@ -39,6 +41,7 @@ const SummaryReportPage = () => {
   const t = useTranslation();
 
   const devices = useSelector((state) => state.devices.items);
+  const userId = useSelector((state) => state.session.user?.id || 1);
 
   const distanceUnit = useAttributePreference('distanceUnit');
   const speedUnit = useAttributePreference('speedUnit');
@@ -49,10 +52,11 @@ const SummaryReportPage = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = useCatch(async ({ deviceIds, groupIds, from, to, type }) => {
+  const handleSubmit = useCatch(async ({ deviceIds, groupIds, from, to, type, ...otherParams }, options = {}) => {
     const query = new URLSearchParams({ from, to, daily });
     deviceIds.forEach((deviceId) => query.append('deviceId', deviceId));
     groupIds.forEach((groupId) => query.append('groupId', groupId));
+
     if (type === 'export') {
       window.location.assign(`/api/reports/summary/xlsx?${query.toString()}`);
     } else if (type === 'mail') {
@@ -75,7 +79,43 @@ const SummaryReportPage = () => {
         setLoading(false);
       }
     }
+
+    // Save to history after successful report generation
+    if (type !== 'export' && type !== 'mail' && options.skipHistorySave !== true) {
+      await saveReportToHistory({
+        userId,
+        reportType: 'summary',
+        deviceIds: Array.isArray(deviceIds) ? deviceIds : [deviceIds],
+        groupIds: groupIds || [],
+        from,
+        to,
+        period: getPeriodLabel(from, to),
+        additionalParams: {
+          daily,
+        },
+      });
+    }
   });
+
+  const handleReRunReport = (config) => {
+    if (!config) return;
+
+    // Restore filter states from additionalParams
+    if (config.additionalParams && config.additionalParams.daily !== undefined) {
+      setDaily(config.additionalParams.daily);
+    }
+
+    handleSubmit(
+      {
+        deviceIds: config.deviceIds || [],
+        groupIds: config.groupIds || [],
+        from: config.from,
+        to: config.to,
+        ...config.additionalParams,
+      },
+      { skipHistorySave: true },
+    );
+  };
 
   const handleSchedule = useCatch(async (deviceIds, groupIds, report) => {
     report.type = 'summary';
@@ -129,6 +169,14 @@ const SummaryReportPage = () => {
           <ColumnSelect columns={columns} setColumns={setColumns} columnsArray={columnsArray} />
         </ReportFilter>
       </div>
+
+      {!loading && items.length === 0 && (
+        <RecentReportsWrapper
+          reportType="summary"
+          onReRunReport={handleReRunReport}
+        />
+      )}
+
       <Table>
         <TableHead>
           <TableRow>
