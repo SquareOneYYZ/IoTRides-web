@@ -120,7 +120,15 @@ const StatusRow = ({ name, content }) => {
   );
 };
 
-const StatusCard = ({ deviceId, position, onClose, disableActions, hideCardActions, desktopPadding = 0 }) => {
+const StatusCard = ({
+  deviceId,
+  position,
+  onClose,
+  disableActions,
+  hideCardActions,
+  desktopPadding = 0,
+  customStyles = null,
+}) => {
   const classes = useStyles({ desktopPadding, hideCardActions });
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -184,9 +192,13 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, hideCardActio
     }
   }, [navigate, position]);
 
+  // Use customStyles if provided, otherwise use default classes.root
+  const rootStyles = customStyles || {};
+  const rootClassName = customStyles ? '' : classes.root;
+
   return (
     <>
-      <div className={classes.root}>
+      <div className={rootClassName} style={customStyles || {}}>
         {device && (
           <Draggable
             handle={`.${classes.media}, .${classes.header}`}

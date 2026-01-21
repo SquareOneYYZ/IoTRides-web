@@ -34,7 +34,6 @@ const CombinedReportPage = () => {
 
   const itemsCoordinates = useMemo(() => items.flatMap((item) => item.route), [items]);
 
-  // Create positions array for MapPositions component
   const markerPositions = useMemo(() => items.flatMap((item) => item.events
     .map((event) => item.positions.find((p) => event.positionId === p.id))
     .filter((position) => position != null)), [items]);
@@ -75,6 +74,16 @@ const CombinedReportPage = () => {
       setLoading(false);
     }
   });
+
+  const statusCardStyles = {
+    position: 'absolute',
+    bottom: '10px',
+    left: '10px',
+    right: '16px',
+    maxWidth: '400px',
+    zIndex: 1000,
+    pointerEvents: 'auto',
+  };
 
   return (
     <PageLayout menu={<ReportsMenu />} breadcrumbs={['reportTitle', 'reportCombined']}>
@@ -117,6 +126,17 @@ const CombinedReportPage = () => {
               </MapView>
               <MapScale />
               <MapCamera coordinates={itemsCoordinates} />
+
+              {showCard && selectedPositionData && (
+                <StatusCard
+                  deviceId={selectedPositionData.deviceId}
+                  position={selectedPositionData.position}
+                  onClose={() => setShowCard(false)}
+                  disableActions
+                  hideCardActions
+                  customStyles={statusCardStyles}
+                />
+              )}
             </div>
 
             <div
@@ -201,16 +221,6 @@ const CombinedReportPage = () => {
               )}
             </TableBody>
           </Table>
-
-          {showCard && selectedPositionData && (
-          <StatusCard
-            deviceId={selectedPositionData.deviceId}
-            position={selectedPositionData.position}
-            onClose={() => setShowCard(false)}
-            disableActions
-            hideCardActions
-          />
-          )}
         </div>
       </div>
     </PageLayout>
