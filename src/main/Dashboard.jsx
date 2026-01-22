@@ -66,7 +66,6 @@ const styles = {
     padding: '16px',
     backgroundColor: '#0A0A0A',
     borderRadius: '0px 0px 20px 20px',
-
   },
   statsGrid: {
     display: 'grid',
@@ -139,6 +138,14 @@ const styles = {
     gap: '8px',
     flexWrap: 'wrap',
   },
+  filterSection: {
+    padding: '16px',
+    borderBottom: '1px solid #3F3E3E',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    flexWrap: 'wrap',
+  },
   table: {
     width: '100%',
     borderCollapse: 'collapse',
@@ -158,7 +165,7 @@ const styles = {
   },
 };
 
-const TableRow = ({ item, status, target, limit, reviewer }) => (
+const TableRow = ({ item, status, target, limit, reviewer, sectionType }) => (
   <tr style={{ transition: 'background-color 0.2s' }}>
     <td style={styles.td}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -182,9 +189,9 @@ const TableRow = ({ item, status, target, limit, reviewer }) => (
         <span style={{ color: '#e2e8f0' }}>{item}</span>
       </div>
     </td>
-    <td style={{ ...styles.td, color: '#94a3b8' }}>{item}</td>
+    <td style={{ ...styles.td, color: '#94a3b8' }}>{sectionType}</td>
     <td style={styles.td}>
-      <span
+      {/* <span
         style={{
           display: 'inline-flex',
           alignItems: 'center',
@@ -195,8 +202,15 @@ const TableRow = ({ item, status, target, limit, reviewer }) => (
           backgroundColor:
             status === 'Done'
               ? 'rgba(34, 197, 94, 0.1)'
-              : 'rgba(234, 179, 8, 0.1)',
-          color: status === 'Done' ? '#4ade80' : '#fbbf24',
+              : status === 'In Process'
+                ? 'rgba(234, 179, 8, 0.1)'
+                : 'rgba(107, 114, 128, 0.1)',
+          color:
+            status === 'Done'
+              ? '#4ade80'
+              : status === 'In Process'
+                ? '#fbbf24'
+                : '#9ca3af',
         }}
       >
         <div
@@ -204,11 +218,16 @@ const TableRow = ({ item, status, target, limit, reviewer }) => (
             width: 8,
             height: 8,
             borderRadius: '50%',
-            backgroundColor: status === 'Done' ? '#4ade80' : '#fbbf24',
+            backgroundColor:
+              status === 'Done'
+                ? '#4ade80'
+                : status === 'In Process'
+                  ? '#fbbf24'
+                  : '#9ca3af',
           }}
         />
         {status}
-      </span>
+      </span> */}
     </td>
     <td style={{ ...styles.td, color: '#e2e8f0' }}>{target}</td>
     <td style={{ ...styles.td, color: '#e2e8f0' }}>{limit}</td>
@@ -253,6 +272,65 @@ export const DashboardPage = () => {
   const [weeklyKmLoading, setWeeklyKmLoading] = useState(false);
   const [dayNightKmLoading, setDayNightKmLoading] = useState(false);
   const [selectedGroupForDayNight, setSelectedGroupForDayNight] = useState('');
+
+  // New states for tabs and filtering
+  const [activeTab, setActiveTab] = useState('outline');
+  const [selectedTableGroup, setSelectedTableGroup] = useState('all');
+
+  // Table data for different tabs
+  const tabsData = {
+    outline: {
+      name: 'Outline',
+      count: null,
+      data: [
+        { item: 'Cover page', sectionType: 'Compliance', status: 'In Process', target: '18', limit: '5', reviewer: 'Eddie Lake', group: 'Group A' },
+        { item: 'Table of contents', sectionType: 'Documentation', status: 'Done', target: '29', limit: '24', reviewer: 'Eddie Lake', group: 'Group A' },
+        { item: 'Executive summary', sectionType: 'Management', status: 'Done', target: '10', limit: '13', reviewer: 'Eddie Lake', group: 'Group B' },
+        { item: 'Project overview', sectionType: 'Technical', status: 'Not Started', target: '15', limit: '20', reviewer: 'Sarah Chen', group: 'Group B' },
+        { item: 'Risk assessment', sectionType: 'Compliance', status: 'In Process', target: '12', limit: '18', reviewer: 'Mike Johnson', group: 'Group C' },
+      ],
+    },
+    pastPerformance: {
+      name: 'Past Performance',
+      count: 3,
+      data: [
+        { item: 'Project Alpha completion', sectionType: 'Historical', status: 'Done', target: '25', limit: '30', reviewer: 'Sarah Chen', group: 'Group A' },
+        { item: 'Client testimonials', sectionType: 'Reference', status: 'Done', target: '8', limit: '10', reviewer: 'Mike Johnson', group: 'Group A' },
+        { item: 'Performance metrics', sectionType: 'Analytics', status: 'In Process', target: '15', limit: '20', reviewer: 'Eddie Lake', group: 'Group B' },
+        { item: 'Case studies', sectionType: 'Documentation', status: 'Not Started', target: '12', limit: '15', reviewer: 'Sarah Chen', group: 'Group C' },
+      ],
+    },
+    keyVehicles: {
+      name: 'Key Vehicles',
+      count: 2,
+      data: [
+        { item: 'GSA Schedule 70', sectionType: 'Contract', status: 'Done', target: '20', limit: '25', reviewer: 'Mike Johnson', group: 'Group A' },
+        { item: 'IDIQ Contract', sectionType: 'Contract', status: 'In Process', target: '18', limit: '22', reviewer: 'Eddie Lake', group: 'Group A' },
+        { item: 'State contracts', sectionType: 'Legal', status: 'Not Started', target: '10', limit: '15', reviewer: 'Sarah Chen', group: 'Group B' },
+      ],
+    },
+    focusDocuments: {
+      name: 'Focus Documents',
+      count: null,
+      data: [
+        { item: 'Technical specifications', sectionType: 'Technical', status: 'Done', target: '30', limit: '35', reviewer: 'Sarah Chen', group: 'Group A' },
+        { item: 'Cost proposal', sectionType: 'Financial', status: 'In Process', target: '22', limit: '28', reviewer: 'Mike Johnson', group: 'Group B' },
+        { item: 'Management plan', sectionType: 'Management', status: 'In Process', target: '16', limit: '20', reviewer: 'Eddie Lake', group: 'Group B' },
+        { item: 'Quality assurance plan', sectionType: 'Quality', status: 'Not Started', target: '14', limit: '18', reviewer: 'Sarah Chen', group: 'Group C' },
+        { item: 'Security documentation', sectionType: 'Compliance', status: 'Done', target: '25', limit: '30', reviewer: 'Mike Johnson', group: 'Group C' },
+      ],
+    },
+  };
+
+  const tableGroups = ['all', 'Group A', 'Group B', 'Group C'];
+
+  const getFilteredData = () => {
+    const currentData = tabsData[activeTab].data;
+    if (selectedTableGroup === 'all') {
+      return currentData;
+    }
+    return currentData.filter((item) => item.group === selectedTableGroup);
+  };
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -329,7 +407,6 @@ export const DashboardPage = () => {
         const from = new Date();
         from.setDate(to.getDate() - 7);
 
-        // Changed deviceId to groupId
         const url = `/api/dashboard/daynightkm?&from=${from.toISOString()}&to=${to.toISOString()}&groupId=${selectedGroupForDayNight}`;
         const response = await fetch(url);
 
@@ -443,9 +520,9 @@ export const DashboardPage = () => {
             <StatCard
               type="dayNightKm"
               data={dayNightKmData}
-              groups={groups} // Changed from devices to groups
-              selectedGroup={selectedGroupForDayNight} // Changed from selectedDevice
-              onGroupChange={(e) => setSelectedGroupForDayNight(e.target.value)} // Changed from onDeviceChange
+              groups={groups}
+              selectedGroup={selectedGroupForDayNight}
+              onGroupChange={(e) => setSelectedGroupForDayNight(e.target.value)}
               loading={dayNightKmLoading}
             />
           </div>
@@ -541,73 +618,37 @@ export const DashboardPage = () => {
             </ResponsiveContainer>
           </div>
 
+          {/* Updated Table Section with Tabs and Filter */}
           <div style={styles.tableSection}>
             <div style={styles.tableHeader} className="table-header">
               <div style={styles.tabButtons}>
-                <button
-                  type="button"
-                  style={{
-                    ...styles.tabBtn,
-                    backgroundColor: '#404040',
-                    color: '#ffffff',
-                  }}
-                >
-                  Outline
-                </button>
-                <button
-                  type="button"
-                  style={{
-                    ...styles.tabBtn,
-                    backgroundColor: 'transparent',
-                    color: '#94a3b8',
-                  }}
-                >
-                  Past Performance
-                  {' '}
-                  <span
+                {Object.entries(tabsData).map(([key, tab]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setActiveTab(key)}
                     style={{
-                      marginLeft: 4,
-                      fontSize: 12,
-                      backgroundColor: '#404040',
-                      padding: '2px 6px',
-                      borderRadius: 4,
+                      ...styles.tabBtn,
+                      backgroundColor: activeTab === key ? '#404040' : 'transparent',
+                      color: activeTab === key ? '#ffffff' : '#94a3b8',
                     }}
                   >
-                    3
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  style={{
-                    ...styles.tabBtn,
-                    backgroundColor: 'transparent',
-                    color: '#94a3b8',
-                  }}
-                >
-                  Key Vehicles
-                  {' '}
-                  <span
-                    style={{
-                      marginLeft: 4,
-                      fontSize: 12,
-                      backgroundColor: '#404040',
-                      padding: '2px 6px',
-                      borderRadius: 4,
-                    }}
-                  >
-                    2
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  style={{
-                    ...styles.tabBtn,
-                    backgroundColor: 'transparent',
-                    color: '#94a3b8',
-                  }}
-                >
-                  Focus Documents
-                </button>
+                    {tab.name}
+                    {tab.count && (
+                      <span
+                        style={{
+                          marginLeft: 4,
+                          fontSize: 12,
+                          backgroundColor: activeTab === key ? '#525252' : '#404040',
+                          padding: '2px 6px',
+                          borderRadius: 4,
+                        }}
+                      >
+                        {tab.count}
+                      </span>
+                    )}
+                  </button>
+                ))}
               </div>
               <div style={styles.actionButtons}>
                 <button
@@ -644,10 +685,47 @@ export const DashboardPage = () => {
                   }}
                 >
                   <span>+</span>
-                  {' '}
                   Add Section
                 </button>
               </div>
+            </div>
+
+            {/* Filter Section */}
+            <div style={styles.filterSection}>
+              <label style={{ color: '#94a3b8', fontSize: '14px', fontWeight: '500' }}>
+                Filter by Group:
+              </label>
+              <select
+                value={selectedTableGroup}
+                onChange={(e) => setSelectedTableGroup(e.target.value)}
+                style={{
+                  padding: '8px 12px',
+                  backgroundColor: '#404040',
+                  color: '#ffffff',
+                  border: '1px solid #4C4B4B',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  minWidth: '200px',
+                }}
+              >
+                {tableGroups.map((group) => (
+                  <option key={group} value={group}>
+                    {group === 'all' ? 'All Groups' : group}
+                  </option>
+                ))}
+              </select>
+              <span style={{ color: '#64748b', fontSize: '13px', marginLeft: 'auto' }}>
+                Showing
+                {' '}
+                {getFilteredData().length}
+                {' '}
+                of
+                {' '}
+                {tabsData[activeTab].data.length}
+                {' '}
+                items
+              </span>
             </div>
 
             <table style={styles.table}>
@@ -663,27 +741,16 @@ export const DashboardPage = () => {
                 </tr>
               </thead>
               <tbody>
-                <TableRow
-                  item="Cover page"
-                  status="In Process"
-                  target="18"
-                  limit="5"
-                  reviewer="Eddie Lake"
-                />
-                <TableRow
-                  item="Table of contents"
-                  status="Done"
-                  target="29"
-                  limit="24"
-                  reviewer="Eddie Lake"
-                />
-                <TableRow
-                  item="Executive summary"
-                  status="Done"
-                  target="10"
-                  limit="13"
-                  reviewer="Eddie Lake"
-                />
+                {getFilteredData().map((row, index) => (
+                  <TableRow
+                    item={row.item}
+                    sectionType={row.sectionType}
+                    status={row.status}
+                    target={row.target}
+                    limit={row.limit}
+                    reviewer={row.reviewer}
+                  />
+                ))}
               </tbody>
             </table>
           </div>
