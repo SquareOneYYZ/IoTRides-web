@@ -29,7 +29,6 @@ import scheduleReport from './common/scheduleReport';
 import MapScale from '../map/MapScale';
 import useResizableMap from './common/useResizableMap';
 import RecentReportsWrapper from './components/RecentReportWrapper';
-import { saveReportToHistory, getPeriodLabel } from './components/ReportUtils';
 
 const columnsArray = [
   ['startTime', 'reportStartTime'],
@@ -123,26 +122,11 @@ const TripReportPage = () => {
         setLoading(false);
       }
     }
-
-    // Save to history after successful report generation (only for normal reports, not export/mail)
-    if (type !== 'export' && type !== 'mail' && options.skipHistorySave !== true) {
-      await saveReportToHistory({
-        userId,
-        reportType: 'trips',
-        deviceIds: [deviceId], // Convert single deviceId to array for storage
-        groupIds: groupIds || [],
-        from,
-        to,
-        period: getPeriodLabel(from, to),
-        additionalParams: { ...otherParams },
-      });
-    }
   });
 
   const handleReRunReport = (config) => {
     if (!config) return;
 
-    // Convert deviceIds array back to single deviceId for the API
     const deviceId = Array.isArray(config.deviceIds) && config.deviceIds.length > 0
       ? config.deviceIds[0]
       : config.deviceIds;

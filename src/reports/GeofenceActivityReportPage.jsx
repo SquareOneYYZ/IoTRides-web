@@ -42,7 +42,6 @@ import MapCamera from '../map/MapCamera';
 import MapScale from '../map/MapScale';
 import useResizableMap from './common/useResizableMap';
 import RecentReportsWrapper from './components/RecentReportWrapper';
-import { saveReportToHistory, getPeriodLabel } from './components/ReportUtils';
 
 const columnsArray = [
   ['deviceId', 'sharedDevice'],
@@ -223,7 +222,7 @@ const GeofenceDistanceReportPage = () => {
       setLoading(true);
       try {
         const response = await fetch(
-          `/api/devicegeofencedistances?${query.toString()}`,
+          `/api/reports/geofencedistances?${query.toString()}`,
           {
             headers: { Accept: 'application/json' },
           },
@@ -280,25 +279,6 @@ const GeofenceDistanceReportPage = () => {
         setLoading(false);
       }
     }
-
-    // Save to history after successful report generation
-    if (type !== 'export' && type !== 'mail' && options.skipHistorySave !== true) {
-      await saveReportToHistory({
-        userId,
-        reportType: 'geofence',
-        deviceIds: [deviceId],
-        groupIds: groupIds || [],
-        from,
-        to,
-        period: getPeriodLabel(from, to),
-        additionalParams: {
-          selectedTypes,
-          selectedSegmentType,
-          selectedGeofences,
-          minDistance,
-        },
-      });
-    }
   });
 
   const handleReRunReport = (config) => {
@@ -308,7 +288,6 @@ const GeofenceDistanceReportPage = () => {
       ? config.deviceIds[0]
       : config.deviceIds;
 
-    // Restore filter states from additionalParams
     if (config.additionalParams) {
       if (config.additionalParams.selectedTypes) {
         setSelectedTypes(config.additionalParams.selectedTypes);
@@ -590,7 +569,7 @@ const GeofenceDistanceReportPage = () => {
 
             {!loading && items.length === 0 && (
               <RecentReportsWrapper
-                reportType="geofence"
+                reportType="devicegeofencedistances"
                 onReRunReport={handleReRunReport}
               />
             )}

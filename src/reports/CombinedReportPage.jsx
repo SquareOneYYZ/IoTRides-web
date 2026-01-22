@@ -20,7 +20,6 @@ import MapRouteCoordinates from '../map/MapRouteCoordinates';
 import MapScale from '../map/MapScale';
 import useResizableMap from './common/useResizableMap';
 import RecentReportsWrapper from './components/RecentReportWrapper';
-import { saveReportToHistory, getPeriodLabel } from './components/ReportUtils';
 
 const CombinedReportPage = () => {
   const classes = useReportStyles();
@@ -57,19 +56,6 @@ const CombinedReportPage = () => {
 
       const data = await response.json();
       setItems(data);
-
-      if (!options.skipHistorySave) {
-        await saveReportToHistory({
-          userId,
-          reportType: 'combined',
-          deviceIds,
-          groupIds,
-          from,
-          to,
-          period: getPeriodLabel(from, to),
-          additionalParams: {},
-        });
-      }
     } finally {
       setLoading(false);
     }
@@ -86,7 +72,6 @@ const CombinedReportPage = () => {
       return;
     }
 
-    // IMPORTANT: Always pass skipHistorySave when re-running
     handleSubmit(
       {
         deviceIds: config.deviceIds || [],
@@ -94,7 +79,7 @@ const CombinedReportPage = () => {
         from: config.from,
         to: config.to,
       },
-      { skipHistorySave: true }, // Don't save when viewing saved reports
+      { skipHistorySave: true },
     );
   };
 

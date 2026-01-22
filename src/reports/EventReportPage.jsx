@@ -47,7 +47,6 @@ import MapScale from '../map/MapScale';
 import SelectField from '../common/components/SelectField';
 import ReplayControl from './components/ReplayControl';
 import RecentReportsWrapper from './components/RecentReportWrapper';
-import { saveReportToHistory, getPeriodLabel } from './components/ReportUtils';
 
 const columnsArray = [
   ['eventTime', 'positionFixTime'],
@@ -188,19 +187,6 @@ const EventReportPage = () => {
           }));
           const filteredEvents = filterEvents(modifiedData, typesToExclude);
           setItems(filteredEvents);
-
-          if (options.skipHistorySave !== true) {
-            await saveReportToHistory({
-              userId,
-              reportType: 'events',
-              deviceIds,
-              groupIds,
-              from,
-              to,
-              period: getPeriodLabel(from, to),
-              additionalParams: { },
-            });
-          }
         } else {
           throw Error(await response.text());
         }

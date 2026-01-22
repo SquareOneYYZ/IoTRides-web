@@ -19,7 +19,6 @@ import useReportStyles from './common/useReportStyles';
 import TableShimmer from '../common/components/TableShimmer';
 import scheduleReport from './common/scheduleReport';
 import RecentReportsWrapper from './components/RecentReportWrapper';
-import { saveReportToHistory, getPeriodLabel } from './components/ReportUtils';
 
 const columnsArray = [
   ['startTime', 'reportStartDate'],
@@ -79,28 +78,11 @@ const SummaryReportPage = () => {
         setLoading(false);
       }
     }
-
-    // Save to history after successful report generation
-    if (type !== 'export' && type !== 'mail' && options.skipHistorySave !== true) {
-      await saveReportToHistory({
-        userId,
-        reportType: 'summary',
-        deviceIds: Array.isArray(deviceIds) ? deviceIds : [deviceIds],
-        groupIds: groupIds || [],
-        from,
-        to,
-        period: getPeriodLabel(from, to),
-        additionalParams: {
-          daily,
-        },
-      });
-    }
   });
 
   const handleReRunReport = (config) => {
     if (!config) return;
 
-    // Restore filter states from additionalParams
     if (config.additionalParams && config.additionalParams.daily !== undefined) {
       setDaily(config.additionalParams.daily);
     }

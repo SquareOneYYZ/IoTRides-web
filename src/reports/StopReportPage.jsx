@@ -29,7 +29,6 @@ import scheduleReport from './common/scheduleReport';
 import MapScale from '../map/MapScale';
 import useResizableMap from './common/useResizableMap';
 import RecentReportsWrapper from './components/RecentReportWrapper';
-import { saveReportToHistory, getPeriodLabel } from './components/ReportUtils';
 
 const columnsArray = [
   ['startTime', 'reportStartTime'],
@@ -79,20 +78,6 @@ const StopReportPage = () => {
       } finally {
         setLoading(false);
       }
-    }
-
-    // Save to history after successful report generation
-    if (type !== 'export' && type !== 'mail' && options.skipHistorySave !== true) {
-      await saveReportToHistory({
-        userId,
-        reportType: 'stops',
-        deviceIds: [deviceId],
-        groupIds: groupIds || [],
-        from,
-        to,
-        period: getPeriodLabel(from, to),
-        additionalParams: { ...otherParams },
-      });
     }
   });
 
