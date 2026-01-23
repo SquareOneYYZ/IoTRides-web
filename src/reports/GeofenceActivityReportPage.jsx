@@ -73,13 +73,10 @@ const GeofenceDistanceReportPage = () => {
   const classes = useReportStyles();
   const t = useTranslation();
   const { containerRef, mapHeight, handleMouseDown } = useResizableMap(60, 20, 80);
-
   const devices = useSelector((state) => state.devices.items);
   const userId = useSelector((state) => state.session.user?.id || 1);
-
   const distanceUnit = useAttributePreference('distanceUnit');
   const [filterRange, setFilterRange] = useState({ from: null, to: null });
-
   const [columns, setColumns] = usePersistedState('geofenceDistanceColumns', [
     'deviceId',
     'geofenceId',
@@ -574,6 +571,7 @@ const GeofenceDistanceReportPage = () => {
               />
             )}
 
+            {items.length > 0 && (
             <Table>
               <TableHead>
                 <TableRow>
@@ -616,6 +614,7 @@ const GeofenceDistanceReportPage = () => {
                 )}
               </TableBody>
             </Table>
+            )}
           </div>
         </div>
       </div>

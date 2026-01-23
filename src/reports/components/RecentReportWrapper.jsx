@@ -25,16 +25,14 @@ import {
   createFavoriteReport,
   parseReportConfig,
 } from './ReportUtils';
+import { useTranslation } from '../../common/components/LocalizationProvider';
 
 const useStyles = makeStyles((theme) => ({
   wrapper: {
-    height: '100%',
     display: 'flex',
     flexDirection: 'column',
   },
   reportsContainer: {
-    flex: 1,
-    overflow: 'auto',
     padding: theme.spacing(3),
     backgroundColor: theme.palette.background.default,
   },
@@ -55,10 +53,7 @@ const useStyles = makeStyles((theme) => ({
     justifyContent: 'center',
     gap: theme.spacing(1),
     marginBottom: theme.spacing(2),
-    position: 'sticky',
-    top: 0,
     backgroundColor: theme.palette.background.default,
-    zIndex: 1,
     paddingBottom: theme.spacing(1),
   },
   reportCard: {
@@ -184,6 +179,7 @@ const FavoriteReportCard = ({
   classes,
   onReRun,
   onUnfavorite,
+  t,
 }) => (
   <Paper className={classes.reportCard} elevation={1}>
     <Box className={classes.reportHeader}>
@@ -191,7 +187,7 @@ const FavoriteReportCard = ({
         <Box className={classes.reportTitle}>
           <StarIcon sx={{ color: 'warning.main' }} />
           <Typography variant="h6">
-            {capitalizeFirstLetter(report.name)}
+            {t(`reportTitle${capitalizeFirstLetter(report.reportType || 'favorite')}`)}
           </Typography>
         </Box>
 
@@ -266,50 +262,16 @@ const RecentReportCard = ({
   onFavorite,
   onDelete,
   isFavorite,
+  t,
 }) => (
+
   <Paper className={classes.reportCard} elevation={1}>
     <Box className={classes.reportHeader}>
-      <Box className={classes.reportInfo}>
-        <Box className={classes.reportTitle}>
-          <Typography variant="h6">
-            {capitalizeFirstLetter(`${reportType} Report`)}
-          </Typography>
-        </Box>
-
-        <Box className={classes.reportMeta}>
-          <Box className={classes.metaItem}>
-            <ClockIcon fontSize="small" />
-            <span>
-              <strong>Generated: </strong>
-              {' '}
-              {formatDate(report.generatedAt)}
-            </span>
-          </Box>
-          <Box className={classes.metaItem}>
-            <CalendarIcon fontSize="small" />
-            <strong>Period:</strong>
-            {' '}
-            {getPeriodDisplay(report)}
-          </Box>
-          {report.deviceIds && parseIds(report.deviceIds) > 0 && (
-            <Box className={classes.metaItem}>
-              <SettingsIcon fontSize="small" />
-              <strong>Devices:</strong>
-              {' '}
-              {getDeviceNames(report.deviceIds, devices)}
-            </Box>
-          )}
-          {report.groupIds && parseIds(report.groupIds) > 0 && (
-            <Box className={classes.metaItem}>
-              <SettingsIcon fontSize="small" />
-              <strong>Groups:</strong>
-              {' '}
-              {getGroupNames(report.groupIds, groups)}
-            </Box>
-          )}
-        </Box>
+      <Box className={classes.reportTitle}>
+        <Typography variant="h6">
+          {t(`reportTitle${capitalizeFirstLetter(reportType)}`)}
+        </Typography>
       </Box>
-
       <Box className={classes.actions}>
         <IconButton
           size="small"
@@ -346,12 +308,48 @@ const RecentReportCard = ({
         </IconButton>
       </Box>
     </Box>
+
+    <Box className={classes.reportMeta}>
+      <Box className={classes.metaItem}>
+        <ClockIcon fontSize="small" />
+        <span>
+          <strong>Generated: </strong>
+          {' '}
+          {formatDate(report.generatedAt)}
+        </span>
+      </Box>
+      <Box className={classes.metaItem}>
+        <CalendarIcon fontSize="small" />
+        <strong>Period:</strong>
+        {' '}
+        {getPeriodDisplay(report)}
+      </Box>
+      {report.deviceIds && parseIds(report.deviceIds) > 0 && (
+        <Box className={classes.metaItem}>
+          <SettingsIcon fontSize="small" />
+          <strong>Devices:</strong>
+          {' '}
+          {getDeviceNames(report.deviceIds, devices)}
+        </Box>
+      )}
+      {report.groupIds && parseIds(report.groupIds) > 0 && (
+        <Box className={classes.metaItem}>
+          <SettingsIcon fontSize="small" />
+          <strong>Groups:</strong>
+          {' '}
+          {getGroupNames(report.groupIds, groups)}
+        </Box>
+      )}
+    </Box>
+
   </Paper>
 );
 
 const RecentReportsWrapper = ({ reportType, onReRunReport }) => {
   const classes = useStyles();
   const devices = useSelector((state) => state.devices.items);
+  const t = useTranslation();
+
   const groups = useSelector((state) => state.groups.items);
   const userId = useSelector((state) => state.session.user?.id || 1);
   const [recentReports, setRecentReports] = useState([]);
@@ -470,7 +468,7 @@ const RecentReportsWrapper = ({ reportType, onReRunReport }) => {
           <Box className={classes.column}>
             <Box className={classes.sectionHeader}>
               <ClockIcon color="primary" />
-              <Typography variant="h5">Recent Reports</Typography>
+              <Typography variant="h5">{t('reportRecentReports')}</Typography>
             </Box>
 
             {loading && (
@@ -507,6 +505,7 @@ const RecentReportsWrapper = ({ reportType, onReRunReport }) => {
                   onFavorite={handleToggleFavorite}
                   onDelete={handleDeleteRecent}
                   isFavorite={isReportFavorited(report)}
+                  t={t}
                 />
               ))
             )}
@@ -526,7 +525,7 @@ const RecentReportsWrapper = ({ reportType, onReRunReport }) => {
           <Box className={classes.column}>
             <Box className={classes.sectionHeader}>
               <StarIcon sx={{ color: 'warning.main' }} />
-              <Typography variant="h5">Favorite Reports</Typography>
+              <Typography variant="h5">{t('reportFavoriteReports')}</Typography>
             </Box>
 
             {favoriteReports.length === 0 && (
@@ -549,6 +548,7 @@ const RecentReportsWrapper = ({ reportType, onReRunReport }) => {
                 classes={classes}
                 onReRun={handleReRun}
                 onUnfavorite={handleUnfavorite}
+                t={t}
               />
             ))}
           </Box>

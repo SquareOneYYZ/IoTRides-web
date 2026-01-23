@@ -224,7 +224,7 @@ const StopReportPage = () => {
               onReRunReport={handleReRunReport}
             />
           )}
-
+          {items.length > 0 && (
           <Table>
             <TableHead>
               <TableRow>
@@ -259,6 +259,7 @@ const StopReportPage = () => {
               )}
             </TableBody>
           </Table>
+          )}
         </div>
       </div>
     </PageLayout>

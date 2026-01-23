@@ -158,7 +158,7 @@ const SummaryReportPage = () => {
           onReRunReport={handleReRunReport}
         />
       )}
-
+      {items.length > 0 && (
       <Table>
         <TableHead>
           <TableRow>
@@ -179,6 +179,7 @@ const SummaryReportPage = () => {
           )) : (<TableShimmer columns={columns.length + 1} />)}
         </TableBody>
       </Table>
+      )}
     </PageLayout>
   );
 };

@@ -20,21 +20,17 @@ import {
 } from '../common/util/converter';
 import useReportStyles from './common/useReportStyles';
 import RecentReportsWrapper from './components/RecentReportWrapper';
-import { saveReportToHistory, getPeriodLabel } from './components/ReportUtils';
 
 const ChartReportPage = () => {
   const classes = useReportStyles();
   const theme = useTheme();
   const t = useTranslation();
-
   const positionAttributes = usePositionAttributes(t);
   const userId = useSelector((state) => state.session.user?.id || 1);
-
   const distanceUnit = useAttributePreference('distanceUnit');
   const altitudeUnit = useAttributePreference('altitudeUnit');
   const speedUnit = useAttributePreference('speedUnit');
   const volumeUnit = useAttributePreference('volumeUnit');
-
   const [items, setItems] = useState([]);
   const [types, setTypes] = useState(['speed']);
   const [selectedTypes, setSelectedTypes] = useState(['speed']);
@@ -120,23 +116,6 @@ const ChartReportPage = () => {
     } finally {
       setLoading(false);
     }
-
-    // Save to history after successful report generation
-    if (options.skipHistorySave !== true) {
-      await saveReportToHistory({
-        userId,
-        reportType: 'chart',
-        deviceIds: [deviceId],
-        groupIds: groupIds || [],
-        from,
-        to,
-        period: getPeriodLabel(from, to),
-        additionalParams: {
-          selectedTypes,
-          timeType,
-        },
-      });
-    }
   });
 
   const handleReRunReport = (config) => {
@@ -146,7 +125,6 @@ const ChartReportPage = () => {
       ? config.deviceIds[0]
       : config.deviceIds;
 
-    // Restore filter states from additionalParams
     if (config.additionalParams) {
       if (config.additionalParams.selectedTypes) {
         setSelectedTypes(config.additionalParams.selectedTypes);
@@ -239,7 +217,7 @@ const ChartReportPage = () => {
 
       {!loading && displayData.length === 0 && (
         <RecentReportsWrapper
-          reportType="chart"
+          reportType="route"
           onReRunReport={handleReRunReport}
         />
       )}

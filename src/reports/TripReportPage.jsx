@@ -266,7 +266,7 @@ const TripReportPage = () => {
               onReRunReport={handleReRunReport}
             />
           )}
-
+          {items.length > 0 && (
           <Table>
             <TableHead>
               <TableRow>
@@ -297,6 +297,7 @@ const TripReportPage = () => {
               )) : (<TableShimmer columns={columns.length + 1} startAction />)}
             </TableBody>
           </Table>
+          )}
         </div>
       </div>
 

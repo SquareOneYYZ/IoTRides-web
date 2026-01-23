@@ -455,6 +455,7 @@ const EventReportPage = () => {
             onReRunReport={handleReRunReport}
           />
           )}
+          {items.length > 0 && (
           <Table>
             <TableHead>
               <TableRow>
@@ -490,13 +491,13 @@ const EventReportPage = () => {
                     </TableCell>
                     <TableCell className={classes.columnAction} padding="none">
                       {item.positionId && (
-                        <IconButton
-                          size="small"
-                          onClick={() => handleReplayStart(item)}
-                          disabled={replayLoading}
-                        >
-                          <ReplayIcon fontSize="small" />
-                        </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleReplayStart(item)}
+                        disabled={replayLoading}
+                      >
+                        <ReplayIcon fontSize="small" />
+                      </IconButton>
                       )}
                     </TableCell>
                     {columns.map((key) => (
@@ -509,6 +510,7 @@ const EventReportPage = () => {
               )}
             </TableBody>
           </Table>
+          )}
         </div>
       </div>
     </PageLayout>
