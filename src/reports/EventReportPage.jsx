@@ -46,6 +46,7 @@ import scheduleReport from './common/scheduleReport';
 import MapScale from '../map/MapScale';
 import SelectField from '../common/components/SelectField';
 import ReplayControl from './components/ReplayControl';
+import RecentReportsWrapper from './components/RecentReportWrapper';
 
 const columnsArray = [
   ['eventTime', 'positionFixTime'],
@@ -60,31 +61,26 @@ const filterEvents = (events, typesToExclude) => {
   const excludeSet = new Set(typesToExclude);
   return events.filter((event) => !excludeSet.has(event.type));
 };
-
 const columnsMap = new Map(columnsArray);
 
 const EventReportPage = () => {
+  const userId = useSelector((state) => state.session.user?.id || 1);
   const navigate = useNavigate();
   const classes = useReportStyles();
   const t = useTranslation();
-
   const devices = useSelector((state) => state.devices.items);
   const geofences = useSelector((state) => state.geofences.items);
-
   const speedUnit = useAttributePreference('speedUnit');
   const distanceUnit = useAttributePreference('distanceUnit');
-
   const [allEventTypes, setAllEventTypes] = useState([
     ['allEvents', 'eventAll'],
   ]);
-
   const alarms = useTranslationKeys((it) => it.startsWith('alarm')).map(
     (it) => ({
       key: unprefixString('alarm', it),
       name: t(it),
     }),
   );
-
   const [columns, setColumns] = usePersistedState('eventColumns', [
     'eventTime',
     'type',
@@ -101,7 +97,6 @@ const EventReportPage = () => {
   const [replayPositions, setReplayPositions] = useState([]);
   const [replayLoading, setReplayLoading] = useState(false);
   const [eventPosition, setEventPosition] = useState(null);
-
   const deviceName = useSelector((state) => {
     if (selectedItem?.deviceId) {
       const device = state.devices.items[selectedItem.deviceId];
@@ -152,8 +147,8 @@ const EventReportPage = () => {
     }
   }, []);
 
-  const handleSubmit = useCatch(async ({ deviceId, from, to, type }) => {
-    const query = new URLSearchParams({ deviceId, from, to });
+  const handleSubmit = useCatch(async ({ deviceIds, groupIds, from, to, type }, options = {}) => {
+    const query = new URLSearchParams({ deviceId: deviceIds[0], from, to });
     eventTypes.forEach((it) => query.append('type', it));
     if (eventTypes[0] !== 'allEvents' && eventTypes.includes('alarm')) {
       alarmTypes.forEach((it) => query.append('alarm', it));
@@ -200,6 +195,21 @@ const EventReportPage = () => {
       }
     }
   });
+
+  const handleReRunReport = (config) => {
+    if (!config) return;
+
+    handleSubmit(
+      {
+        deviceIds: config.deviceIds || [],
+        groupIds: config.groupIds || [],
+        from: config.from,
+        to: config.to,
+        ...config.additionalParams,
+      },
+      { skipHistorySave: true },
+    );
+  };
 
   const handleSchedule = useCatch(async (deviceIds, groupIds, report) => {
     report.type = 'events';
@@ -385,6 +395,7 @@ const EventReportPage = () => {
             )}
           </div>
         )}
+
         <div className={classes.containerMain}>
           <div className={classes.header}>
             <ReportFilter
@@ -392,6 +403,7 @@ const EventReportPage = () => {
               handleSchedule={handleSchedule}
               loading={loading}
             >
+
               <div className={classes.filterItem}>
                 <FormControl fullWidth>
                   <InputLabel>{t('reportEventTypes')}</InputLabel>
@@ -437,6 +449,13 @@ const EventReportPage = () => {
               />
             </ReportFilter>
           </div>
+          {!loading && items.length === 0 && (
+          <RecentReportsWrapper
+            reportType="events"
+            onReRunReport={handleReRunReport}
+          />
+          )}
+          {items.length > 0 && (
           <Table>
             <TableHead>
               <TableRow>
@@ -472,13 +491,13 @@ const EventReportPage = () => {
                     </TableCell>
                     <TableCell className={classes.columnAction} padding="none">
                       {item.positionId && (
-                        <IconButton
-                          size="small"
-                          onClick={() => handleReplayStart(item)}
-                          disabled={replayLoading}
-                        >
-                          <ReplayIcon fontSize="small" />
-                        </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleReplayStart(item)}
+                        disabled={replayLoading}
+                      >
+                        <ReplayIcon fontSize="small" />
+                      </IconButton>
                       )}
                     </TableCell>
                     {columns.map((key) => (
@@ -491,6 +510,7 @@ const EventReportPage = () => {
               )}
             </TableBody>
           </Table>
+          )}
         </div>
       </div>
     </PageLayout>
