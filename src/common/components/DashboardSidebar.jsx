@@ -15,6 +15,10 @@ import {
   ExpandLess,
 } from '@mui/icons-material';
 import PersonIcon from '@mui/icons-material/Person';
+import PauseCircleFilledIcon from '@mui/icons-material/PauseCircleFilled';
+import RouteIcon from '@mui/icons-material/Route';
+import FolderIcon from '@mui/icons-material/Folder';
+import CreateIcon from '@mui/icons-material/Create';
 
 const styles = {
   sidebar: {
@@ -93,7 +97,7 @@ const styles = {
   },
   sidebarFooter: {
     padding: '12px',
-    borderTop: '1px solid #1f2937',
+    borderTop: '1px solid #424242',
     display: 'flex',
     flexDirection: 'column',
     gap: '8px',
@@ -131,17 +135,30 @@ export const DashboardSidebar = ({
       },
       { key: 'geofence', label: 'Geofence Activity', href: '/reports/geofence-activity', icon: Place },
       { key: 'trips', label: 'Trips Report', href: '/reports/trip', icon: PieChart },
+      { key: 'replay', label: 'Replay', href: '/reports/replay', icon: RouteIcon },
+      { key: 'stops', label: 'Stops', href: '/reports/stop', icon: PauseCircleFilledIcon },
       { key: 'reportsMore', label: 'More', href: '/reports/combined', icon: MoreHoriz },
     ],
     settings: [
       { key: 'devices', label: 'Devices', href: '/settings/devices', icon: Devices },
-      { key: 'preferences', label: 'Preferences', href: '/settings/preferences', icon: Settings },
       {
         key: 'notifications',
         label: 'Notifications',
         href: '/settings/notifications',
         icon: Notifications,
       },
+      {
+        key: 'Groups',
+        label: 'Groups',
+        href: '/settings/groups',
+        icon: FolderIcon,
+      }, {
+        key: 'geofences',
+        label: 'Geofences',
+        href: '/settings/geofences',
+        icon: CreateIcon,
+      },
+      { key: 'preferences', label: 'Preferences', href: '/settings/preferences', icon: Settings },
       { key: 'settingsMore', label: 'More', href: '/settings/preferences', icon: MoreHoriz },
     ],
   };

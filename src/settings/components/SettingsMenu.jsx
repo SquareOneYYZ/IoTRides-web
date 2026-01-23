@@ -25,7 +25,7 @@ import {
 import useFeatures from '../../common/util/useFeatures';
 import MenuItem from '../../common/components/MenuItem';
 
-const SettingsMenu = () => {
+const SettingsMenu = ({ miniVariant = false }) => {
   const t = useTranslation();
   const location = useLocation();
 
@@ -41,117 +41,131 @@ const SettingsMenu = () => {
 
   return (
     <>
-      <List>
+      <List sx={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
         <MenuItem
           title={t('sharedPreferences')}
           link="/settings/preferences"
           icon={<SettingsIcon />}
           selected={location.pathname === '/settings/preferences'}
+          miniVariant={miniVariant}
         />
         {!readonly && (
-          <>
-            <MenuItem
-              title={t('sharedNotifications')}
-              link="/settings/notifications"
-              icon={<NotificationsIcon />}
-              selected={location.pathname.startsWith('/settings/notification')}
-            />
-            <MenuItem
-              title={t('settingsUser')}
-              link={`/settings/user/${userId}`}
-              icon={<PersonIcon />}
-              selected={location.pathname === `/settings/user/${userId}`}
-            />
-            <MenuItem
-              title={t('deviceTitle')}
-              link="/settings/devices"
-              icon={<SmartphoneIcon />}
-              selected={location.pathname.startsWith('/settings/device')}
-            />
-            <MenuItem
-              title={t('sharedGeofences')}
-              link="/geofences"
-              icon={<CreateIcon />}
-              selected={location.pathname.startsWith('/settings/geofence')}
-            />
-            {!features.disableGroups && (
-              <MenuItem
-                title={t('settingsGroups')}
-                link="/settings/groups"
-                icon={<FolderIcon />}
-                selected={location.pathname.startsWith('/settings/group')}
-              />
+        <>
+          <MenuItem
+            title={t('sharedNotifications')}
+            link="/settings/notifications"
+            icon={<NotificationsIcon />}
+            selected={location.pathname.startsWith('/settings/notification')}
+            miniVariant={miniVariant}
+          />
+          <MenuItem
+            title={t('settingsUser')}
+            link={`/settings/user/${userId}`}
+            icon={<PersonIcon />}
+            selected={location.pathname === `/settings/user/${userId}`}
+            miniVariant={miniVariant}
+          />
+          <MenuItem
+            title={t('deviceTitle')}
+            link="/settings/devices"
+            icon={<SmartphoneIcon />}
+            selected={location.pathname.startsWith('/settings/device')}
+            miniVariant={miniVariant}
+          />
+          <MenuItem
+            title={t('sharedGeofences')}
+            link="/geofences"
+            icon={<CreateIcon />}
+            selected={location.pathname.startsWith('/settings/geofence')}
+            miniVariant={miniVariant}
+          />
+          {!features.disableGroups && (
+          <MenuItem
+            title={t('settingsGroups')}
+            link="/settings/groups"
+            icon={<FolderIcon />}
+            selected={location.pathname.startsWith('/settings/group')}
+            miniVariant={miniVariant}
+          />
+          )}
+          {admin && (
+          <MenuItem
+            title={t('settingsOrganization')}
+            link="/settings/organizations"
+            icon={<CorporateFareIcon />}
+            selected={location.pathname.startsWith(
+              '/settings/organization',
             )}
-            {admin && (
-              <MenuItem
-                title={t('settingsOrganization')}
-                link="/settings/organizations"
-                icon={<CorporateFareIcon />}
-                selected={location.pathname.startsWith(
-                  '/settings/organization',
-                )}
-              />
-            )}
-            {!features.disableDrivers && (
-              <MenuItem
-                title={t('sharedDrivers')}
-                link="/settings/drivers"
-                icon={<PersonIcon />}
-                selected={location.pathname.startsWith('/settings/driver')}
-              />
-            )}
-            {!features.disableCalendars && (
-              <MenuItem
-                title={t('sharedCalendars')}
-                link="/settings/calendars"
-                icon={<TodayIcon />}
-                selected={location.pathname.startsWith('/settings/calendar')}
-              />
-            )}
-            {!features.disableComputedAttributes && (
-              <MenuItem
-                title={t('sharedComputedAttributes')}
-                link="/settings/attributes"
-                icon={<StorageIcon />}
-                selected={location.pathname.startsWith('/settings/attribute')}
-              />
-            )}
-            {!features.disableMaintenance && (
-              <MenuItem
-                title={t('sharedMaintenance')}
-                link="/settings/maintenances"
-                icon={<BuildIcon />}
-                selected={location.pathname.startsWith('/settings/maintenance')}
-              />
-            )}
-            {!features.disableSavedCommands && (
-              <MenuItem
-                title={t('sharedSavedCommands')}
-                link="/settings/commands"
-                icon={<PublishIcon />}
-                selected={location.pathname.startsWith('/settings/command')}
-              />
-            )}
-            {supportLink && (
-              <MenuItem
-                title={t('settingsSupport')}
-                link={supportLink}
-                icon={<HelpIcon />}
-              />
-            )}
-          </>
+            miniVariant={miniVariant}
+          />
+          )}
+          {!features.disableDrivers && (
+          <MenuItem
+            title={t('sharedDrivers')}
+            link="/settings/drivers"
+            icon={<PersonIcon />}
+            selected={location.pathname.startsWith('/settings/driver')}
+            miniVariant={miniVariant}
+          />
+          )}
+          {!features.disableCalendars && (
+          <MenuItem
+            title={t('sharedCalendars')}
+            link="/settings/calendars"
+            icon={<TodayIcon />}
+            selected={location.pathname.startsWith('/settings/calendar')}
+            miniVariant={miniVariant}
+          />
+          )}
+          {!features.disableComputedAttributes && (
+          <MenuItem
+            title={t('sharedComputedAttributes')}
+            link="/settings/attributes"
+            icon={<StorageIcon />}
+            selected={location.pathname.startsWith('/settings/attribute')}
+            miniVariant={miniVariant}
+          />
+          )}
+          {!features.disableMaintenance && (
+          <MenuItem
+            title={t('sharedMaintenance')}
+            link="/settings/maintenances"
+            icon={<BuildIcon />}
+            selected={location.pathname.startsWith('/settings/maintenance')}
+            miniVariant={miniVariant}
+          />
+          )}
+          {!features.disableSavedCommands && (
+          <MenuItem
+            title={t('sharedSavedCommands')}
+            link="/settings/commands"
+            icon={<PublishIcon />}
+            selected={location.pathname.startsWith('/settings/command')}
+            miniVariant={miniVariant}
+          />
+          )}
+          {supportLink && (
+          <MenuItem
+            title={t('settingsSupport')}
+            link={supportLink}
+            icon={<HelpIcon />}
+            miniVariant={miniVariant}
+          />
+          )}
+        </>
         )}
       </List>
 
       {manager && (
         <>
-          <Divider />
-          <List>
+          <Divider sx={{ borderColor: '#1f2937', margin: '8px 0' }} />
+          <List sx={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <MenuItem
               title={t('serverAnnouncement')}
               link="/settings/announcement"
               icon={<CampaignIcon />}
               selected={location.pathname === '/settings/announcement'}
+              miniVariant={miniVariant}
             />
             {admin && (
               <MenuItem
@@ -159,6 +173,7 @@ const SettingsMenu = () => {
                 link="/settings/server"
                 icon={<StorageIcon />}
                 selected={location.pathname === '/settings/server'}
+                miniVariant={miniVariant}
               />
             )}
             <MenuItem
@@ -169,6 +184,7 @@ const SettingsMenu = () => {
                 location.pathname.startsWith('/settings/user')
                 && location.pathname !== `/settings/user/${userId}`
               }
+              miniVariant={miniVariant}
             />
           </List>
         </>
