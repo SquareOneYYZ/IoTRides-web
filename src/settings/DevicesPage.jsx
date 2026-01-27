@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -64,6 +64,7 @@ const filterByGlobalSearch = (keyword) => (item) => {
     item.vin,
     item.model,
     item.contact,
+    item.status,
   ];
   return searchFields.some((field) => (field || '').toLowerCase().includes(keyword.toLowerCase()));
 };
@@ -83,7 +84,7 @@ const DevicesPage = () => {
   const [filters, setFilters] = useState({
     group: '',
     model: '',
-    expired: '',
+    status: '',
     name: '',
     identifier: '',
     phone: '',
@@ -137,7 +138,7 @@ const DevicesPage = () => {
     setFilters({
       group: '',
       model: '',
-      expired: '',
+      status: '',
       name: '',
       identifier: '',
       phone: '',
@@ -400,15 +401,53 @@ const DevicesPage = () => {
       {column === 'model' && t('deviceModel')}
       {column === 'contact' && t('deviceContact')}
       {column === 'expirationTime' && t('userExpirationTime')}
+      {column === 'status' && 'Status'}
+      {column === 'lastUpdate' && 'Last Update'}
       {column === 'vin' && 'VIN'}
     </TableSortLabel>
   );
+
+  const getRelativeTime = (timestamp) => {
+    if (!timestamp) return '-';
+
+    const now = new Date();
+    const past = new Date(timestamp);
+    const diffInSeconds = Math.floor((now - past) / 1000);
+
+    if (diffInSeconds < 60) {
+      return `${diffInSeconds} sec ago`;
+    }
+
+    const diffInMinutes = Math.floor(diffInSeconds / 60);
+    if (diffInMinutes < 60) {
+      return `${diffInMinutes} min ago`;
+    }
+
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) {
+      return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+    }
+
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 30) {
+      return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
+    }
+
+    const diffInMonths = Math.floor(diffInDays / 30);
+    if (diffInMonths < 12) {
+      return `${diffInMonths} month${diffInMonths > 1 ? 's' : ''} ago`;
+    }
+
+    const diffInYears = Math.floor(diffInMonths / 12);
+    return `${diffInYears} year${diffInYears > 1 ? 's' : ''} ago`;
+  };
+
   return (
     <PageLayout
       menu={<SettingsMenu />}
       breadcrumbs={['settingsTitle', 'deviceTitle']}
     >
-      <Box sx={{ pb: 2 }}>
+      <Box sx={{ minHeight: '100vh', overflowY: 'auto' }}>
         <Box
           sx={{
             p: 2,
@@ -509,14 +548,14 @@ const DevicesPage = () => {
               <FormControl fullWidth size="small">
                 <InputLabel>Status</InputLabel>
                 <Select
-                  value={filters.expired}
-                  onChange={(e) => handleFilterChange('expired', e.target.value)}
+                  value={filters.status}
+                  onChange={(e) => handleFilterChange('status', e.target.value)}
                   label="Status"
                 >
                   <MenuItem value="">All Status</MenuItem>
-                  <MenuItem value="active">Active</MenuItem>
-                  <MenuItem value="soon">Expiring Soon</MenuItem>
-                  <MenuItem value="expired">Expired</MenuItem>
+                  <MenuItem value="online">Online</MenuItem>
+                  <MenuItem value="offline">Offline</MenuItem>
+                  <MenuItem value="unknown">Unknown</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -552,6 +591,7 @@ const DevicesPage = () => {
             </Grid>
           </Grid>
 
+          {/* Active Filters Display */}
           {hasActiveFilters && (
             <Box sx={{ mt: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
               <Typography variant="body2" color="textSecondary" sx={{ mr: 1 }}>
@@ -653,6 +693,7 @@ const DevicesPage = () => {
                 <TableCell>{getSortLabel('phone')}</TableCell>
                 <TableCell>{getSortLabel('model')}</TableCell>
                 <TableCell>{getSortLabel('contact')}</TableCell>
+                <TableCell>{getSortLabel('lastUpdate')}</TableCell>
                 <TableCell>{getSortLabel('expirationTime')}</TableCell>
                 <TableCell>{getSortLabel('vin')}</TableCell>
                 {manager && <TableCell>{t('settingsUsers')}</TableCell>}
@@ -684,6 +725,9 @@ const DevicesPage = () => {
                     <TableCell>{item.phone}</TableCell>
                     <TableCell>{item.model}</TableCell>
                     <TableCell>{item.contact}</TableCell>
+                    <TableCell>
+                      {getRelativeTime(item.lastUpdate)}
+                    </TableCell>
                     <TableCell>
                       {item.expirationTime ? (
                         <Box>
@@ -728,7 +772,7 @@ const DevicesPage = () => {
                   </TableRow>
                 ))
               ) : (
-                <TableShimmer columns={manager ? 10 : 9} endAction />
+                <TableShimmer columns={manager ? 11 : 10} endAction />
               )}
             </TableBody>
             <TableFooter>
@@ -788,7 +832,7 @@ const DevicesPage = () => {
             </Typography>
           </Box>
 
-          {/* Pagination controls */}
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2, mb: 8 }}>
           <Pagination
             count={totalPages}
             page={page}
