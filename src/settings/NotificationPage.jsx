@@ -23,13 +23,24 @@ import useSettingsStyles from './common/useSettingsStyles';
 const NotificationPage = () => {
   const classes = useSettingsStyles();
   const t = useTranslation();
-
   const [item, setItem] = useState();
 
   const alarms = useTranslationKeys((it) => it.startsWith('alarm')).map((it) => ({
     key: unprefixString('alarm', it),
     name: t(it),
   }));
+
+  const zoneTypes = [
+    { key: 'geofence', name: 'Geofence' },
+    { key: 'city', name: 'City' },
+    { key: 'state', name: 'State' },
+    { key: 'country', name: 'Country' },
+  ];
+
+  const violationTypes = [
+    { key: 'enter', name: 'Enter' },
+    { key: 'exit', name: 'Exit' },
+  ];
 
   const testNotificators = useCatch(async () => {
     await Promise.all(item.notificators.split(/[, ]+/).map(async (notificator) => {
@@ -81,6 +92,26 @@ const NotificationPage = () => {
                   keyGetter={(it) => it.key}
                   label={t('sharedAlarms')}
                 />
+              )}
+              {item.type === 'zoneViolation' && (
+                <SelectField
+                  multiple
+                  value={item.attributes && item.attributes.zoneTypes ? item.attributes.zoneTypes.split(/[, ]+/) : []}
+                  onChange={(e) => setItem({ ...item, attributes: { ...item.attributes, zoneTypes: e.target.value.join() } })}
+                  data={zoneTypes}
+                  keyGetter={(it) => it.key}
+                  label={t('alarmZoneType')}
+                />
+              )}
+              {item.type === 'zoneViolation' && (
+              <SelectField
+                multiple
+                value={item.attributes && item.attributes.violationTypes ? item.attributes.violationTypes.split(/[, ]+/) : []}
+                onChange={(e) => setItem({ ...item, attributes: { ...item.attributes, violationTypes: e.target.value.join() } })}
+                data={violationTypes}
+                keyGetter={(it) => it.key}
+                label={t('alarmViolationType')}
+              />
               )}
               <SelectField
                 multiple
