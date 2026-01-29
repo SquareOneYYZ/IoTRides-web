@@ -407,6 +407,12 @@ const EventReportPage = () => {
                       setEventTypes(values);
                     }}
                     multiple
+                    sx={{
+                      borderRadius: '12px',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderRadius: '12px',
+                      },
+                    }}
                   >
                     {allEventTypes.map(([key, string]) => (
                       <MenuItem key={key} value={key}>

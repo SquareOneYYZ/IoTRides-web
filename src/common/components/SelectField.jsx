@@ -59,6 +59,12 @@ const SelectField = ({
               multiple
               value={value}
               onChange={onChange}
+              sx={{
+                borderRadius: '12px',
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderRadius: '12px',
+                },
+              }}
             >
               {items.map((item) => (
                 <MenuItem key={keyGetter(item)} value={keyGetter(item)}>{titleGetter(item)}</MenuItem>
