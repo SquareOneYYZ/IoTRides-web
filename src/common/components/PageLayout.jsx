@@ -22,6 +22,7 @@ const useStyles = makeStyles((theme) => ({
   desktopRoot: {
     height: '100%',
     display: 'flex',
+    backgroundColor: '#101010',
   },
   mobileRoot: {
     height: '100%',
@@ -44,7 +45,6 @@ const useStyles = makeStyles((theme) => ({
       }),
       overflowY: 'auto',
       overflowX: 'hidden',
-      /* Custom Scrollbar - Webkit (Chrome, Safari, Edge) */
       '&::-webkit-scrollbar': {
         width: '1px',
       },
@@ -74,7 +74,6 @@ const useStyles = makeStyles((theme) => ({
       color: '#fff',
       width: '250px',
       overflowY: 'auto',
-      /* Custom Scrollbar - Webkit (Chrome, Safari, Edge) */
       '&::-webkit-scrollbar': {
         width: '1px',
       },
@@ -108,14 +107,14 @@ const useStyles = makeStyles((theme) => ({
     overflowY: 'auto',
   },
   toolbar: {
-    backgroundColor: '#212121',
+    backgroundColor: '#171717',
     color: '#fff',
     minHeight: '64px',
     padding: (props) => (props.miniVariant ? '16px 8px' : '16px'),
     justifyContent: (props) => (props.miniVariant ? 'center' : 'flex-start'),
   },
   divider: {
-    borderColor: '#1f2937',
+    borderColor: '#404244',
   },
   iconButton: {
     color: '#fff',

@@ -25,7 +25,7 @@ const ReportsMenu = ({ miniVariant = false }) => {
 
   return (
     <>
-      <List sx={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+      <List sx={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: '4px', background: '#171717' }}>
         <MenuItem
           title={t('reportCombined')}
           link="/reports/combined"
@@ -82,8 +82,8 @@ const ReportsMenu = ({ miniVariant = false }) => {
           miniVariant={miniVariant}
         />
       </List>
-      <Divider sx={{ borderColor: '#404244', margin: '8px 0' }} />
-      <List sx={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+      <Divider sx={{ borderColor: '#404244' }} />
+      <List sx={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: '4px', background: '#171717' }}>
         <MenuItem
           title={t('sharedLogs')}
           link="/reports/logs"

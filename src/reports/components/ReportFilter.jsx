@@ -225,6 +225,12 @@ const ReportFilter = ({
             color="secondary"
             disabled={disabled}
             onClick={() => handleClick('json')}
+            sx={{
+              borderRadius: '12px',
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderRadius: '12px',
+              },
+            }}
           >
             <Typography variant="button" noWrap>{t(loading ? 'sharedLoading' : 'reportShow')}</Typography>
           </Button>

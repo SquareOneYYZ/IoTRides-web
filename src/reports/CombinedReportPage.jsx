@@ -18,7 +18,7 @@ import { prefixString } from '../common/util/stringUtils';
 import MapMarkers from '../map/MapMarkers';
 import MapRouteCoordinates from '../map/MapRouteCoordinates';
 import MapScale from '../map/MapScale';
-import useResizableMap from './common/useResizableMap'; // 👈 your new hook
+import useResizableMap from './common/useResizableMap';
 
 const CombinedReportPage = () => {
   const classes = useReportStyles();
@@ -139,28 +139,67 @@ const CombinedReportPage = () => {
               loading={loading}
             />
           </div>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>{t('sharedDevice')}</TableCell>
-                <TableCell>{t('positionFixTime')}</TableCell>
-                <TableCell>{t('sharedType')}</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {!loading ? (
-                items.flatMap((item) => item.events.map((event, index) => (
-                  <TableRow key={event.id}>
-                    <TableCell>{index ? '' : devices[item.deviceId].name}</TableCell>
-                    <TableCell>{formatTime(event.eventTime, 'seconds')}</TableCell>
-                    <TableCell>{t(prefixString('event', event.type))}</TableCell>
-                  </TableRow>
-                )))
-              ) : (
-                <TableShimmer columns={3} />
-              )}
-            </TableBody>
-          </Table>
+          <div style={{ padding: '20px' }}>
+            <Table
+              sx={{
+                borderCollapse: 'separate',
+                borderSpacing: 0,
+                borderRadius: '20px',
+                borderLeft: '1px solid #2a2a2a',
+                borderRight: '1px solid #2a2a2a',
+                overflow: 'hidden', // important for radius
+              }}
+            >
+              <TableHead sx={{
+                background: '#171717',
+
+              }}
+              >
+                <TableRow>
+                  <TableCell
+                    sx={{
+                      borderTopLeftRadius: '20px',
+                    }}
+                  >
+                    {t('sharedDevice')}
+                  </TableCell>
+
+                  <TableCell>
+                    {t('positionFixTime')}
+                  </TableCell>
+
+                  <TableCell
+                    sx={{
+                      borderTopRightRadius: '20px',
+                    }}
+                  >
+                    {t('sharedType')}
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+
+              <TableBody>
+                {!loading ? (
+                  items.flatMap((item) => item.events.map((event, index) => (
+                    <TableRow key={event.id}>
+                      <TableCell>
+                        {index ? '' : devices[item.deviceId].name}
+                      </TableCell>
+                      <TableCell>
+                        {formatTime(event.eventTime, 'seconds')}
+                      </TableCell>
+                      <TableCell>
+                        {t(prefixString('event', event.type))}
+                      </TableCell>
+                    </TableRow>
+                  )))
+                ) : (
+                  <TableShimmer columns={3} />
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
         </div>
       </div>
     </PageLayout>
