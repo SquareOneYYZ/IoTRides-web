@@ -21,7 +21,7 @@ import PageLayout from '../common/components/PageLayout';
 import useFeatures from '../common/util/useFeatures';
 import useSettingsStyles from './common/useSettingsStyles';
 
-const LOCATIONIQ_API_KEY = 'Your_API_Access_Token'; // Replace with your actual API key
+const LOCATIONIQ_API_KEY = 'pk.8d53fbdaad1b9785ba8e39a1ac5e3533';
 
 const GroupConnectionsPage = () => {
   const classes = useSettingsStyles();
@@ -30,30 +30,46 @@ const GroupConnectionsPage = () => {
   const { id } = useParams();
   const features = useFeatures();
 
-  const [locationOptions, setLocationOptions] = useState([]);
-  const [locationQuery, setLocationQuery] = useState('');
-  const [loadingLocations, setLoadingLocations] = useState(false);
+  const [cityOptions, setCityOptions] = useState([]);
+  const [stateOptions, setStateOptions] = useState([]);
+  const [countryOptions, setCountryOptions] = useState([]);
+
+  const [cityQuery, setCityQuery] = useState('');
+  const [stateQuery, setStateQuery] = useState('');
+  const [countryQuery, setCountryQuery] = useState('');
+
+  const [loadingCities, setLoadingCities] = useState(false);
+  const [loadingStates, setLoadingStates] = useState(false);
+  const [loadingCountries, setLoadingCountries] = useState(false);
 
   const [selectedCities, setSelectedCities] = useState([]);
   const [selectedStates, setSelectedStates] = useState([]);
   const [selectedCountries, setSelectedCountries] = useState([]);
 
+  // Fetch cities
   useEffect(() => {
-    const fetchLocations = async () => {
-      if (!locationQuery || locationQuery.length < 2) {
-        setLocationOptions([]);
+    const fetchCities = async () => {
+      if (!cityQuery || cityQuery.length < 2) {
+        setCityOptions([]);
         return;
       }
 
-      setLoadingLocations(true);
+      setLoadingCities(true);
       try {
         const response = await fetch(
-          `https://api.locationiq.com/v1/autocomplete?key=${LOCATIONIQ_API_KEY}&q=${encodeURIComponent(locationQuery)}&limit=10&dedupe=1`,
+          `https://api.locationiq.com/v1/autocomplete?key=${LOCATIONIQ_API_KEY}&q=${encodeURIComponent(cityQuery)}&limit=10&dedupe=1`,
         );
 
         if (response.ok) {
           const data = await response.json();
-          const formattedOptions = data.map((location) => ({
+          // Filter for cities, towns, and villages only
+          const filteredData = data.filter(
+            (location) => location.type === 'city'
+                         || location.type === 'town'
+                         || location.type === 'village',
+          );
+
+          const formattedOptions = filteredData.map((location) => ({
             id: location.place_id,
             label: location.display_name,
             type: location.type,
@@ -62,18 +78,103 @@ const GroupConnectionsPage = () => {
             lon: location.lon,
             address: location.address,
           }));
-          setLocationOptions(formattedOptions);
+          setCityOptions(formattedOptions);
         }
       } catch (error) {
-        console.error('Error fetching locations:', error);
+        console.error('Error fetching cities:', error);
       } finally {
-        setLoadingLocations(false);
+        setLoadingCities(false);
       }
     };
 
-    const debounceTimer = setTimeout(fetchLocations, 300);
+    const debounceTimer = setTimeout(fetchCities, 300);
     return () => clearTimeout(debounceTimer);
-  }, [locationQuery]);
+  }, [cityQuery]);
+
+  // Fetch states
+  useEffect(() => {
+    const fetchStates = async () => {
+      if (!stateQuery || stateQuery.length < 2) {
+        setStateOptions([]);
+        return;
+      }
+
+      setLoadingStates(true);
+      try {
+        const response = await fetch(
+          `https://api.locationiq.com/v1/autocomplete?key=${LOCATIONIQ_API_KEY}&q=${encodeURIComponent(stateQuery)}&limit=10&dedupe=1`,
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          const filteredData = data.filter(
+            (location) => location.type === 'state',
+          );
+
+          const formattedOptions = filteredData.map((location) => ({
+            id: location.place_id,
+            label: location.display_name,
+            type: location.type,
+            osm_type: location.osm_type,
+            lat: location.lat,
+            lon: location.lon,
+            address: location.address,
+          }));
+          setStateOptions(formattedOptions);
+        }
+      } catch (error) {
+        console.error('Error fetching states:', error);
+      } finally {
+        setLoadingStates(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(fetchStates, 300);
+    return () => clearTimeout(debounceTimer);
+  }, [stateQuery]);
+
+  // Fetch countries
+  useEffect(() => {
+    const fetchCountries = async () => {
+      if (!countryQuery || countryQuery.length < 2) {
+        setCountryOptions([]);
+        return;
+      }
+
+      setLoadingCountries(true);
+      try {
+        const response = await fetch(
+          `https://api.locationiq.com/v1/autocomplete?key=${LOCATIONIQ_API_KEY}&q=${encodeURIComponent(countryQuery)}&limit=10&dedupe=1`,
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          // Filter for countries only
+          const filteredData = data.filter(
+            (location) => location.type === 'country',
+          );
+
+          const formattedOptions = filteredData.map((location) => ({
+            id: location.place_id,
+            label: location.display_name,
+            type: location.type,
+            osm_type: location.osm_type,
+            lat: location.lat,
+            lon: location.lon,
+            address: location.address,
+          }));
+          setCountryOptions(formattedOptions);
+        }
+      } catch (error) {
+        console.error('Error fetching countries:', error);
+      } finally {
+        setLoadingCountries(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(fetchCountries, 300);
+    return () => clearTimeout(debounceTimer);
+  }, [countryQuery]);
 
   // Handle saving location connections
   const handleSaveLocations = async () => {
@@ -128,13 +229,14 @@ const GroupConnectionsPage = () => {
             <Box sx={{ mb: 2 }}>
               <Autocomplete
                 multiple
-                options={locationOptions.filter((loc) => loc.type === 'city' || loc.type === 'town' || loc.type === 'village')}
+                options={cityOptions}
                 value={selectedCities}
                 onChange={(e, newValue) => setSelectedCities(newValue)}
-                onInputChange={(e, newInputValue) => setLocationQuery(newInputValue)}
+                onInputChange={(e, newInputValue) => setCityQuery(newInputValue)}
                 getOptionLabel={(option) => option.label || ''}
-                loading={loadingLocations}
+                loading={loadingCities}
                 isOptionEqualToValue={(option, value) => option.id === value.id}
+                noOptionsText={cityQuery.length < 2 ? 'Type at least 2 characters' : 'No cities found'}
                 renderInput={(params) => (
                   <TextField
                     {...params}
@@ -149,13 +251,14 @@ const GroupConnectionsPage = () => {
             <Box sx={{ mb: 2 }}>
               <Autocomplete
                 multiple
-                options={locationOptions.filter((loc) => loc.type === 'state' || loc.type === 'administrative')}
+                options={stateOptions}
                 value={selectedStates}
                 onChange={(e, newValue) => setSelectedStates(newValue)}
-                onInputChange={(e, newInputValue) => setLocationQuery(newInputValue)}
+                onInputChange={(e, newInputValue) => setStateQuery(newInputValue)}
                 getOptionLabel={(option) => option.label || ''}
-                loading={loadingLocations}
+                loading={loadingStates}
                 isOptionEqualToValue={(option, value) => option.id === value.id}
+                noOptionsText={stateQuery.length < 2 ? 'Type at least 2 characters' : 'No states found'}
                 renderInput={(params) => (
                   <TextField
                     {...params}
@@ -170,13 +273,14 @@ const GroupConnectionsPage = () => {
             <Box sx={{ mb: 2 }}>
               <Autocomplete
                 multiple
-                options={locationOptions.filter((loc) => loc.type === 'country')}
+                options={countryOptions}
                 value={selectedCountries}
                 onChange={(e, newValue) => setSelectedCountries(newValue)}
-                onInputChange={(e, newInputValue) => setLocationQuery(newInputValue)}
+                onInputChange={(e, newInputValue) => setCountryQuery(newInputValue)}
                 getOptionLabel={(option) => option.label || ''}
-                loading={loadingLocations}
+                loading={loadingCountries}
                 isOptionEqualToValue={(option, value) => option.id === value.id}
+                noOptionsText={countryQuery.length < 2 ? 'Type at least 2 characters' : 'No countries found'}
                 renderInput={(params) => (
                   <TextField
                     {...params}
