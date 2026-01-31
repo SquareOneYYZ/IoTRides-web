@@ -223,21 +223,24 @@ const DevicesPage = () => {
     });
 
     return filtered;
+<<<<<<< HEAD
   }, [items, globalSearch, filters, sortConfig, groups]);
 
-  const idToIndex = useMemo(() => {
-    const map = {};
-    processedItems.forEach((item, index) => {
-      map[item.id] = index;
-    });
-    return map;
-  }, [processedItems]);
-  const totalPages = Math.ceil(processedItems.length / pageSize);
-  const startIndex = (page - 1) * pageSize;
-  const paginatedItems = processedItems.slice(
-    startIndex,
-    startIndex + pageSize,
-  );
+const idToIndex = useMemo(() => {
+  const map = {};
+  processedItems.forEach((item, index) => {
+    map[item.id] = index;
+  });
+  return map;
+}, [processedItems]);
+
+const totalPages = Math.ceil(processedItems.length / pageSize);
+const startIndex = (page - 1) * pageSize;
+const paginatedItems = processedItems.slice(
+  startIndex,
+  startIndex + pageSize,
+);
+
 
   const handleExport = () => {
     const params = new URLSearchParams();
@@ -776,26 +779,10 @@ const DevicesPage = () => {
               )}
             </TableBody>
             <TableFooter>
-              <TableRow>
-                {/* <TableCell colSpan={manager ? 9 : 8} align="right">
-                  <FormControlLabel
-                    control={(
-                      <Switch
-                        checked={showAll}
-                        onChange={(e) => setShowAll(e.target.checked)}
-                        size="small"
-                      />
-                    )}
-                    label={t('notificationAlways')}
-                    labelPlacement="start"
-                    disabled={!manager}
-                  />
-                </TableCell> */}
-              </TableRow>
-            </TableFooter>
             <Button onClick={handleExport} variant="text">
               {t('reportExport')}
             </Button>
+            </TableFooter>
           </Table>
         </Box>
         <Box sx={{
@@ -865,6 +852,7 @@ const DevicesPage = () => {
         onClose={() => setSnackbar({ open: false, message: '' })}
         message={snackbar.message}
       />
+      </Box>
     </PageLayout>
   );
 };
