@@ -147,7 +147,7 @@ const CombinedReportPage = () => {
                 borderRadius: '20px',
                 borderLeft: '1px solid #2a2a2a',
                 borderRight: '1px solid #2a2a2a',
-                overflow: 'hidden', // important for radius
+                overflow: 'hidden',
               }}
             >
               <TableHead sx={{

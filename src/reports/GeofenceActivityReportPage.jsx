@@ -72,12 +72,9 @@ const GeofenceDistanceReportPage = () => {
   const classes = useReportStyles();
   const t = useTranslation();
   const { containerRef, mapHeight, handleMouseDown } = useResizableMap(60, 20, 80);
-
   const devices = useSelector((state) => state.devices.items);
-
   const distanceUnit = useAttributePreference('distanceUnit');
   const [filterRange, setFilterRange] = useState({ from: null, to: null });
-
   const [columns, setColumns] = usePersistedState('geofenceDistanceColumns', [
     'deviceId',
     'geofenceId',
@@ -453,6 +450,12 @@ const GeofenceDistanceReportPage = () => {
                       label="Segment Type"
                       value={selectedSegmentType}
                       onChange={(e) => setSelectedSegmentType(e.target.value)}
+                      sx={{
+                        borderRadius: '13px',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderRadius: '13px',
+                        },
+                      }}
                     >
                       {segmentTypes.map(([key, label]) => (
                         <MenuItem key={key} value={key}>
@@ -470,6 +473,12 @@ const GeofenceDistanceReportPage = () => {
                     value={minDistance}
                     onChange={(e) => setMinDistance(e.target.value)}
                     inputProps={{ min: 0, step: 0.1 }}
+                    sx={{
+                      borderRadius: '5px',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderRadius: '5px',
+                      },
+                    }}
                   />
                 </div>
                 <div className={classes.filterItem}>
@@ -487,6 +496,12 @@ const GeofenceDistanceReportPage = () => {
                         setSelectedTypes(values);
                       }}
                       multiple
+                      sx={{
+                        borderRadius: '13px',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderRadius: '13px',
+                        },
+                      }}
                     >
                       {allEventTypes.map(([key, string]) => (
                         <MenuItem key={key} value={key}>
@@ -511,6 +526,12 @@ const GeofenceDistanceReportPage = () => {
                         setSelectedGeofences(values);
                       }}
                       multiple
+                      sx={{
+                        borderRadius: '13px',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderRadius: '13px',
+                        },
+                      }}
                     >
                       <MenuItem key="allGeofences" value="allGeofences">
                         All Geofences
@@ -530,48 +551,59 @@ const GeofenceDistanceReportPage = () => {
                 />
               </ReportFilter>
             </div>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell className={classes.columnAction} />
-                  {columns.map((key) => (
-                    <TableCell key={key}>{t(columnsMap.get(key))}</TableCell>
-                  ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {!loading ? (
-                  items.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className={classes.columnAction} padding="none">
-                        {!item.isPlaceholder && (item.enterPositionId || item.exitPositionId) && (
-                          selectedItem === item ? (
-                            <IconButton
-                              size="small"
-                              onClick={() => setSelectedItem(null)}
-                            >
-                              <GpsFixedIcon fontSize="small" />
-                            </IconButton>
-                          ) : (
-                            <IconButton
-                              size="small"
-                              onClick={() => setSelectedItem(item)}
-                            >
-                              <LocationSearchingIcon fontSize="small" />
-                            </IconButton>
-                          )
-                        )}
-                      </TableCell>
-                      {columns.map((key) => (
-                        <TableCell key={key}>{formatValue(item, key)}</TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableShimmer columns={columns.length + 1} startAction />
-                )}
-              </TableBody>
-            </Table>
+            <div style={{ padding: '20px' }}>
+              <Table
+                sx={{
+                  borderCollapse: 'separate',
+                  borderSpacing: 0,
+                  borderRadius: '20px',
+                  borderLeft: '1px solid #2a2a2a',
+                  borderRight: '1px solid #2a2a2a',
+                  overflow: 'hidden',
+                }}
+              >
+                <TableHead sx={{ background: '#171717' }}>
+                  <TableRow>
+                    <TableCell className={classes.columnAction} />
+                    {columns.map((key) => (
+                      <TableCell key={key}>{t(columnsMap.get(key))}</TableCell>
+                    ))}
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {!loading ? (
+                    items.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell className={classes.columnAction} padding="none">
+                          {!item.isPlaceholder && (item.enterPositionId || item.exitPositionId) && (
+                            selectedItem === item ? (
+                              <IconButton
+                                size="small"
+                                onClick={() => setSelectedItem(null)}
+                              >
+                                <GpsFixedIcon fontSize="small" />
+                              </IconButton>
+                            ) : (
+                              <IconButton
+                                size="small"
+                                onClick={() => setSelectedItem(item)}
+                              >
+                                <LocationSearchingIcon fontSize="small" />
+                              </IconButton>
+                            )
+                          )}
+                        </TableCell>
+                        {columns.map((key) => (
+                          <TableCell key={key}>{formatValue(item, key)}</TableCell>
+                        ))}
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableShimmer columns={columns.length + 1} startAction />
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         </div>
       </div>

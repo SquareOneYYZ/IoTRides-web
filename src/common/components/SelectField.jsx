@@ -60,9 +60,9 @@ const SelectField = ({
               value={value}
               onChange={onChange}
               sx={{
-                borderRadius: '12px',
+                borderRadius: '13px',
                 '& .MuiOutlinedInput-notchedOutline': {
-                  borderRadius: '12px',
+                  borderRadius: '13px',
                 },
               }}
             >
@@ -83,6 +83,12 @@ const SelectField = ({
             value={value}
             onChange={(_, value) => onChange({ target: { value: value ? keyGetter(value) : emptyValue } })}
             renderInput={(params) => <TextField {...params} label={label} />}
+            sx={{
+              borderRadius: '13px',
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderRadius: '13px',
+              },
+            }}
           />
         )}
       </FormControl>

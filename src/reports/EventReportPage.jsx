@@ -67,13 +67,10 @@ const EventReportPage = () => {
   const navigate = useNavigate();
   const classes = useReportStyles();
   const t = useTranslation();
-
   const devices = useSelector((state) => state.devices.items);
   const geofences = useSelector((state) => state.geofences.items);
-
   const speedUnit = useAttributePreference('speedUnit');
   const distanceUnit = useAttributePreference('distanceUnit');
-
   const [allEventTypes, setAllEventTypes] = useState([
     ['allEvents', 'eventAll'],
   ]);
@@ -443,60 +440,71 @@ const EventReportPage = () => {
               />
             </ReportFilter>
           </div>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell className={classes.columnAction} />
-                <TableCell className={classes.columnAction} />
-                {columns.map((key) => (
-                  <TableCell key={key}>{t(columnsMap.get(key))}</TableCell>
-                ))}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {!loading ? (
-                items.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell className={classes.columnAction} padding="none">
-                      {item.positionId && (
-                        selectedItem === item ? (
+          <div style={{ padding: '20px' }}>
+            <Table
+              sx={{
+                borderCollapse: 'separate',
+                borderSpacing: 0,
+                borderRadius: '20px',
+                borderLeft: '1px solid #2a2a2a',
+                borderRight: '1px solid #2a2a2a',
+                overflow: 'hidden',
+              }}
+            >
+              <TableHead sx={{ background: '#171717' }}>
+                <TableRow>
+                  <TableCell className={classes.columnAction} />
+                  <TableCell className={classes.columnAction} />
+                  {columns.map((key) => (
+                    <TableCell key={key}>{t(columnsMap.get(key))}</TableCell>
+                  ))}
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {!loading ? (
+                  items.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell className={classes.columnAction} padding="none">
+                        {item.positionId && (
+                          selectedItem === item ? (
+                            <IconButton
+                              size="small"
+                              onClick={() => setSelectedItem(null)}
+                            >
+                              <GpsFixedIcon fontSize="small" />
+                            </IconButton>
+                          ) : (
+                            <IconButton
+                              size="small"
+                              onClick={() => setSelectedItem(item)}
+                            >
+                              <LocationSearchingIcon fontSize="small" />
+                            </IconButton>
+                          )
+                        )}
+                      </TableCell>
+                      <TableCell className={classes.columnAction} padding="none">
+                        {item.positionId && (
                           <IconButton
                             size="small"
-                            onClick={() => setSelectedItem(null)}
+                            onClick={() => handleReplayStart(item)}
+                            disabled={replayLoading}
                           >
-                            <GpsFixedIcon fontSize="small" />
+                            <ReplayIcon fontSize="small" />
                           </IconButton>
-                        ) : (
-                          <IconButton
-                            size="small"
-                            onClick={() => setSelectedItem(item)}
-                          >
-                            <LocationSearchingIcon fontSize="small" />
-                          </IconButton>
-                        )
-                      )}
-                    </TableCell>
-                    <TableCell className={classes.columnAction} padding="none">
-                      {item.positionId && (
-                        <IconButton
-                          size="small"
-                          onClick={() => handleReplayStart(item)}
-                          disabled={replayLoading}
-                        >
-                          <ReplayIcon fontSize="small" />
-                        </IconButton>
-                      )}
-                    </TableCell>
-                    {columns.map((key) => (
-                      <TableCell key={key}>{formatValue(item, key)}</TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableShimmer columns={columns.length + 2} />
-              )}
-            </TableBody>
-          </Table>
+                        )}
+                      </TableCell>
+                      {columns.map((key) => (
+                        <TableCell key={key}>{formatValue(item, key)}</TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableShimmer columns={columns.length + 2} />
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       </div>
     </PageLayout>

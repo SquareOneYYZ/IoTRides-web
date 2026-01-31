@@ -129,26 +129,37 @@ const SummaryReportPage = () => {
           <ColumnSelect columns={columns} setColumns={setColumns} columnsArray={columnsArray} />
         </ReportFilter>
       </div>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>{t('sharedDevice')}</TableCell>
-            {columns.map((key) => (<TableCell key={key}>{t(columnsMap.get(key))}</TableCell>))}
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {!loading ? items.map((item) => (
-            <TableRow key={(`${item.deviceId}_${Date.parse(item.startTime)}`)}>
-              <TableCell>{devices[item.deviceId].name}</TableCell>
-              {columns.map((key) => (
-                <TableCell key={key}>
-                  {formatValue(item, key)}
-                </TableCell>
-              ))}
+      <div style={{ padding: '20px' }}>
+        <Table
+          sx={{
+            borderCollapse: 'separate',
+            borderSpacing: 0,
+            borderRadius: '20px',
+            borderLeft: '1px solid #2a2a2a',
+            borderRight: '1px solid #2a2a2a',
+            overflow: 'hidden',
+          }}
+        >
+          <TableHead sx={{ background: '#171717' }}>
+            <TableRow>
+              <TableCell>{t('sharedDevice')}</TableCell>
+              {columns.map((key) => (<TableCell key={key}>{t(columnsMap.get(key))}</TableCell>))}
             </TableRow>
-          )) : (<TableShimmer columns={columns.length + 1} />)}
-        </TableBody>
-      </Table>
+          </TableHead>
+          <TableBody>
+            {!loading ? items.map((item) => (
+              <TableRow key={(`${item.deviceId}_${Date.parse(item.startTime)}`)}>
+                <TableCell>{devices[item.deviceId].name}</TableCell>
+                {columns.map((key) => (
+                  <TableCell key={key}>
+                    {formatValue(item, key)}
+                  </TableCell>
+                ))}
+              </TableRow>
+            )) : (<TableShimmer columns={columns.length + 1} />)}
+          </TableBody>
+        </Table>
+      </div>
     </PageLayout>
   );
 };

@@ -17,12 +17,9 @@ const ReportFilter = ({
   const classes = useReportStyles();
   const dispatch = useDispatch();
   const t = useTranslation();
-
   const readonly = useRestriction('readonly');
-
   const devices = useSelector((state) => state.devices.items);
   const groups = useSelector((state) => state.groups.items);
-
   const deviceId = useSelector((state) => state.devices.selectedId);
   const deviceIds = useSelector((state) => state.devices.selectedIds);
   const groupIds = useSelector((state) => state.reports.groupIds);
@@ -30,7 +27,6 @@ const ReportFilter = ({
   const from = useSelector((state) => state.reports.from);
   const to = useSelector((state) => state.reports.to);
   const [button, setButton] = useState('json');
-
   const [description, setDescription] = useState();
   const [calendarId, setCalendarId] = useState();
 
@@ -102,9 +98,9 @@ const ReportFilter = ({
             multiple={multiDevice}
             fullWidth
             sx={{
-              borderRadius: '12px',
+              borderRadius: '13px',
               '& .MuiOutlinedInput-notchedOutline': {
-                borderRadius: '12px',
+                borderRadius: '13px',
               },
             }}
           />
@@ -120,9 +116,9 @@ const ReportFilter = ({
             multiple
             fullWidth
             sx={{
-              borderRadius: '12px',
+              borderRadius: '13px',
               '& .MuiOutlinedInput-notchedOutline': {
-                borderRadius: '12px',
+                borderRadius: '13px',
               },
             }}
           />
@@ -137,9 +133,9 @@ const ReportFilter = ({
                 label={t('reportPeriod')}
                 value={period}
                 sx={{
-                  borderRadius: '12px',
+                  borderRadius: '13px',
                   '& .MuiOutlinedInput-notchedOutline': {
-                    borderRadius: '12px',
+                    borderRadius: '13px',
                   },
                 }}
                 onChange={(e) => dispatch(reportsActions.updatePeriod(e.target.value))}
@@ -163,9 +159,9 @@ const ReportFilter = ({
                 onChange={(e) => dispatch(reportsActions.updateFrom(e.target.value))}
                 fullWidth
                 sx={{
-                  borderRadius: '12px',
+                  borderRadius: '13px',
                   '& .MuiOutlinedInput-notchedOutline': {
-                    borderRadius: '12px',
+                    borderRadius: '13px',
                   },
                 }}
               />
@@ -180,9 +176,9 @@ const ReportFilter = ({
                 onChange={(e) => dispatch(reportsActions.updateTo(e.target.value))}
                 fullWidth
                 sx={{
-                  borderRadius: '12px',
+                  borderRadius: '13px',
                   '& .MuiOutlinedInput-notchedOutline': {
-                    borderRadius: '12px',
+                    borderRadius: '13px',
                   },
                 }}
               />
@@ -207,9 +203,9 @@ const ReportFilter = ({
               label={t('sharedCalendar')}
               fullWidth
               sx={{
-                borderRadius: '12px',
+                borderRadius: '13px',
                 '& .MuiOutlinedInput-notchedOutline': {
-                  borderRadius: '12px',
+                  borderRadius: '13px',
                 },
               }}
             />
@@ -226,9 +222,9 @@ const ReportFilter = ({
             disabled={disabled}
             onClick={() => handleClick('json')}
             sx={{
-              borderRadius: '12px',
+              borderRadius: '13px',
               '& .MuiOutlinedInput-notchedOutline': {
-                borderRadius: '12px',
+                borderRadius: '13px',
               },
             }}
           >
