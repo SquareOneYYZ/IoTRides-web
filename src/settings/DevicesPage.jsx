@@ -64,6 +64,7 @@ const filterByGlobalSearch = (keyword) => (item) => {
     item.vin,
     item.model,
     item.contact,
+    item.status,
   ];
   return searchFields.some((field) => (field || '').toLowerCase().includes(keyword.toLowerCase()));
 };
@@ -83,7 +84,7 @@ const DevicesPage = () => {
   const [filters, setFilters] = useState({
     group: '',
     model: '',
-    expired: '',
+    status: '',
     name: '',
     identifier: '',
     phone: '',
@@ -137,7 +138,7 @@ const DevicesPage = () => {
     setFilters({
       group: '',
       model: '',
-      expired: '',
+      status: '',
       name: '',
       identifier: '',
       phone: '',
@@ -162,27 +163,9 @@ const DevicesPage = () => {
       if (filters.model && item.model !== filters.model) {
         return false;
       }
-      if (filters.expired) {
-        const now = new Date();
-        const expirationDate = item.expirationTime
-          ? new Date(item.expirationTime)
-          : null;
-        if (
-          filters.expired === 'expired'
-          && (!expirationDate || expirationDate > now)
-        ) {
-          return false;
-        }
-        if (
-          filters.expired === 'soon'
-          && !isExpiringSoon(item.expirationTime)
-        ) {
-          return false;
-        }
-        if (
-          filters.expired === 'active'
-          && (!expirationDate || expirationDate <= now)
-        ) {
+
+      if (filters.status) {
+        if (!item.status || item.status.toLowerCase() !== filters.status.toLowerCase()) {
           return false;
         }
       }
@@ -222,15 +205,8 @@ const DevicesPage = () => {
     });
 
     return filtered;
-  }, [items, globalSearch, filters, sortConfig, groups]);
+  }, [items, globalSearch, filters, sortConfig]);
 
-  const idToIndex = useMemo(() => {
-    const map = {};
-    processedItems.forEach((item, index) => {
-      map[item.id] = index;
-    });
-    return map;
-  }, [processedItems]);
   const totalPages = Math.ceil(processedItems.length / pageSize);
   const startIndex = (page - 1) * pageSize;
   const paginatedItems = processedItems.slice(
@@ -400,9 +376,47 @@ const DevicesPage = () => {
       {column === 'model' && t('deviceModel')}
       {column === 'contact' && t('deviceContact')}
       {column === 'expirationTime' && t('userExpirationTime')}
+      {column === 'status' && 'Status'}
+      {column === 'lastUpdate' && 'Last Update'}
       {column === 'vin' && 'VIN'}
     </TableSortLabel>
   );
+
+  const getRelativeTime = (timestamp) => {
+    if (!timestamp) return '-';
+
+    const now = new Date();
+    const past = new Date(timestamp);
+    const diffInSeconds = Math.floor((now - past) / 1000);
+
+    if (diffInSeconds < 60) {
+      return `${diffInSeconds} sec ago`;
+    }
+
+    const diffInMinutes = Math.floor(diffInSeconds / 60);
+    if (diffInMinutes < 60) {
+      return `${diffInMinutes} min ago`;
+    }
+
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) {
+      return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+    }
+
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 30) {
+      return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
+    }
+
+    const diffInMonths = Math.floor(diffInDays / 30);
+    if (diffInMonths < 12) {
+      return `${diffInMonths} month${diffInMonths > 1 ? 's' : ''} ago`;
+    }
+
+    const diffInYears = Math.floor(diffInMonths / 12);
+    return `${diffInYears} year${diffInYears > 1 ? 's' : ''} ago`;
+  };
+
   return (
     <PageLayout
       menu={<SettingsMenu />}
@@ -418,7 +432,6 @@ const DevicesPage = () => {
             width: '100%',
           }}
         >
-          {/* Global Search */}
           <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
             <Grid item xs={12} md={6}>
               <TextField
@@ -477,24 +490,6 @@ const DevicesPage = () => {
               </FormControl>
             </Grid>
 
-            {/* <Grid item xs={12} sm={6} md={2}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Model</InputLabel>
-                <Select
-                  value={filters.model}
-                  onChange={(e) => handleFilterChange('model', e.target.value)}
-                  label="Model"
-                >
-                  <MenuItem value="">All Models</MenuItem>
-                  {uniqueModels.map((model) => (
-                    <MenuItem key={model} value={model}>
-                      {model}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid> */}
-
             <Grid item xs={12} sm={6} md={2}>
               <TextField
                 fullWidth
@@ -509,14 +504,14 @@ const DevicesPage = () => {
               <FormControl fullWidth size="small">
                 <InputLabel>Status</InputLabel>
                 <Select
-                  value={filters.expired}
-                  onChange={(e) => handleFilterChange('expired', e.target.value)}
+                  value={filters.status}
+                  onChange={(e) => handleFilterChange('status', e.target.value)}
                   label="Status"
                 >
                   <MenuItem value="">All Status</MenuItem>
-                  <MenuItem value="active">Active</MenuItem>
-                  <MenuItem value="soon">Expiring Soon</MenuItem>
-                  <MenuItem value="expired">Expired</MenuItem>
+                  <MenuItem value="online">Online</MenuItem>
+                  <MenuItem value="offline">Offline</MenuItem>
+                  <MenuItem value="unknown">Unknown</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -653,6 +648,7 @@ const DevicesPage = () => {
                 <TableCell>{getSortLabel('phone')}</TableCell>
                 <TableCell>{getSortLabel('model')}</TableCell>
                 <TableCell>{getSortLabel('contact')}</TableCell>
+                <TableCell>{getSortLabel('lastUpdate')}</TableCell>
                 <TableCell>{getSortLabel('expirationTime')}</TableCell>
                 <TableCell>{getSortLabel('vin')}</TableCell>
                 {manager && <TableCell>{t('settingsUsers')}</TableCell>}
@@ -684,6 +680,9 @@ const DevicesPage = () => {
                     <TableCell>{item.phone}</TableCell>
                     <TableCell>{item.model}</TableCell>
                     <TableCell>{item.contact}</TableCell>
+                    <TableCell>
+                      {getRelativeTime(item.lastUpdate)}
+                    </TableCell>
                     <TableCell>
                       {item.expirationTime ? (
                         <Box>
@@ -728,12 +727,17 @@ const DevicesPage = () => {
                   </TableRow>
                 ))
               ) : (
-                <TableShimmer columns={manager ? 10 : 9} endAction />
+                <TableShimmer columns={manager ? 11 : 10} endAction />
               )}
             </TableBody>
             <TableFooter>
               <TableRow>
-                {/* <TableCell colSpan={manager ? 9 : 8} align="right">
+                <TableCell>
+                  <Button onClick={handleExport} variant="text">
+                    {t('reportExport')}
+                  </Button>
+                </TableCell>
+                <TableCell colSpan={manager ? 10 : 9} align="right">
                   <FormControlLabel
                     control={(
                       <Switch
