@@ -63,8 +63,8 @@ const columnsMap = new Map(columnsArray);
 
 const allEventTypes = [
   ['allTypes', 'sharedAll'],
-  ['Inside', 'Inside'],
-  ['Outside', 'Outside'],
+  ['inside', 'inside'],
+  ['outside', 'outside'],
 ];
 
 const segmentTypes = [
