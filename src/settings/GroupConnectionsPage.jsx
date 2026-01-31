@@ -33,20 +33,16 @@ const GroupConnectionsPage = () => {
   const [cityOptions, setCityOptions] = useState([]);
   const [stateOptions, setStateOptions] = useState([]);
   const [countryOptions, setCountryOptions] = useState([]);
-
   const [cityQuery, setCityQuery] = useState('');
   const [stateQuery, setStateQuery] = useState('');
   const [countryQuery, setCountryQuery] = useState('');
-
   const [loadingCities, setLoadingCities] = useState(false);
   const [loadingStates, setLoadingStates] = useState(false);
   const [loadingCountries, setLoadingCountries] = useState(false);
-
   const [selectedCities, setSelectedCities] = useState([]);
   const [selectedStates, setSelectedStates] = useState([]);
   const [selectedCountries, setSelectedCountries] = useState([]);
 
-  // Fetch cities
   useEffect(() => {
     const fetchCities = async () => {
       if (!cityQuery || cityQuery.length < 2) {
@@ -62,7 +58,6 @@ const GroupConnectionsPage = () => {
 
         if (response.ok) {
           const data = await response.json();
-          // Filter for cities, towns, and villages only
           const filteredData = data.filter(
             (location) => location.type === 'city'
                          || location.type === 'town'
@@ -91,7 +86,6 @@ const GroupConnectionsPage = () => {
     return () => clearTimeout(debounceTimer);
   }, [cityQuery]);
 
-  // Fetch states
   useEffect(() => {
     const fetchStates = async () => {
       if (!stateQuery || stateQuery.length < 2) {
@@ -133,7 +127,6 @@ const GroupConnectionsPage = () => {
     return () => clearTimeout(debounceTimer);
   }, [stateQuery]);
 
-  // Fetch countries
   useEffect(() => {
     const fetchCountries = async () => {
       if (!countryQuery || countryQuery.length < 2) {
@@ -176,7 +169,6 @@ const GroupConnectionsPage = () => {
     return () => clearTimeout(debounceTimer);
   }, [countryQuery]);
 
-  // Handle saving location connections
   const handleSaveLocations = async () => {
     try {
       const locationData = {
@@ -186,7 +178,6 @@ const GroupConnectionsPage = () => {
         countries: selectedCountries,
       };
 
-      // Save to your backend API
       const response = await fetch(`/api/groups/${id}/locations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -207,7 +198,6 @@ const GroupConnectionsPage = () => {
       breadcrumbs={['settingsTitle', 'groupDialog', 'sharedConnections']}
     >
       <Container maxWidth="xs" className={classes.container}>
-        {/* Zone Violation Connections */}
         <Accordion defaultExpanded>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
             <Typography variant="subtitle1">
@@ -225,7 +215,6 @@ const GroupConnectionsPage = () => {
               label={t('sharedGeofences')}
             />
 
-            {/* Cities */}
             <Box sx={{ mb: 2 }}>
               <Autocomplete
                 multiple
@@ -247,7 +236,6 @@ const GroupConnectionsPage = () => {
               />
             </Box>
 
-            {/* States */}
             <Box sx={{ mb: 2 }}>
               <Autocomplete
                 multiple
@@ -269,7 +257,6 @@ const GroupConnectionsPage = () => {
               />
             </Box>
 
-            {/* Countries */}
             <Box sx={{ mb: 2 }}>
               <Autocomplete
                 multiple
@@ -303,7 +290,6 @@ const GroupConnectionsPage = () => {
           </AccordionDetails>
         </Accordion>
 
-        {/* Standard Connections */}
         <Accordion>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
             <Typography variant="subtitle1">
