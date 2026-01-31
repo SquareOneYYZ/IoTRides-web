@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -223,24 +223,22 @@ const DevicesPage = () => {
     });
 
     return filtered;
-<<<<<<< HEAD
   }, [items, globalSearch, filters, sortConfig, groups]);
 
-const idToIndex = useMemo(() => {
-  const map = {};
-  processedItems.forEach((item, index) => {
-    map[item.id] = index;
-  });
-  return map;
-}, [processedItems]);
+  const idToIndex = useMemo(() => {
+    const map = {};
+    processedItems.forEach((item, index) => {
+      map[item.id] = index;
+    });
+    return map;
+  }, [processedItems]);
 
-const totalPages = Math.ceil(processedItems.length / pageSize);
-const startIndex = (page - 1) * pageSize;
-const paginatedItems = processedItems.slice(
-  startIndex,
-  startIndex + pageSize,
-);
-
+  const totalPages = Math.ceil(processedItems.length / pageSize);
+  const startIndex = (page - 1) * pageSize;
+  const paginatedItems = processedItems.slice(
+    startIndex,
+    startIndex + pageSize,
+  );
 
   const handleExport = () => {
     const params = new URLSearchParams();
@@ -779,9 +777,9 @@ const paginatedItems = processedItems.slice(
               )}
             </TableBody>
             <TableFooter>
-            <Button onClick={handleExport} variant="text">
-              {t('reportExport')}
-            </Button>
+              <Button onClick={handleExport} variant="text">
+                {t('reportExport')}
+              </Button>
             </TableFooter>
           </Table>
         </Box>
@@ -819,39 +817,39 @@ const paginatedItems = processedItems.slice(
             </Typography>
           </Box>
 
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2, mb: 8 }}>
-          <Pagination
-            count={totalPages}
-            page={page}
-            onChange={handlePageChange}
-            showFirstButton
-            showLastButton
-            size="medium"
-          />
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2, mb: 8 }}>
+            <Pagination
+              count={totalPages}
+              page={page}
+              onChange={handlePageChange}
+              showFirstButton
+              showLastButton
+              size="medium"
+            />
+          </Box>
+
+          <CollectionFab editPath="/settings/device" />
         </Box>
 
-        <CollectionFab editPath="/settings/device" />
-      </Box>
-
-      <DeviceBulkAssignGroupDialog
-        open={bulkAssignOpen}
-        onClose={() => setBulkAssignOpen(false)}
-        onConfirm={handleBulkAssign}
-        groups={groups}
-        selectedCount={selectedIds.length}
-      />
-      <DeviceBulkUpdateSettingsDialog
-        open={bulkUpdateOpen}
-        onClose={() => setBulkUpdateOpen(false)}
-        onConfirm={handleBulkUpdate}
-        selectedCount={selectedIds.length}
-      />
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={4000}
-        onClose={() => setSnackbar({ open: false, message: '' })}
-        message={snackbar.message}
-      />
+        <DeviceBulkAssignGroupDialog
+          open={bulkAssignOpen}
+          onClose={() => setBulkAssignOpen(false)}
+          onConfirm={handleBulkAssign}
+          groups={groups}
+          selectedCount={selectedIds.length}
+        />
+        <DeviceBulkUpdateSettingsDialog
+          open={bulkUpdateOpen}
+          onClose={() => setBulkUpdateOpen(false)}
+          onConfirm={handleBulkUpdate}
+          selectedCount={selectedIds.length}
+        />
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={4000}
+          onClose={() => setSnackbar({ open: false, message: '' })}
+          message={snackbar.message}
+        />
       </Box>
     </PageLayout>
   );
