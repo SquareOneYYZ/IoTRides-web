@@ -70,13 +70,29 @@ export const ReportTable = ({ headers, children, loading, loadingComponent }) =>
       <DarkTable>
         <DarkTableHead>
           <TableRow>
-            <FirstHeaderCell />
-            <ActionHeaderCell />
-            {headers.slice(2).map((header, index) => (
-              index === headers.length - 3
-                ? <LastHeaderCell key={header}>{header}</LastHeaderCell>
-                : <DarkTableCell key={header}>{header}</DarkTableCell>
-            ))}
+            {headers.map((header, index) => {
+              if (index === 0) {
+                return (
+                  <FirstHeaderCell key={header}>
+                    {header}
+                  </FirstHeaderCell>
+                );
+              }
+
+              if (index === headers.length - 1) {
+                return (
+                  <LastHeaderCell key={header}>
+                    {header}
+                  </LastHeaderCell>
+                );
+              }
+
+              return (
+                <DarkTableCell key={header}>
+                  {header}
+                </DarkTableCell>
+              );
+            })}
           </TableRow>
         </DarkTableHead>
         <DarkTableBody>

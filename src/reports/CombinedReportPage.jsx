@@ -151,7 +151,6 @@ const CombinedReportPage = () => {
               </DarkTableRow>
             )))}
           </ReportTable>
-
         </div>
       </div>
     </PageLayout>
