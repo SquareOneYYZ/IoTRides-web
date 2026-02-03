@@ -4,11 +4,6 @@ import React, {
 } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
   FormControl,
   InputLabel,
   Select,
@@ -41,6 +36,7 @@ import MapMarkers from '../map/MapMarkers';
 import MapCamera from '../map/MapCamera';
 import MapScale from '../map/MapScale';
 import useResizableMap from './common/useResizableMap';
+import { ReportTable, DarkTableRow, DarkTableCell } from './components/StyledTableComponents';
 
 const columnsArray = [
   ['deviceId', 'sharedDevice'],
@@ -57,8 +53,8 @@ const columnsMap = new Map(columnsArray);
 
 const allEventTypes = [
   ['allTypes', 'sharedAll'],
-  ['Inside', 'Inside'],
-  ['Outside', 'Outside'],
+  ['Inside', 'inside'],
+  ['Outside', 'outside'],
 ];
 
 const segmentTypes = [
@@ -551,59 +547,39 @@ const GeofenceDistanceReportPage = () => {
                 />
               </ReportFilter>
             </div>
-            <div style={{ padding: '20px' }}>
-              <Table
-                sx={{
-                  borderCollapse: 'separate',
-                  borderSpacing: 0,
-                  borderRadius: '20px',
-                  borderLeft: '1px solid #2a2a2a',
-                  borderRight: '1px solid #2a2a2a',
-                  overflow: 'hidden',
-                }}
-              >
-                <TableHead sx={{ background: '#171717' }}>
-                  <TableRow>
-                    <TableCell className={classes.columnAction} />
-                    {columns.map((key) => (
-                      <TableCell key={key}>{t(columnsMap.get(key))}</TableCell>
-                    ))}
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {!loading ? (
-                    items.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell className={classes.columnAction} padding="none">
-                          {!item.isPlaceholder && (item.enterPositionId || item.exitPositionId) && (
-                            selectedItem === item ? (
-                              <IconButton
-                                size="small"
-                                onClick={() => setSelectedItem(null)}
-                              >
-                                <GpsFixedIcon fontSize="small" />
-                              </IconButton>
-                            ) : (
-                              <IconButton
-                                size="small"
-                                onClick={() => setSelectedItem(item)}
-                              >
-                                <LocationSearchingIcon fontSize="small" />
-                              </IconButton>
-                            )
-                          )}
-                        </TableCell>
-                        {columns.map((key) => (
-                          <TableCell key={key}>{formatValue(item, key)}</TableCell>
-                        ))}
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableShimmer columns={columns.length + 1} startAction />
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+
+            <ReportTable
+              headers={['', ...columns.map((key) => t(columnsMap.get(key)))]}
+              loading={loading}
+              loadingComponent={<TableShimmer columns={columns.length + 1} startAction />}
+            >
+              {items.map((item) => (
+                <DarkTableRow key={item.id}>
+                  <DarkTableCell className={classes.columnAction} padding="none">
+                    {!item.isPlaceholder && (item.enterPositionId || item.exitPositionId) && (
+                      selectedItem === item ? (
+                        <IconButton
+                          size="small"
+                          onClick={() => setSelectedItem(null)}
+                        >
+                          <GpsFixedIcon fontSize="small" />
+                        </IconButton>
+                      ) : (
+                        <IconButton
+                          size="small"
+                          onClick={() => setSelectedItem(item)}
+                        >
+                          <LocationSearchingIcon fontSize="small" />
+                        </IconButton>
+                      )
+                    )}
+                  </DarkTableCell>
+                  {columns.map((key) => (
+                    <DarkTableCell key={key}>{formatValue(item, key)}</DarkTableCell>
+                  ))}
+                </DarkTableRow>
+              ))}
+            </ReportTable>
           </div>
         </div>
       </div>

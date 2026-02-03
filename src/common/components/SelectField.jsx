@@ -16,7 +16,7 @@ const SelectField = ({
   data,
   keyGetter = (item) => item.id,
   titleGetter = (item) => item.name,
-
+  sx, // ✅ Accept sx prop from parent
 }) => {
   const [items, setItems] = useState();
 
@@ -37,7 +37,6 @@ const SelectField = ({
 
         if (endpoint === '/api/notifications/types') {
           const FilteredTypes = ['deviceFuelDrop', 'deviceFuelIncrease', 'textMessage', 'driverChanged', 'media'];
-
           setItems(data.filter((item) => !FilteredTypes.includes(item.type)));
         } else {
           setItems(data);
@@ -64,10 +63,13 @@ const SelectField = ({
                 '& .MuiOutlinedInput-notchedOutline': {
                   borderRadius: '13px',
                 },
+                ...sx, // ✅ Merge with parent sx
               }}
             >
               {items.map((item) => (
-                <MenuItem key={keyGetter(item)} value={keyGetter(item)}>{titleGetter(item)}</MenuItem>
+                <MenuItem key={keyGetter(item)} value={keyGetter(item)}>
+                  {titleGetter(item)}
+                </MenuItem>
               ))}
             </Select>
           </>
@@ -77,18 +79,28 @@ const SelectField = ({
             options={items}
             getOptionLabel={getOptionLabel}
             renderOption={(props, option) => (
-              <MenuItem {...props} key={keyGetter(option)} value={keyGetter(option)}>{titleGetter(option)}</MenuItem>
+              <MenuItem {...props} key={keyGetter(option)} value={keyGetter(option)}>
+                {titleGetter(option)}
+              </MenuItem>
             )}
             isOptionEqualToValue={(option, value) => keyGetter(option) === value}
             value={value}
             onChange={(_, value) => onChange({ target: { value: value ? keyGetter(value) : emptyValue } })}
-            renderInput={(params) => <TextField {...params} label={label} />}
-            sx={{
-              borderRadius: '13px',
-              '& .MuiOutlinedInput-notchedOutline': {
-                borderRadius: '13px',
-              },
-            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label={label}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '13px',
+                    '& fieldset': {
+                      borderRadius: '13px',
+                    },
+                  },
+                  ...sx, // ✅ Merge with parent sx
+                }}
+              />
+            )}
           />
         )}
       </FormControl>

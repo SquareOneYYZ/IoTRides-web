@@ -97,12 +97,6 @@ const ReportFilter = ({
             onChange={(e) => dispatch(multiDevice ? devicesActions.selectIds(e.target.value) : devicesActions.selectId(e.target.value))}
             multiple={multiDevice}
             fullWidth
-            sx={{
-              borderRadius: '13px',
-              '& .MuiOutlinedInput-notchedOutline': {
-                borderRadius: '13px',
-              },
-            }}
           />
         </div>
       )}
@@ -115,12 +109,6 @@ const ReportFilter = ({
             onChange={(e) => dispatch(reportsActions.updateGroupIds(e.target.value))}
             multiple
             fullWidth
-            sx={{
-              borderRadius: '13px',
-              '& .MuiOutlinedInput-notchedOutline': {
-                borderRadius: '13px',
-              },
-            }}
           />
         </div>
       )}
@@ -159,9 +147,11 @@ const ReportFilter = ({
                 onChange={(e) => dispatch(reportsActions.updateFrom(e.target.value))}
                 fullWidth
                 sx={{
-                  borderRadius: '13px',
-                  '& .MuiOutlinedInput-notchedOutline': {
+                  '& .MuiOutlinedInput-root': {
                     borderRadius: '13px',
+                    '& fieldset': {
+                      borderRadius: '13px',
+                    },
                   },
                 }}
               />
@@ -176,9 +166,11 @@ const ReportFilter = ({
                 onChange={(e) => dispatch(reportsActions.updateTo(e.target.value))}
                 fullWidth
                 sx={{
-                  borderRadius: '13px',
-                  '& .MuiOutlinedInput-notchedOutline': {
+                  '& .MuiOutlinedInput-root': {
                     borderRadius: '13px',
+                    '& fieldset': {
+                      borderRadius: '13px',
+                    },
                   },
                 }}
               />
@@ -193,6 +185,14 @@ const ReportFilter = ({
               onChange={(event) => setDescription(event.target.value)}
               label={t('sharedDescription')}
               fullWidth
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '13px',
+                  '& fieldset': {
+                    borderRadius: '13px',
+                  },
+                },
+              }}
             />
           </div>
           <div className={classes.filterItem}>
@@ -202,12 +202,6 @@ const ReportFilter = ({
               endpoint="/api/calendars"
               label={t('sharedCalendar')}
               fullWidth
-              sx={{
-                borderRadius: '13px',
-                '& .MuiOutlinedInput-notchedOutline': {
-                  borderRadius: '13px',
-                },
-              }}
             />
           </div>
         </>
@@ -223,9 +217,6 @@ const ReportFilter = ({
             onClick={() => handleClick('json')}
             sx={{
               borderRadius: '13px',
-              '& .MuiOutlinedInput-notchedOutline': {
-                borderRadius: '13px',
-              },
             }}
           >
             <Typography variant="button" noWrap>{t(loading ? 'sharedLoading' : 'reportShow')}</Typography>

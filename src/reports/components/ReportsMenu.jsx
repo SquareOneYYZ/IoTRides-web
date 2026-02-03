@@ -19,7 +19,6 @@ import MenuItem from '../../common/components/MenuItem';
 const ReportsMenu = ({ miniVariant = false }) => {
   const t = useTranslation();
   const location = useLocation();
-
   const admin = useAdministrator();
   const readonly = useRestriction('readonly');
 

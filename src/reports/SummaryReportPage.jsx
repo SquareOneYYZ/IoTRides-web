@@ -18,6 +18,7 @@ import { useCatch } from '../reactHelper';
 import useReportStyles from './common/useReportStyles';
 import TableShimmer from '../common/components/TableShimmer';
 import scheduleReport from './common/scheduleReport';
+import { ReportTable, DarkTableRow, DarkTableCell } from './components/StyledTableComponents';
 
 const columnsArray = [
   ['startTime', 'reportStartDate'],
@@ -37,13 +38,10 @@ const SummaryReportPage = () => {
   const navigate = useNavigate();
   const classes = useReportStyles();
   const t = useTranslation();
-
   const devices = useSelector((state) => state.devices.items);
-
   const distanceUnit = useAttributePreference('distanceUnit');
   const speedUnit = useAttributePreference('speedUnit');
   const volumeUnit = useAttributePreference('volumeUnit');
-
   const [columns, setColumns] = usePersistedState('summaryColumns', ['startTime', 'distance', 'averageSpeed']);
   const [daily, setDaily] = useState(false);
   const [items, setItems] = useState([]);
@@ -129,37 +127,22 @@ const SummaryReportPage = () => {
           <ColumnSelect columns={columns} setColumns={setColumns} columnsArray={columnsArray} />
         </ReportFilter>
       </div>
-      <div style={{ padding: '20px' }}>
-        <Table
-          sx={{
-            borderCollapse: 'separate',
-            borderSpacing: 0,
-            borderRadius: '20px',
-            borderLeft: '1px solid #2a2a2a',
-            borderRight: '1px solid #2a2a2a',
-            overflow: 'hidden',
-          }}
-        >
-          <TableHead sx={{ background: '#171717' }}>
-            <TableRow>
-              <TableCell>{t('sharedDevice')}</TableCell>
-              {columns.map((key) => (<TableCell key={key}>{t(columnsMap.get(key))}</TableCell>))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {!loading ? items.map((item) => (
-              <TableRow key={(`${item.deviceId}_${Date.parse(item.startTime)}`)}>
-                <TableCell>{devices[item.deviceId].name}</TableCell>
-                {columns.map((key) => (
-                  <TableCell key={key}>
-                    {formatValue(item, key)}
-                  </TableCell>
-                ))}
-              </TableRow>
-            )) : (<TableShimmer columns={columns.length + 1} />)}
-          </TableBody>
-        </Table>
-      </div>
+      <ReportTable
+        headers={[t('sharedDevice'), ...columns.map((key) => t(columnsMap.get(key)))]}
+        loading={loading}
+        loadingComponent={<TableShimmer columns={columns.length + 1} />}
+      >
+        {items.map((item) => (
+          <DarkTableRow key={`${item.deviceId}_${Date.parse(item.startTime)}`}>
+            <DarkTableCell>{devices[item.deviceId].name}</DarkTableCell>
+            {columns.map((key) => (
+              <DarkTableCell key={key}>
+                {formatValue(item, key)}
+              </DarkTableCell>
+            ))}
+          </DarkTableRow>
+        ))}
+      </ReportTable>
     </PageLayout>
   );
 };

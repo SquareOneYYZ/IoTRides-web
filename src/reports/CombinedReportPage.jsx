@@ -19,6 +19,7 @@ import MapMarkers from '../map/MapMarkers';
 import MapRouteCoordinates from '../map/MapRouteCoordinates';
 import MapScale from '../map/MapScale';
 import useResizableMap from './common/useResizableMap';
+import { ReportTable, DarkTableRow, DarkTableCell } from './components/StyledTableComponents';
 
 const CombinedReportPage = () => {
   const classes = useReportStyles();
@@ -26,9 +27,7 @@ const CombinedReportPage = () => {
   const devices = useSelector((state) => state.devices.items);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
-
   const { containerRef, mapHeight, handleMouseDown } = useResizableMap(60, 20, 80);
-
   const itemsCoordinates = useMemo(() => items.flatMap((item) => item.route), [items]);
   const createMarkers = () => items.flatMap((item) => item.events
     .map((event) => item.positions.find((p) => event.positionId === p.id))
@@ -139,66 +138,19 @@ const CombinedReportPage = () => {
               loading={loading}
             />
           </div>
-          <div style={{ padding: '20px' }}>
-            <Table
-              sx={{
-                borderCollapse: 'separate',
-                borderSpacing: 0,
-                borderRadius: '20px',
-                borderLeft: '1px solid #2a2a2a',
-                borderRight: '1px solid #2a2a2a',
-                overflow: 'hidden',
-              }}
-            >
-              <TableHead sx={{
-                background: '#171717',
-
-              }}
-              >
-                <TableRow>
-                  <TableCell
-                    sx={{
-                      borderTopLeftRadius: '20px',
-                    }}
-                  >
-                    {t('sharedDevice')}
-                  </TableCell>
-
-                  <TableCell>
-                    {t('positionFixTime')}
-                  </TableCell>
-
-                  <TableCell
-                    sx={{
-                      borderTopRightRadius: '20px',
-                    }}
-                  >
-                    {t('sharedType')}
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-
-              <TableBody>
-                {!loading ? (
-                  items.flatMap((item) => item.events.map((event, index) => (
-                    <TableRow key={event.id}>
-                      <TableCell>
-                        {index ? '' : devices[item.deviceId].name}
-                      </TableCell>
-                      <TableCell>
-                        {formatTime(event.eventTime, 'seconds')}
-                      </TableCell>
-                      <TableCell>
-                        {t(prefixString('event', event.type))}
-                      </TableCell>
-                    </TableRow>
-                  )))
-                ) : (
-                  <TableShimmer columns={3} />
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <ReportTable
+            headers={[t('sharedDevice'), t('positionFixTime'), t('sharedType')]}
+            loading={loading}
+            loadingComponent={<TableShimmer columns={3} />}
+          >
+            {items.flatMap((item) => item.events.map((event, index) => (
+              <DarkTableRow key={event.id}>
+                <DarkTableCell>{index ? '' : devices[item.deviceId].name}</DarkTableCell>
+                <DarkTableCell>{formatTime(event.eventTime, 'seconds')}</DarkTableCell>
+                <DarkTableCell>{t(prefixString('event', event.type))}</DarkTableCell>
+              </DarkTableRow>
+            )))}
+          </ReportTable>
 
         </div>
       </div>

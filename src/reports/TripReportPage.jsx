@@ -5,6 +5,7 @@ import {
 } from '@mui/material';
 import GpsFixedIcon from '@mui/icons-material/GpsFixed';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
+import { ReportTable, DarkTableRow, DarkTableCell } from './components/StyledTableComponents';
 import {
   formatDistance, formatSpeed, formatVolume, formatTime, formatNumericHours,
 } from '../common/util/formatter';
@@ -236,47 +237,32 @@ const TripReportPage = () => {
               <ColumnSelect columns={columns} setColumns={setColumns} columnsArray={columnsArray} />
             </ReportFilter>
           </div>
-          <div style={{ padding: '20px' }}>
-            <Table
-              sx={{
-                borderCollapse: 'separate',
-                borderSpacing: 0,
-                borderRadius: '20px',
-                borderLeft: '1px solid #2a2a2a',
-                borderRight: '1px solid #2a2a2a',
-                overflow: 'hidden',
-              }}
-            >
-              <TableHead sx={{ background: '#171717' }}>
-                <TableRow>
-                  <TableCell className={classes.columnAction} />
-                  {columns.map((key) => (<TableCell key={key}>{t(columnsMap.get(key))}</TableCell>))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {!loading ? items.map((item) => (
-                  <TableRow key={item.startPositionId}>
-                    <TableCell className={classes.columnAction} padding="none">
-                      {selectedItem === item ? (
-                        <IconButton size="small" onClick={() => setSelectedItem(null)}>
-                          <GpsFixedIcon fontSize="small" />
-                        </IconButton>
-                      ) : (
-                        <IconButton size="small" onClick={() => setSelectedItem(item)}>
-                          <LocationSearchingIcon fontSize="small" />
-                        </IconButton>
-                      )}
-                    </TableCell>
-                    {columns.map((key) => (
-                      <TableCell key={key}>
-                        {formatValue(item, key)}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                )) : (<TableShimmer columns={columns.length + 1} startAction />)}
-              </TableBody>
-            </Table>
-          </div>
+          <ReportTable
+            headers={['', ...columns.map((key) => t(columnsMap.get(key)))]}
+            loading={loading}
+            loadingComponent={<TableShimmer columns={columns.length + 1} startAction />}
+          >
+            {items.map((item) => (
+              <DarkTableRow key={item.startPositionId}>
+                <DarkTableCell className={classes.columnAction} padding="none">
+                  {selectedItem === item ? (
+                    <IconButton size="small" onClick={() => setSelectedItem(null)}>
+                      <GpsFixedIcon fontSize="small" />
+                    </IconButton>
+                  ) : (
+                    <IconButton size="small" onClick={() => setSelectedItem(item)}>
+                      <LocationSearchingIcon fontSize="small" />
+                    </IconButton>
+                  )}
+                </DarkTableCell>
+                {columns.map((key) => (
+                  <DarkTableCell key={key}>
+                    {formatValue(item, key)}
+                  </DarkTableCell>
+                ))}
+              </DarkTableRow>
+            ))}
+          </ReportTable>
         </div>
       </div>
 

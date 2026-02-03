@@ -27,6 +27,7 @@ import MapGeofence from '../map/MapGeofence';
 import scheduleReport from './common/scheduleReport';
 import MapScale from '../map/MapScale';
 import useResizableMap from './common/useResizableMap';
+import { ReportTable, DarkTableRow, DarkTableCell } from './components/StyledTableComponents';
 
 const columnsArray = [
   ['startTime', 'reportStartTime'],
@@ -44,10 +45,8 @@ const StopReportPage = () => {
   const classes = useReportStyles();
   const t = useTranslation();
   const { containerRef, mapHeight, handleMouseDown } = useResizableMap(60, 20, 80);
-
   const distanceUnit = useAttributePreference('distanceUnit');
   const volumeUnit = useAttributePreference('volumeUnit');
-
   const [columns, setColumns] = usePersistedState('stopColumns', ['startTime', 'endTime', 'startOdometer', 'address']);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -194,51 +193,30 @@ const StopReportPage = () => {
               <ColumnSelect columns={columns} setColumns={setColumns} columnsArray={columnsArray} />
             </ReportFilter>
           </div>
-          <div style={{ padding: '20px' }}>
-            <Table
-              sx={{
-                borderCollapse: 'separate',
-                borderSpacing: 0,
-                borderRadius: '20px',
-                borderLeft: '1px solid #2a2a2a',
-                borderRight: '1px solid #2a2a2a',
-                overflow: 'hidden',
-              }}
-            >
-              <TableHead sx={{ background: '#171717' }}>
-                <TableRow>
-                  <TableCell className={classes.columnAction} />
-                  {columns.map((key) => (
-                    <TableCell key={key}>{t(columnsMap.get(key))}</TableCell>
-                  ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {!loading ? (
-                  items.map((item) => (
-                    <TableRow key={item.positionId}>
-                      <TableCell className={classes.columnAction} padding="none">
-                        {selectedItem === item ? (
-                          <IconButton size="small" onClick={() => setSelectedItem(null)}>
-                            <GpsFixedIcon fontSize="small" />
-                          </IconButton>
-                        ) : (
-                          <IconButton size="small" onClick={() => setSelectedItem(item)}>
-                            <LocationSearchingIcon fontSize="small" />
-                          </IconButton>
-                        )}
-                      </TableCell>
-                      {columns.map((key) => (
-                        <TableCell key={key}>{formatValue(item, key)}</TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableShimmer columns={columns.length + 1} startAction />
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <ReportTable
+            headers={['', ...columns.map((key) => t(columnsMap.get(key)))]}
+            loading={loading}
+            loadingComponent={<TableShimmer columns={columns.length + 1} startAction />}
+          >
+            {items.map((item) => (
+              <DarkTableRow key={item.positionId}>
+                <DarkTableCell className={classes.columnAction} padding="none">
+                  {selectedItem === item ? (
+                    <IconButton size="small" onClick={() => setSelectedItem(null)}>
+                      <GpsFixedIcon fontSize="small" />
+                    </IconButton>
+                  ) : (
+                    <IconButton size="small" onClick={() => setSelectedItem(item)}>
+                      <LocationSearchingIcon fontSize="small" />
+                    </IconButton>
+                  )}
+                </DarkTableCell>
+                {columns.map((key) => (
+                  <DarkTableCell key={key}>{formatValue(item, key)}</DarkTableCell>
+                ))}
+              </DarkTableRow>
+            ))}
+          </ReportTable>
         </div>
       </div>
     </PageLayout>

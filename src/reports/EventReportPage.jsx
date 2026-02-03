@@ -1,19 +1,12 @@
-import React, {
-  useState,
-} from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
-  Link,
   IconButton,
+  Link,
 } from '@mui/material';
 import GpsFixedIcon from '@mui/icons-material/GpsFixed';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
@@ -46,6 +39,8 @@ import scheduleReport from './common/scheduleReport';
 import MapScale from '../map/MapScale';
 import SelectField from '../common/components/SelectField';
 import ReplayControl from './components/ReplayControl';
+import { ReportTable, DarkTableRow, DarkTableCell } from './components/StyledTableComponents';
+import useResizableMap from './common/useResizableMap';
 
 const columnsArray = [
   ['eventTime', 'positionFixTime'],
@@ -74,6 +69,8 @@ const EventReportPage = () => {
   const [allEventTypes, setAllEventTypes] = useState([
     ['allEvents', 'eventAll'],
   ]);
+
+  const { containerRef, mapHeight, handleMouseDown } = useResizableMap(60, 20, 80);
 
   const alarms = useTranslationKeys((it) => it.startsWith('alarm')).map(
     (it) => ({
@@ -364,25 +361,78 @@ const EventReportPage = () => {
       menu={<ReportsMenu />}
       breadcrumbs={['reportTitle', 'reportEvents']}
     >
-      <div className={classes.container}>
+      <div
+        ref={containerRef}
+        className={classes.container}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: 'calc(100vh - 64px)',
+          overflow: 'hidden',
+        }}
+      >
         {selectedItem && (
-          <div className={classes.containerMap}>
-            <MapView>
-              <MapGeofence />
+          <>
+            <div
+              className={classes.containerMap}
+              style={{
+                height: `${mapHeight}%`,
+                minHeight: '150px',
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+            >
+              <MapView>
+                <MapGeofence />
+                {position && (
+                  <MapPositions positions={[position]} titleField="fixTime" />
+                )}
+              </MapView>
+              <MapScale />
               {position && (
-                <MapPositions positions={[position]} titleField="fixTime" />
+                <MapCamera
+                  latitude={position.latitude}
+                  longitude={position.longitude}
+                />
               )}
-            </MapView>
-            <MapScale />
-            {position && (
-              <MapCamera
-                latitude={position.latitude}
-                longitude={position.longitude}
+            </div>
+
+            <button
+              type="button"
+              aria-label="button"
+              onMouseDown={handleMouseDown}
+              style={{
+                height: '8px',
+                backgroundColor: '#e0e0e0',
+                cursor: 'row-resize',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                borderTop: '1px solid #ccc',
+                borderBottom: '1px solid #ccc',
+              }}
+            >
+              <div
+                style={{
+                  width: '40px',
+                  height: '4px',
+                  backgroundColor: '#999',
+                  borderRadius: '2px',
+                }}
               />
-            )}
-          </div>
+            </button>
+          </>
         )}
-        <div className={classes.containerMain}>
+
+        <div
+          className={classes.containerMain}
+          style={{
+            flex: 1,
+            overflow: 'auto',
+            minHeight: '150px',
+          }}
+        >
           <div className={classes.header}>
             <ReportFilter
               handleSubmit={handleSubmit}
@@ -405,9 +455,9 @@ const EventReportPage = () => {
                     }}
                     multiple
                     sx={{
-                      borderRadius: '12px',
+                      borderRadius: '13px',
                       '& .MuiOutlinedInput-notchedOutline': {
-                        borderRadius: '12px',
+                        borderRadius: '13px',
                       },
                     }}
                   >
@@ -419,19 +469,18 @@ const EventReportPage = () => {
                   </Select>
                 </FormControl>
               </div>
-              {eventTypes[0] !== 'allEvents'
-                && eventTypes.includes('alarm') && (
-                  <div className={classes.filterItem}>
-                    <SelectField
-                      multiple
-                      value={alarmTypes}
-                      onChange={(e) => setAlarmTypes(e.target.value)}
-                      data={alarms}
-                      keyGetter={(it) => it.key}
-                      label={t('sharedAlarms')}
-                      fullWidth
-                    />
-                  </div>
+              {eventTypes[0] !== 'allEvents' && eventTypes.includes('alarm') && (
+                <div className={classes.filterItem}>
+                  <SelectField
+                    multiple
+                    value={alarmTypes}
+                    onChange={(e) => setAlarmTypes(e.target.value)}
+                    data={alarms}
+                    keyGetter={(it) => it.key}
+                    label={t('sharedAlarms')}
+                    fullWidth
+                  />
+                </div>
               )}
               <ColumnSelect
                 columns={columns}
@@ -440,71 +489,55 @@ const EventReportPage = () => {
               />
             </ReportFilter>
           </div>
-          <div style={{ padding: '20px' }}>
-            <Table
-              sx={{
-                borderCollapse: 'separate',
-                borderSpacing: 0,
-                borderRadius: '20px',
-                borderLeft: '1px solid #2a2a2a',
-                borderRight: '1px solid #2a2a2a',
-                overflow: 'hidden',
-              }}
-            >
-              <TableHead sx={{ background: '#171717' }}>
-                <TableRow>
-                  <TableCell className={classes.columnAction} />
-                  <TableCell className={classes.columnAction} />
-                  {columns.map((key) => (
-                    <TableCell key={key}>{t(columnsMap.get(key))}</TableCell>
-                  ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {!loading ? (
-                  items.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className={classes.columnAction} padding="none">
-                        {item.positionId && (
-                          selectedItem === item ? (
-                            <IconButton
-                              size="small"
-                              onClick={() => setSelectedItem(null)}
-                            >
-                              <GpsFixedIcon fontSize="small" />
-                            </IconButton>
-                          ) : (
-                            <IconButton
-                              size="small"
-                              onClick={() => setSelectedItem(item)}
-                            >
-                              <LocationSearchingIcon fontSize="small" />
-                            </IconButton>
-                          )
-                        )}
-                      </TableCell>
-                      <TableCell className={classes.columnAction} padding="none">
-                        {item.positionId && (
-                          <IconButton
-                            size="small"
-                            onClick={() => handleReplayStart(item)}
-                            disabled={replayLoading}
-                          >
-                            <ReplayIcon fontSize="small" />
-                          </IconButton>
-                        )}
-                      </TableCell>
-                      {columns.map((key) => (
-                        <TableCell key={key}>{formatValue(item, key)}</TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableShimmer columns={columns.length + 2} />
-                )}
-              </TableBody>
-            </Table>
-          </div>
+
+          <ReportTable
+            headers={[
+              '',
+              '',
+              ...columns.map((key) => t(columnsMap.get(key))),
+            ]}
+            loading={loading}
+            loadingComponent={<TableShimmer columns={columns.length + 2} />}
+          >
+
+            {items.map((item) => (
+              <DarkTableRow key={item.id}>
+                <DarkTableCell className={classes.columnAction} padding="none">
+                  {item.positionId && (
+                    selectedItem === item ? (
+                      <IconButton
+                        size="small"
+                        onClick={() => setSelectedItem(null)}
+                      >
+                        <GpsFixedIcon fontSize="small" />
+                      </IconButton>
+                    ) : (
+                      <IconButton
+                        size="small"
+                        onClick={() => setSelectedItem(item)}
+                      >
+                        <LocationSearchingIcon fontSize="small" />
+                      </IconButton>
+                    )
+                  )}
+                </DarkTableCell>
+                <DarkTableCell className={classes.columnAction} padding="none">
+                  {item.positionId && (
+                  <IconButton
+                    size="small"
+                    onClick={() => handleReplayStart(item)}
+                    disabled={replayLoading}
+                  >
+                    <ReplayIcon fontSize="small" />
+                  </IconButton>
+                  )}
+                </DarkTableCell>
+                {columns.map((key) => (
+                  <DarkTableCell key={key}>{formatValue(item, key)}</DarkTableCell>
+                ))}
+              </DarkTableRow>
+            ))}
+          </ReportTable>
         </div>
       </div>
     </PageLayout>
