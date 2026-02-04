@@ -621,6 +621,7 @@
 	"reportTitleSummary": "Summary Report",
 	"reportTitleDevicegeofencedistances": "Geofence Activity Report",
 	"reportRecentReportsNote": "Showing your 5 most recent reports. Click the replay icon to regenerate a report with the same parameters.",
+	"statisticsTitle": "Statistics",
 	"statisticsCaptureTime": "Capture Time",
 	"statisticsActiveUsers": "Active Users",
 	"statisticsActiveDevices": "Active Devices",
