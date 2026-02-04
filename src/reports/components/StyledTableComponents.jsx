@@ -20,7 +20,7 @@ export const DarkTable = styled(Table)(({ theme }) => ({
 export const DarkTableHead = styled(TableHead)(({ theme }) => ({
   backgroundColor: theme.palette.mode === 'dark'
     ? '#2a2a2a' // Slightly lighter than paper in dark mode for contrast
-    : '#f5f5f5', // Light grey in light mode
+    : 'rgba(0, 132, 255, 0.08)', // Light grey in light mode
 }));
 
 export const DarkTableCell = styled(TableCell)(({ theme }) => ({

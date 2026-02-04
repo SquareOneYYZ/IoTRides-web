@@ -41,10 +41,9 @@ export default {
   MuiListItemButton: {
     styleOverrides: {
       root: ({ theme }) => ({
-        borderRadius: 8,
+        borderRadius: 10,
+        gap: 20,
         marginBottom: theme.spacing(0.5),
-        marginLeft: theme.spacing(1),
-        marginRight: theme.spacing(1),
 
         '&:hover': {
           backgroundColor: theme.palette.mode === 'dark'
@@ -55,16 +54,16 @@ export default {
         '&.Mui-selected': {
           backgroundColor: theme.palette.mode === 'dark'
             ? '#ffffff'
-            : 'rgba(0, 0, 0, 0.08)',
-          fontWeight: 500,
-          color: theme.palette.mode === 'dark' ? '#000000 !important' : theme.palette.text.primary,
+            : 'rgba(0, 132, 255, 0.08)',
+          color: theme.palette.mode === 'dark' ? '#000000 !important' : '#3385F0',
 
           '& .MuiListItemIcon-root': {
-            color: theme.palette.mode === 'dark' ? '#000000 !important' : theme.palette.text.primary,
+            color: theme.palette.mode === 'dark' ? '#000000 !important' : '#3385F0',
           },
 
           '& .MuiListItemText-primary': {
-            color: theme.palette.mode === 'dark' ? '#000000 !important' : theme.palette.text.primary,
+            color: theme.palette.mode === 'dark' ? '#000000 !important' : '#3385F0',
+            fontWeight: 500,
           },
 
           '&:hover': {
@@ -96,7 +95,7 @@ export default {
         color: theme.palette.mode === 'dark'
           ? 'rgba(255, 255, 255, 0.7)'
           : theme.palette.text.secondary,
-        minWidth: 40,
+        minWidth: 20,
       }),
     },
   },

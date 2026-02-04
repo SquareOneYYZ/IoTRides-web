@@ -1,92 +1,14 @@
 import React from 'react';
-import SelectField from './SelectField';
-
-const styles = {
-  statCard: {
-    backgroundColor: '#1B1B1B',
-    borderRadius: '8px',
-    padding: '15px',
-    border: '1px solid #4c4b4bff',
-    minHeight: '160px',
-  },
-  statHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '8px',
-  },
-  statTitle: {
-    fontWeight: 700,
-    color: '#94a3b8de',
-    fontSize: '18px',
-  },
-  dropdownWrapper: {
-    minWidth: '160px',
-  },
-  bigText: {
-    fontSize: '22px',
-    fontWeight: 600,
-    color: '#ffffff',
-    marginBottom: '8px',
-  },
-  smallGreyText: {
-    fontSize: '14px',
-    color: '#9ca3af',
-  },
-  statusGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: '8px',
-    marginTop: '12px',
-  },
-  statusItem: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#00000079',
-    padding: '8px',
-    gap: '10px',
-    borderRadius: '4px',
-  },
-  statusLabel: {
-    fontSize: '16px',
-    color: '#94a3b8c1',
-  },
-  statusValue: {
-    fontSize: '20px',
-    fontWeight: 600,
-    color: '#ffffff',
-  },
-  dayNightGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(2, 1fr)',
-    gap: '8px',
-    marginTop: '12px',
-  },
-  dayNightItem: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#00000079',
-    padding: '8px',
-    gap: '10px',
-    borderRadius: '4px',
-  },
-  dayNightLabel: {
-    fontSize: '16px',
-    fontWeight: 500,
-    color: '#94a3b8',
-  },
-  dayNightValue: {
-    fontSize: '24px',
-    fontWeight: 600,
-    color: '#ffffff',
-  },
-};
+import {
+  Box, Typography, CircularProgress, MenuItem, Select, FormControl,
+} from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 
 const StatCard = ({
   type, data, groups, devices, selectedGroup, selectedDevice, onGroupChange, onDeviceChange, loading,
 }) => {
+  const theme = useTheme();
+
   const formatKm = (meters) => {
     if (!meters && meters !== 0) return '0';
     return (meters / 1000).toLocaleString(undefined, { maximumFractionDigits: 2 });
@@ -98,142 +20,323 @@ const StatCard = ({
     year: 'numeric',
   });
 
+  const cardStyle = {
+    backgroundColor: theme.palette.background.paper,
+    borderRadius: 2,
+    p: 2,
+    border: `1px solid ${theme.palette.divider}`,
+    minHeight: 160,
+  };
+
   if (type === 'vehicleStatus') {
     return (
-      <div style={styles.statCard}>
-        <div style={styles.statHeader}>
-          <div style={styles.statTitle}>Vehicle Status</div>
-        </div>
+      <Box sx={cardStyle}>
+        <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: theme.palette.text.primary }}>
+          Vehicle Status
+        </Typography>
 
         {loading ? (
-          <div style={{ color: '#fff', marginTop: '16px' }}>Loading...</div>
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+            <CircularProgress size={24} />
+          </Box>
         ) : (
-          <div style={styles.statusGrid}>
-            <div style={styles.statusItem}>
-              <div style={{ ...styles.statusValue, color: '#4ade80df' }}>{data?.totalOnline || 0}</div>
-              <div style={styles.statusLabel}>Online</div>
-            </div>
-            <div style={styles.statusItem}>
-              <div style={{ ...styles.statusValue, color: '#f87171' }}>{data?.totalOffline || 0}</div>
-              <div style={styles.statusLabel}>Offline</div>
-            </div>
-            <div style={styles.statusItem}>
-              <div style={{ ...styles.statusValue, color: '#60a5fa' }}>{data?.totalDriving || 0}</div>
-              <div style={styles.statusLabel}>Driving</div>
-            </div>
-            <div style={styles.statusItem}>
-              <div style={styles.statusValue}>{data?.totalParked || 0}</div>
-              <div style={styles.statusLabel}>Parked</div>
-            </div>
-            <div style={styles.statusItem}>
-              <div style={styles.statusValue}>{data?.totalInactive || 0}</div>
-              <div style={styles.statusLabel}>Inactive</div>
-            </div>
-            <div style={styles.statusItem}>
-              <div style={styles.statusValue}>{data?.totalNoData || 0}</div>
-              <div style={styles.statusLabel}>No Data</div>
-            </div>
-          </div>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: 1,
+              mt: 1.5,
+            }}
+          >
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+                p: 1,
+                borderRadius: 1,
+                gap: 0.5,
+              }}
+            >
+              <Typography variant="h5" sx={{ fontWeight: 600, color: '#4ade80' }}>
+                {data?.totalOnline || 0}
+              </Typography>
+              <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontSize: 14 }}>
+                Online
+              </Typography>
+            </Box>
+
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+                p: 1,
+                borderRadius: 1,
+                gap: 0.5,
+              }}
+            >
+              <Typography variant="h5" sx={{ fontWeight: 600, color: '#f87171' }}>
+                {data?.totalOffline || 0}
+              </Typography>
+              <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontSize: 14 }}>
+                Offline
+              </Typography>
+            </Box>
+
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+                p: 1,
+                borderRadius: 1,
+                gap: 0.5,
+              }}
+            >
+              <Typography variant="h5" sx={{ fontWeight: 600, color: '#60a5fa' }}>
+                {data?.totalDriving || 0}
+              </Typography>
+              <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontSize: 14 }}>
+                Driving
+              </Typography>
+            </Box>
+
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+                p: 1,
+                borderRadius: 1,
+                gap: 0.5,
+              }}
+            >
+              <Typography variant="h5" sx={{ fontWeight: 600, color: theme.palette.text.primary }}>
+                {data?.totalParked || 0}
+              </Typography>
+              <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontSize: 14 }}>
+                Parked
+              </Typography>
+            </Box>
+
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+                p: 1,
+                borderRadius: 1,
+                gap: 0.5,
+              }}
+            >
+              <Typography variant="h5" sx={{ fontWeight: 600, color: theme.palette.text.primary }}>
+                {data?.totalInactive || 0}
+              </Typography>
+              <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontSize: 14 }}>
+                Inactive
+              </Typography>
+            </Box>
+
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+                p: 1,
+                borderRadius: 1,
+                gap: 0.5,
+              }}
+            >
+              <Typography variant="h5" sx={{ fontWeight: 600, color: theme.palette.text.primary }}>
+                {data?.totalNoData || 0}
+              </Typography>
+              <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontSize: 14 }}>
+                No Data
+              </Typography>
+            </Box>
+          </Box>
         )}
-      </div>
+      </Box>
     );
   }
+
   if (type === 'weeklyKm') {
     return (
-      <div style={styles.statCard}>
-        <div style={styles.statHeader}>
-          <div style={styles.statTitle}>Weekly Stats</div>
-          <div style={styles.dropdownWrapper}>
-            <SelectField
-              label="Group"
-              data={groups?.sort((a, b) => a.name.localeCompare(b.name))}
+      <Box sx={cardStyle}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, color: theme.palette.text.primary }}>
+            Weekly Stats
+          </Typography>
+          <FormControl size="small" sx={{ minWidth: 160 }}>
+            <Select
               value={selectedGroup}
               onChange={onGroupChange}
-              fullWidth
-            />
-          </div>
-        </div>
+              displayEmpty
+              sx={{
+                fontSize: 14,
+                backgroundColor: theme.palette.background.default,
+              }}
+            >
+              <MenuItem value="" disabled>
+                <em>Select Group</em>
+              </MenuItem>
+              {groups?.sort((a, b) => a.name.localeCompare(b.name)).map((group) => (
+                <MenuItem key={group.id} value={group.id}>
+                  {group.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
 
-        {loading && <div style={{ color: '#fff', marginTop: '16px' }}>Loading...</div>}
+        {loading && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+            <CircularProgress size={24} />
+          </Box>
+        )}
 
         {!loading && data && selectedGroup && (
-          <div style={{ marginTop: '16px' }}>
-            <div style={styles.bigText}>
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="h4" sx={{ fontWeight: 600, color: theme.palette.text.primary, mb: 1 }}>
               {formatKm(data.weeklyDistanceTraveled)}
               {' '}
               km
-            </div>
-            <div style={styles.smallGreyText}>
+            </Typography>
+            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 0.5 }}>
               Week of
               {' '}
               {formatWeekText(new Date())}
-            </div>
-            <div style={styles.smallGreyText}>
+            </Typography>
+            <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
               {data.deviceCount}
               {' '}
               Devices
-            </div>
-          </div>
+            </Typography>
+          </Box>
         )}
 
         {!loading && !selectedGroup && (
-          <div style={{ color: '#94a3b8', marginTop: '16px' }}>
+          <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mt: 2 }}>
             Please select a group
-          </div>
+          </Typography>
         )}
-      </div>
+      </Box>
     );
   }
+
   if (type === 'dayNightKm') {
     return (
-      <div style={styles.statCard}>
-        <div style={styles.statHeader}>
-          <div style={styles.statTitle}>Day/Night Distance</div>
-          <div style={styles.dropdownWrapper}>
-            <SelectField
-              label="Group"
-              data={groups?.sort((a, b) => a.name.localeCompare(b.name))}
+      <Box sx={cardStyle}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, color: theme.palette.text.primary }}>
+            Day/Night Distance
+          </Typography>
+          <FormControl size="small" sx={{ minWidth: 160 }}>
+            <Select
               value={selectedGroup}
               onChange={onGroupChange}
-              fullWidth
-            />
-          </div>
-        </div>
+              displayEmpty
+              sx={{
+                fontSize: 14,
+                backgroundColor: theme.palette.background.default,
+              }}
+            >
+              <MenuItem value="" disabled>
+                <em>Select Group</em>
+              </MenuItem>
+              {groups?.sort((a, b) => a.name.localeCompare(b.name)).map((group) => (
+                <MenuItem key={group.id} value={group.id}>
+                  {group.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
 
-        {loading && <div style={{ color: '#fff', marginTop: '16px' }}>Loading...</div>}
+        {loading && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+            <CircularProgress size={24} />
+          </Box>
+        )}
 
         {!loading && data && selectedGroup && (
-        <div style={{ marginTop: '16px' }}>
-          <div style={styles.dayNightGrid}>
-            <div style={styles.dayNightItem}>
-              <div style={{ ...styles.dayNightValue, color: '#fbbf24' }}>
-                {formatKm(data.daytimeKm * 1000)}
-                {' '}
-                km
-              </div>
-              <div style={styles.dayNightLabel}>Day time</div>
-            </div>
-            <div style={styles.dayNightItem}>
-              <div style={{ ...styles.dayNightValue, color: '#818cf8' }}>
-                {formatKm(data.nighttimeKm * 1000)}
-                {' '}
-                km
-              </div>
-              <div style={styles.statusLabel}>Night-time</div>
-            </div>
-          </div>
-          <div style={{ ...styles.smallGreyText, marginTop: '12px' }}>
-            Last 7 days
-          </div>
-        </div>
+          <Box sx={{ mt: 2 }}>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: 1,
+              }}
+            >
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+                  p: 1,
+                  borderRadius: 1,
+                  gap: 0.5,
+                }}
+              >
+                <Typography variant="h5" sx={{ fontWeight: 600, color: '#fbbf24' }}>
+                  {formatKm(data.daytimeKm * 1000)}
+                  {' '}
+                  km
+                </Typography>
+                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontSize: 14 }}>
+                  Day time
+                </Typography>
+              </Box>
+
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+                  p: 1,
+                  borderRadius: 1,
+                  gap: 0.5,
+                }}
+              >
+                <Typography variant="h5" sx={{ fontWeight: 600, color: '#818cf8' }}>
+                  {formatKm(data.nighttimeKm * 1000)}
+                  {' '}
+                  km
+                </Typography>
+                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontSize: 14 }}>
+                  Night-time
+                </Typography>
+              </Box>
+            </Box>
+            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mt: 1.5 }}>
+              Last 7 days
+            </Typography>
+          </Box>
         )}
 
         {!loading && !selectedGroup && (
-        <div style={{ color: '#94a3b8', marginTop: '16px' }}>
-          Please select a group
-        </div>
+          <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mt: 2 }}>
+            Please select a group
+          </Typography>
         )}
-      </div>
+      </Box>
     );
   }
 

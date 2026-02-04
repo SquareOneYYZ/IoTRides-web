@@ -1,12 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import {
-  TrendingUp,
-  TrendingDown,
   Description,
   Menu,
   MoreVert,
   Settings,
 } from '@mui/icons-material';
+import {
+  Box,
+  Typography,
+  IconButton,
+  Button,
+  ButtonGroup,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Checkbox,
+  MenuItem,
+  Select,
+  FormControl,
+  Tab,
+  Tabs,
+  useMediaQuery,
+} from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import {
   AreaChart,
   Area,
@@ -19,238 +39,49 @@ import {
 import { DashboardSidebar } from '../common/components/DashboardSidebar';
 import StatCard from '../common/components/StatCard';
 
-const styles = {
-  container: {
-    minHeight: '100vh',
-    backgroundColor: '#212121',
-    color: '#ffffff',
-    fontFamily:
-      '-apple-system, BlinkMacSystemFont, "Geist", Roboto, sans-serif',
-  },
-  overlay: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    zIndex: 999,
-    display: 'none',
-  },
-  overlayVisible: {
-    display: 'block',
-  },
-  mainContent: {
-    padding: '12px',
-    marginLeft: '250px',
-    transition: 'margin-left 0.3s ease-in-out',
-  },
-  header: {
-    borderBottom: '1px solid #1f2937',
-    padding: '16px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#0A0A0A',
-    borderRadius: '20px 20px 0px 0px',
-  },
-  hamburger: {
-    display: 'none',
-    background: 'none',
-    border: 'none',
-    color: '#fff',
-    cursor: 'pointer',
-    padding: '8px',
-  },
-  content: {
-    padding: '16px',
-    backgroundColor: '#0A0A0A',
-    borderRadius: '0px 0px 20px 20px',
-  },
-  statsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-    gap: '16px',
-    marginBottom: '32px',
-  },
-  chartSection: {
-    backgroundColor: '#1B1B1B',
-    borderRadius: '12px',
-    padding: '16px',
-    border: '1px solid #4c4b4bff',
-    marginBottom: '32px',
-  },
-  chartHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: '16px',
-    marginBottom: '24px',
-  },
-  timeRangeButtons: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    borderRadius: '8px',
-    height: '36px',
-    border: '1px solid #616161',
-    width: 'fit-content',
-  },
-  timeRangeBtn: {
-    padding: '8px 12px',
-    border: 'none',
-    fontSize: '13px',
-    cursor: 'pointer',
-    backgroundColor: 'transparent',
-    color: '#94a3b8',
-    transition: 'background-color 0.2s, color 0.2s',
-    minWidth: '100px',
-  },
-  tableSection: {
-    backgroundColor: '#1B1B1B',
-    borderRadius: '12px',
-    border: '1px solid #4c4b4bff',
-    overflowX: 'auto',
-  },
-  tableHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: '16px',
-    padding: '16px',
-    borderBottom: '1px solid #3F3E3E',
-  },
-  tabButtons: {
-    display: 'flex',
-    gap: '8px',
-    flexWrap: 'wrap',
-  },
-  tabBtn: {
-    padding: '8px 16px',
-    borderRadius: '5px',
-    fontSize: '14px',
-    border: 'none',
-    cursor: 'pointer',
-    transition: 'background-color 0.2s',
-    whiteSpace: 'nowrap',
-  },
-  actionButtons: {
-    display: 'flex',
-    gap: '8px',
-    flexWrap: 'wrap',
-  },
-  filterSection: {
-    padding: '16px',
-    borderBottom: '1px solid #3F3E3E',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    flexWrap: 'wrap',
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
-    minWidth: '600px',
-  },
-  th: {
-    padding: '12px 16px',
-    textAlign: 'left',
-    fontSize: '14px',
-    color: '#ffffff',
-    fontWeight: 500,
-    borderBottom: '1px solid #3F3E3E',
-  },
-  td: {
-    padding: '16px',
-    borderTop: '1px solid #3F3E3E',
-  },
-};
-
-const TableRow = ({ item, status, target, limit, reviewer, sectionType }) => (
-  <tr style={{ transition: 'background-color 0.2s' }}>
-    <td style={styles.td}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <input
-          type="checkbox"
-          style={{ width: 16, height: 16, cursor: 'pointer' }}
-        />
-        <button
-          type="button"
-          style={{
-            background: 'none',
-            border: 'none',
-            color: '#6b7280',
-            cursor: 'pointer',
-            padding: 0,
-            display: 'flex',
-          }}
-        >
-          <Menu style={{ fontSize: 16 }} />
-        </button>
-        <span style={{ color: '#e2e8f0' }}>{item}</span>
-      </div>
-    </td>
-    <td style={{ ...styles.td, color: '#94a3b8' }}>{sectionType}</td>
-    <td style={styles.td}>
-      {/* <span
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '4px',
-          padding: '4px 8px',
-          borderRadius: '6px',
-          fontSize: '12px',
-          backgroundColor:
-            status === 'Done'
-              ? 'rgba(34, 197, 94, 0.1)'
-              : status === 'In Process'
-                ? 'rgba(234, 179, 8, 0.1)'
-                : 'rgba(107, 114, 128, 0.1)',
-          color:
-            status === 'Done'
-              ? '#4ade80'
-              : status === 'In Process'
-                ? '#fbbf24'
-                : '#9ca3af',
-        }}
-      >
-        <div
-          style={{
-            width: 8,
-            height: 8,
-            borderRadius: '50%',
-            backgroundColor:
-              status === 'Done'
-                ? '#4ade80'
-                : status === 'In Process'
-                  ? '#fbbf24'
-                  : '#9ca3af',
-          }}
-        />
-        {status}
-      </span> */}
-    </td>
-    <td style={{ ...styles.td, color: '#e2e8f0' }}>{target}</td>
-    <td style={{ ...styles.td, color: '#e2e8f0' }}>{limit}</td>
-    <td style={{ ...styles.td, color: '#e2e8f0' }}>{reviewer}</td>
-    <td style={styles.td}>
-      <button
-        type="button"
-        style={{
-          background: 'none',
-          border: 'none',
-          color: '#6b7280',
-          cursor: 'pointer',
-          padding: 0,
-          display: 'flex',
-        }}
-      >
-        <MoreVert style={{ fontSize: 16 }} />
-      </button>
-    </td>
-  </tr>
+const TableRowComponent = ({ item, status, target, limit, reviewer, sectionType, theme }) => (
+  <TableRow
+    sx={{
+      '&:hover': {
+        backgroundColor: theme.palette.action.hover,
+      },
+    }}
+  >
+    <TableCell>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Checkbox size="small" />
+        <IconButton size="small" sx={{ color: theme.palette.text.secondary }}>
+          <Menu sx={{ fontSize: 16 }} />
+        </IconButton>
+        <Typography variant="body2">{item}</Typography>
+      </Box>
+    </TableCell>
+    <TableCell>
+      <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+        {sectionType}
+      </Typography>
+    </TableCell>
+    <TableCell />
+    <TableCell>
+      <Typography variant="body2">{target}</Typography>
+    </TableCell>
+    <TableCell>
+      <Typography variant="body2">{limit}</Typography>
+    </TableCell>
+    <TableCell>
+      <Typography variant="body2">{reviewer}</Typography>
+    </TableCell>
+    <TableCell>
+      <IconButton size="small" sx={{ color: theme.palette.text.secondary }}>
+        <MoreVert sx={{ fontSize: 16 }} />
+      </IconButton>
+    </TableCell>
+  </TableRow>
 );
 
 export const DashboardPage = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [timeRange, setTimeRange] = useState('Last 7 days');
   const [activeNav, setActiveNav] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -272,12 +103,9 @@ export const DashboardPage = () => {
   const [weeklyKmLoading, setWeeklyKmLoading] = useState(false);
   const [dayNightKmLoading, setDayNightKmLoading] = useState(false);
   const [selectedGroupForDayNight, setSelectedGroupForDayNight] = useState('');
-
-  // New states for tabs and filtering
-  const [activeTab, setActiveTab] = useState('outline');
+  const [activeTab, setActiveTab] = useState(0);
   const [selectedTableGroup, setSelectedTableGroup] = useState('all');
 
-  // Table data for different tabs
   const tabsData = {
     outline: {
       name: 'Outline',
@@ -323,9 +151,10 @@ export const DashboardPage = () => {
   };
 
   const tableGroups = ['all', 'Group A', 'Group B', 'Group C'];
+  const tabKeys = Object.keys(tabsData);
 
   const getFilteredData = () => {
-    const currentData = tabsData[activeTab].data;
+    const currentData = tabsData[tabKeys[activeTab]].data;
     if (selectedTableGroup === 'all') {
       return currentData;
     }
@@ -352,7 +181,6 @@ export const DashboardPage = () => {
         const groupsResponse = await fetch('/api/groups');
         if (groupsResponse.ok) {
           const groupsData = await groupsResponse.json();
-          console.log('Groups data:', groupsData);
           setGroups(groupsData);
         }
       } catch (error) {
@@ -442,41 +270,13 @@ export const DashboardPage = () => {
   ];
 
   return (
-    <div style={styles.container}>
-      <style>
-        {`
-          @media (max-width: 767px) {
-            .main-content-mobile {
-              margin-left: 0 !important;
-            }
-          }
-          @media (min-width: 768px) and (max-width: 1024px) {
-            .stats-grid {
-              grid-template-columns: repeat(2, 1fr) !important;
-            }
-          }
-          @media (max-width: 640px) {
-            .stats-grid {
-              grid-template-columns: 1fr !important;
-            }
-            .chart-header {
-              align-items: flex-start !important;
-            }
-            .table-header {
-              align-items: flex-start !important;
-            }
-          }
-        `}
-      </style>
-
-      {sidebarOpen && (
-        <div
-          aria-hidden="true"
-          style={{ ...styles.overlay, ...styles.overlayVisible }}
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
+    <Box
+      sx={{
+        minHeight: '100vh',
+        backgroundColor: theme.palette.background.default,
+        display: 'flex',
+      }}
+    >
       <DashboardSidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
@@ -484,279 +284,275 @@ export const DashboardPage = () => {
         setActiveNav={setActiveNav}
       />
 
-      <div style={styles.mainContent} className="main-content-mobile">
-        <div style={styles.header}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <button
-              type="button"
+      <Box
+        sx={{
+          flex: 1,
+          ml: { xs: 0, md: '250px' },
+          p: 1.5,
+        }}
+      >
+        {/* Header */}
+        <Paper
+          sx={{
+            p: 2,
+            mb: 1.5,
+            borderRadius: 2,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <IconButton
               onClick={() => setSidebarOpen(true)}
-              className="hamburger-btn"
-              style={styles.hamburger}
+              sx={{ display: { xs: 'flex', md: 'none' } }}
             >
-              <Menu style={{ fontSize: 24 }} />
-            </button>
-            <Description style={{ fontSize: 20 }} />
-            <h1 style={{ fontSize: '20px', fontWeight: 600, margin: 0 }}>
+              <Menu />
+            </IconButton>
+            <Description sx={{ fontSize: 20 }} />
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
               Dashboard
-            </h1>
-          </div>
-        </div>
+            </Typography>
+          </Box>
+        </Paper>
 
-        <div style={styles.content}>
-          <div style={styles.statsGrid} className="stats-grid">
-            <StatCard
-              type="vehicleStatus"
-              data={vehicleStatus}
-              loading={loading}
-            />
-            <StatCard
-              type="weeklyKm"
-              data={weeklyKmData}
-              groups={groups}
-              selectedGroup={selectedGroup}
-              onGroupChange={(e) => setSelectedGroup(e.target.value)}
-              loading={weeklyKmLoading}
-            />
-            <StatCard
-              type="dayNightKm"
-              data={dayNightKmData}
-              groups={groups}
-              selectedGroup={selectedGroupForDayNight}
-              onGroupChange={(e) => setSelectedGroupForDayNight(e.target.value)}
-              loading={dayNightKmLoading}
-            />
-          </div>
+        {/* Stats Grid */}
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              sm: 'repeat(2, 1fr)',
+              md: 'repeat(3, 1fr)',
+            },
+            gap: 2,
+            mb: 3,
+          }}
+        >
+          <StatCard
+            type="vehicleStatus"
+            data={vehicleStatus}
+            loading={loading}
+          />
+          <StatCard
+            type="weeklyKm"
+            data={weeklyKmData}
+            groups={groups}
+            selectedGroup={selectedGroup}
+            onGroupChange={(e) => setSelectedGroup(e.target.value)}
+            loading={weeklyKmLoading}
+          />
+          <StatCard
+            type="dayNightKm"
+            data={dayNightKmData}
+            groups={groups}
+            selectedGroup={selectedGroupForDayNight}
+            onGroupChange={(e) => setSelectedGroupForDayNight(e.target.value)}
+            loading={dayNightKmLoading}
+          />
+        </Box>
 
-          <div style={styles.chartSection}>
-            <div style={styles.chartHeader} className="chart-header">
-              <div>
-                <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>
-                  Vehicle Activity
-                </h2>
-                <p style={{ fontSize: 14, color: '#94a3b8', margin: 0 }}>
-                  Total for the last 3 months
-                </p>
-              </div>
-              <div style={styles.timeRangeButtons}>
-                {ranges.map((range, index) => {
-                  const isActive = timeRange === range;
-                  const isFirst = index === 0;
-                  const isLast = index === ranges.length - 1;
-
-                  return (
-                    <button
-                      key={range}
-                      type="button"
-                      onClick={() => setTimeRange(range)}
-                      style={{
-                        ...styles.timeRangeBtn,
-                        backgroundColor: isActive ? '#404040' : 'transparent',
-                        color: isActive ? '#ffffff' : '#94a3b8',
-                        borderTopLeftRadius: isFirst ? '8px' : 0,
-                        borderBottomLeftRadius: isFirst ? '8px' : 0,
-                        borderTopRightRadius: isLast ? '8px' : 0,
-                        borderBottomRightRadius: isLast ? '8px' : 0,
-                        borderLeft: index !== 0 ? '1px solid #404040' : 'none',
-                      }}
-                    >
-                      {range}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={visitorData}>
-                <defs>
-                  <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6b7280" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#6b7280" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient
-                    id="colorVehicles"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop offset="5%" stopColor="#9ca3af" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#9ca3af" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis
-                  dataKey="date"
-                  stroke="#64748b"
-                  style={{ fontSize: '12px' }}
-                />
-                <YAxis stroke="#64748b" style={{ fontSize: '12px' }} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#000000',
-                    border: '1px solid #272727',
-                    borderRadius: '8px',
-                    color: '#fff',
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="vehicles"
-                  stroke="#9ca3af"
-                  fillOpacity={1}
-                  fill="url(#colorVehicles)"
-                  strokeWidth={2}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="value"
-                  stroke="#6b7280"
-                  fillOpacity={1}
-                  fill="url(#colorValue)"
-                  strokeWidth={2}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Updated Table Section with Tabs and Filter */}
-          <div style={styles.tableSection}>
-            <div style={styles.tableHeader} className="table-header">
-              <div style={styles.tabButtons}>
-                {Object.entries(tabsData).map(([key, tab]) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setActiveTab(key)}
-                    style={{
-                      ...styles.tabBtn,
-                      backgroundColor: activeTab === key ? '#404040' : 'transparent',
-                      color: activeTab === key ? '#ffffff' : '#94a3b8',
-                    }}
-                  >
-                    {tab.name}
-                    {tab.count && (
-                      <span
-                        style={{
-                          marginLeft: 4,
-                          fontSize: 12,
-                          backgroundColor: activeTab === key ? '#525252' : '#404040',
-                          padding: '2px 6px',
-                          borderRadius: 4,
-                        }}
-                      >
-                        {tab.count}
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </div>
-              <div style={styles.actionButtons}>
-                <button
-                  type="button"
-                  style={{
-                    padding: '8px 16px',
-                    border: '1px solid #4C4B4B',
-                    backgroundColor: 'transparent',
-                    color: '#cbd5e1',
-                    borderRadius: '8px',
-                    fontSize: 14,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                  }}
+        {/* Chart Section */}
+        <Paper sx={{ p: 2, borderRadius: 2, mb: 3 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: { xs: 'flex-start', sm: 'center' },
+              flexDirection: { xs: 'column', sm: 'row' },
+              gap: 2,
+              mb: 3,
+            }}
+          >
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
+                Vehicle Activity
+              </Typography>
+              <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+                Total for the last 3 months
+              </Typography>
+            </Box>
+            <ButtonGroup variant="outlined" size="small">
+              {ranges.map((range) => (
+                <Button
+                  key={range}
+                  onClick={() => setTimeRange(range)}
+                  variant={timeRange === range ? 'contained' : 'outlined'}
+                  sx={{ minWidth: 100 }}
                 >
-                  <Settings style={{ fontSize: 16 }} />
-                  Customize
-                </button>
-                <button
-                  type="button"
-                  style={{
-                    padding: '8px 16px',
-                    backgroundColor: '#404040',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontSize: 14,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                  }}
-                >
-                  <span>+</span>
-                  Add Section
-                </button>
-              </div>
-            </div>
+                  {range}
+                </Button>
+              ))}
+            </ButtonGroup>
+          </Box>
+          <ResponsiveContainer width="100%" height={300}>
+            <AreaChart data={visitorData}>
+              <defs>
+                <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={theme.palette.primary.main} stopOpacity={0.3} />
+                  <stop offset="95%" stopColor={theme.palette.primary.main} stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="colorVehicles" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={theme.palette.secondary.main} stopOpacity={0.2} />
+                  <stop offset="95%" stopColor={theme.palette.secondary.main} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
+              <XAxis
+                dataKey="date"
+                stroke={theme.palette.text.secondary}
+                style={{ fontSize: '12px' }}
+              />
+              <YAxis stroke={theme.palette.text.secondary} style={{ fontSize: '12px' }} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: theme.palette.background.paper,
+                  border: `1px solid ${theme.palette.divider}`,
+                  borderRadius: '8px',
+                  color: theme.palette.text.primary,
+                }}
+              />
+              <Area
+                type="monotone"
+                dataKey="vehicles"
+                stroke={theme.palette.secondary.main}
+                fillOpacity={1}
+                fill="url(#colorVehicles)"
+                strokeWidth={2}
+              />
+              <Area
+                type="monotone"
+                dataKey="value"
+                stroke={theme.palette.primary.main}
+                fillOpacity={1}
+                fill="url(#colorValue)"
+                strokeWidth={2}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </Paper>
 
-            {/* Filter Section */}
-            <div style={styles.filterSection}>
-              <label style={{ color: '#94a3b8', fontSize: '14px', fontWeight: '500' }}>
-                Filter by Group:
-              </label>
-              <select
+        {/* Table Section */}
+        <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
+          <Box
+            sx={{
+              p: 2,
+              borderBottom: `1px solid ${theme.palette.divider}`,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: { xs: 'flex-start', sm: 'center' },
+              flexDirection: { xs: 'column', sm: 'row' },
+              gap: 2,
+            }}
+          >
+            <Tabs
+              value={activeTab}
+              onChange={(e, newValue) => setActiveTab(newValue)}
+              sx={{ minHeight: 40 }}
+            >
+              {tabKeys.map((key) => (
+                <Tab
+                  key={key}
+                  label={(
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      {tabsData[key].name}
+                      {tabsData[key].count && (
+                        <Box
+                          sx={{
+                            fontSize: 12,
+                            backgroundColor: theme.palette.action.selected,
+                            px: 0.75,
+                            py: 0.25,
+                            borderRadius: 1,
+                          }}
+                        >
+                          {tabsData[key].count}
+                        </Box>
+                      )}
+                    </Box>
+                  )}
+                  sx={{ minHeight: 40, textTransform: 'none' }}
+                />
+              ))}
+            </Tabs>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button variant="outlined" startIcon={<Settings />}>
+                Customize
+              </Button>
+              <Button variant="contained">+ Add Section</Button>
+            </Box>
+          </Box>
+
+          <Box
+            sx={{
+              p: 2,
+              borderBottom: `1px solid ${theme.palette.divider}`,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+              flexWrap: 'wrap',
+            }}
+          >
+            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+              Filter by Group:
+            </Typography>
+            <FormControl size="small" sx={{ minWidth: 200 }}>
+              <Select
                 value={selectedTableGroup}
                 onChange={(e) => setSelectedTableGroup(e.target.value)}
-                style={{
-                  padding: '8px 12px',
-                  backgroundColor: '#404040',
-                  color: '#ffffff',
-                  border: '1px solid #4C4B4B',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  cursor: 'pointer',
-                  minWidth: '200px',
-                }}
               >
                 {tableGroups.map((group) => (
-                  <option key={group} value={group}>
+                  <MenuItem key={group} value={group}>
                     {group === 'all' ? 'All Groups' : group}
-                  </option>
+                  </MenuItem>
                 ))}
-              </select>
-              <span style={{ color: '#64748b', fontSize: '13px', marginLeft: 'auto' }}>
-                Showing
-                {' '}
-                {getFilteredData().length}
-                {' '}
-                of
-                {' '}
-                {tabsData[activeTab].data.length}
-                {' '}
-                items
-              </span>
-            </div>
+              </Select>
+            </FormControl>
+            <Typography variant="body2" sx={{ ml: 'auto', color: theme.palette.text.secondary }}>
+              Showing
+              {' '}
+              {getFilteredData().length}
+              {' '}
+              of
+              {' '}
+              {tabsData[tabKeys[activeTab]].data.length}
+              {' '}
+              items
+            </Typography>
+          </Box>
 
-            <table style={styles.table}>
-              <thead>
-                <tr>
-                  <th style={styles.th}>Header</th>
-                  <th style={styles.th}>Section Type</th>
-                  <th style={styles.th}>Status</th>
-                  <th style={styles.th}>Target</th>
-                  <th style={styles.th}>Limit</th>
-                  <th style={styles.th}>Reviewer</th>
-                  <th aria-label="actions" style={styles.th} />
-                </tr>
-              </thead>
-              <tbody>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Header</TableCell>
+                  <TableCell>Section Type</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Target</TableCell>
+                  <TableCell>Limit</TableCell>
+                  <TableCell>Reviewer</TableCell>
+                  <TableCell />
+                </TableRow>
+              </TableHead>
+              <TableBody>
                 {getFilteredData().map((row, index) => (
-                  <TableRow
+                  <TableRowComponent
+                    // key={index}
                     item={row.item}
                     sectionType={row.sectionType}
                     status={row.status}
                     target={row.target}
                     limit={row.limit}
                     reviewer={row.reviewer}
+                    theme={theme}
                   />
                 ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
+      </Box>
+    </Box>
   );
 };
 

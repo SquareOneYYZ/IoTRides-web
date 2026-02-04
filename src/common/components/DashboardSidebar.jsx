@@ -19,98 +19,39 @@ import PauseCircleFilledIcon from '@mui/icons-material/PauseCircleFilled';
 import RouteIcon from '@mui/icons-material/Route';
 import FolderIcon from '@mui/icons-material/Folder';
 import CreateIcon from '@mui/icons-material/Create';
+import { useTheme } from '@mui/material/styles';
+import {
+  Drawer, List, ListItemButton, ListItemIcon, ListItemText, IconButton, Typography, Box, Collapse,
+} from '@mui/material';
 
-const styles = {
-  sidebar: {
-    position: 'fixed',
-    left: 0,
-    top: 0,
-    height: '100vh',
-    width: '250px',
-    backgroundColor: '#212121',
-    display: 'flex',
-    flexDirection: 'column',
-    overflowY: 'auto',
-    transition: 'transform 0.3s ease-in-out',
-    zIndex: 1000,
-  },
-  sidebarHeader: {
-    padding: '16px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: '8px',
-  },
-  logo: {
-    color: '#3b82f6',
-    fontSize: '24px',
-  },
-  brandName: {
-    fontWeight: 600,
-    fontSize: '18px',
-  },
-  nav: {
-    flex: 1,
-    padding: '8px 12px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '4px',
-  },
-  navLink: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    padding: '10px 12px',
-    borderRadius: '8px',
-    fontSize: '14px',
-    color: '#fff',
-    textDecoration: 'none',
-    transition: 'background-color 0.2s',
-    cursor: 'pointer',
-    border: 'none',
-    width: '100%',
-    backgroundColor: 'transparent',
-  },
-  activeNavStyle: {
-    backgroundColor: '#f5f5f5',
-    color: '#000',
-    fontWeight: 500,
-  },
-  accordionHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '10px 12px',
-    borderRadius: '8px',
-    fontSize: '14px',
-    color: '#fff',
-    cursor: 'pointer',
-    border: 'none',
-    width: '100%',
-    backgroundColor: 'transparent',
-    marginTop: '8px',
-  },
-  accordionContent: {
-    paddingLeft: '12px',
-    overflow: 'hidden',
-    transition: 'max-height 0.3s ease-in-out',
-  },
-  sidebarFooter: {
-    padding: '12px',
-    borderTop: '1px solid #424242',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-  },
-  hamburger: {
-    display: 'none',
-    background: 'none',
-    border: 'none',
-    color: '#fff',
-    cursor: 'pointer',
-    padding: '8px',
-  },
-};
+// Move AccordionSection outside the main component
+const AccordionSection = ({ title, isOpen, onToggle, children, theme }) => (
+  <Box>
+    <ListItemButton
+      onClick={onToggle}
+      sx={{
+        borderRadius: 2,
+        mx: 1,
+        mt: 1,
+        mb: 0.5,
+        '&:hover': {
+          backgroundColor: theme.palette.action.hover,
+        },
+      }}
+    >
+      <ListItemText
+        primary={title}
+        primaryTypographyProps={{ fontSize: 14, fontWeight: 500 }}
+      />
+      {isOpen ? <ExpandLess /> : <ExpandMore />}
+    </ListItemButton>
+    <Collapse in={isOpen} timeout="auto" unmountOnExit>
+      <Box sx={{ pl: 1 }}>
+        {children}
+      </Box>
+    </Collapse>
+  </Box>
+);
 
 export const DashboardSidebar = ({
   isOpen,
@@ -118,6 +59,7 @@ export const DashboardSidebar = ({
   activeNav,
   setActiveNav,
 }) => {
+  const theme = useTheme();
   const [reportsOpen, setReportsOpen] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(true);
 
@@ -135,7 +77,7 @@ export const DashboardSidebar = ({
       },
       { key: 'geofence', label: 'Geofence Activity', href: '/reports/geofence-activity', icon: Place },
       { key: 'trips', label: 'Trips Report', href: '/reports/trip', icon: PieChart },
-      { key: 'replay', label: 'Replay', href: '/reports/replay', icon: RouteIcon },
+      { key: 'replay', label: 'Replay', href: '/replay', icon: RouteIcon },
       { key: 'stops', label: 'Stops', href: '/reports/stop', icon: PauseCircleFilledIcon },
       { key: 'reportsMore', label: 'More', href: '/reports/combined', icon: MoreHoriz },
     ],
@@ -152,7 +94,8 @@ export const DashboardSidebar = ({
         label: 'Groups',
         href: '/settings/groups',
         icon: FolderIcon,
-      }, {
+      },
+      {
         key: 'geofences',
         label: 'Geofences',
         href: '/settings/geofences',
@@ -168,187 +111,216 @@ export const DashboardSidebar = ({
     const isActive = activeNav === item.key;
 
     return (
-      <a
+      <ListItemButton
         key={item.key}
+        component="a"
         href={item.href}
-        style={{
-          ...styles.navLink,
-          ...(isActive ? styles.activeNavStyle : {}),
-        }}
-        onMouseEnter={(e) => {
-          if (!isActive) e.currentTarget.style.backgroundColor = '#313131ff';
-        }}
-        onMouseLeave={(e) => {
-          if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
+        selected={isActive}
+        sx={{
+          borderRadius: 2,
+          mx: 1,
+          mb: 0.5,
+          '&.Mui-selected': {
+            backgroundColor: theme.palette.mode === 'dark' ? '#ffffff' : 'rgba(0, 0, 0, 0.08)',
+            color: theme.palette.mode === 'dark' ? '#000000' : theme.palette.text.primary,
+            '&:hover': {
+              backgroundColor: theme.palette.mode === 'dark' ? '#f5f5f5' : 'rgba(0, 0, 0, 0.12)',
+            },
+            '& .MuiListItemIcon-root': {
+              color: theme.palette.mode === 'dark' ? '#000000' : theme.palette.text.primary,
+            },
+          },
+          '&:hover': {
+            backgroundColor: theme.palette.action.hover,
+          },
         }}
       >
-        <Icon style={{ fontSize: 20, color: isActive ? '#000' : '#9ca3af' }} />
-        <span>{item.label}</span>
-      </a>
+        <ListItemIcon sx={{ minWidth: 40 }}>
+          <Icon sx={{ fontSize: 20 }} />
+        </ListItemIcon>
+        <ListItemText primary={item.label} primaryTypographyProps={{ fontSize: 14 }} />
+      </ListItemButton>
     );
   };
 
-  return (
-    <>
-      <style>
-        {`
-    @media (max-width: 767px) {
-      .sidebar-mobile {
-        transform: translateX(-100%);
-      }
-      .sidebar-open {
-        transform: translateX(0);
-      }
-      .hamburger-btn {
-        display: flex !important;
-      }
-    }
-
-    @media (min-width: 768px) {
-      .sidebar-mobile {
-        transform: translateX(0) !important;
-      }
-    }
-
-    /* Custom Scrollbar */
-    .sidebar-mobile::-webkit-scrollbar {
-      width: 1px;
-    }
-
-    .sidebar-mobile::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    .sidebar-mobile::-webkit-scrollbar-thumb {
-      background-color: transparent;
-      border-radius: 10px;
-      transition: background-color 0.3s;
-    }
-
-    .sidebar-mobile:hover::-webkit-scrollbar-thumb {
-      background-color: #555;
-    }
-
-    .sidebar-mobile::-webkit-scrollbar-thumb:hover {
-      background-color: #777;
-    }
-
-    /* Firefox */
-    .sidebar-mobile {
-      scrollbar-width: thin;
-      scrollbar-color: #555 transparent;
-    }
-      `}
-      </style>
-
-      <div
-        style={styles.sidebar}
-        className={`sidebar-mobile ${isOpen ? 'sidebar-open' : ''}`}
+  const drawerContent = (
+    <Box
+      sx={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        backgroundColor: theme.palette.background.paper,
+      }}
+    >
+      {/* Header */}
+      <Box
+        sx={{
+          p: 2,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          borderBottom: `1px solid ${theme.palette.divider}`,
+        }}
       >
-        <div style={styles.sidebarHeader}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Navigation style={styles.logo} />
-            <span style={styles.brandName}>IOT Rides</span>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="hamburger-btn"
-            style={{
-              ...styles.hamburger,
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Navigation sx={{ color: theme.palette.primary.main, fontSize: 24 }} />
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            IOT Rides
+          </Typography>
+        </Box>
+        <IconButton
+          onClick={onClose}
+          sx={{
+            display: { xs: 'flex', md: 'none' },
+            color: theme.palette.text.primary,
+          }}
+        >
+          <Close />
+        </IconButton>
+      </Box>
+
+      {/* Navigation */}
+      <Box sx={{ flex: 1, overflowY: 'auto', py: 1 }}>
+        <List>
+          {sidebarStructure.main.map(renderNavItem)}
+        </List>
+
+        {/* Reports Accordion */}
+        <AccordionSection
+          title="Reports"
+          isOpen={reportsOpen}
+          onToggle={() => setReportsOpen(!reportsOpen)}
+          theme={theme}
+        >
+          <List>
+            {sidebarStructure.reports.map(renderNavItem)}
+          </List>
+        </AccordionSection>
+
+        {/* Settings Accordion */}
+        <AccordionSection
+          title="Settings"
+          isOpen={settingsOpen}
+          onToggle={() => setSettingsOpen(!settingsOpen)}
+          theme={theme}
+        >
+          <List>
+            {sidebarStructure.settings.map(renderNavItem)}
+          </List>
+        </AccordionSection>
+      </Box>
+
+      {/* Footer */}
+      <Box
+        sx={{
+          p: 1.5,
+          borderTop: `1px solid ${theme.palette.divider}`,
+        }}
+      >
+        <List>
+          <ListItemButton
+            component="a"
+            href="/settings/preferences"
+            sx={{
+              borderRadius: 2,
+              mb: 0.5,
+              '&:hover': {
+                backgroundColor: theme.palette.action.hover,
+              },
             }}
           >
-            <Close style={{ fontSize: 24 }} />
-          </button>
-        </div>
+            <ListItemIcon sx={{ minWidth: 40 }}>
+              <Settings sx={{ fontSize: 20 }} />
+            </ListItemIcon>
+            <ListItemText primary="Settings" primaryTypographyProps={{ fontSize: 14 }} />
+          </ListItemButton>
 
-        <nav style={styles.nav}>
-          {sidebarStructure.main.map(renderNavItem)}
-
-          {/* Reports Accordion */}
-          <div>
-            <button
-              type="button"
-              style={styles.accordionHeader}
-              onClick={() => setReportsOpen(!reportsOpen)}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#313131ff')}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-            >
-              <span style={{ fontSize: '14px', fontWeight: 500 }}>Reports</span>
-              {reportsOpen ? <ExpandLess /> : <ExpandMore />}
-            </button>
-            <div
-              style={{
-                ...styles.accordionContent,
-                maxHeight: reportsOpen ? '500px' : '0',
-              }}
-            >
-              {sidebarStructure.reports.map(renderNavItem)}
-            </div>
-          </div>
-
-          {/* Settings Accordion */}
-          <div>
-            <button
-              type="button"
-              style={styles.accordionHeader}
-              onClick={() => setSettingsOpen(!settingsOpen)}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#313131ff')}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-            >
-              <span style={{ fontSize: '14px', fontWeight: 500 }}>Settings</span>
-              {settingsOpen ? <ExpandLess /> : <ExpandMore />}
-            </button>
-            <div
-              style={{
-                ...styles.accordionContent,
-                maxHeight: settingsOpen ? '500px' : '0',
-              }}
-            >
-              {sidebarStructure.settings.map(renderNavItem)}
-            </div>
-          </div>
-        </nav>
-
-        <div style={styles.sidebarFooter}>
-          <a
-            href="/settings/preferences"
-            style={styles.navLink}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#313131ff')}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-          >
-            <Settings style={{ fontSize: 20 }} />
-            <span>Settings</span>
-          </a>
-          <a
+          <ListItemButton
+            component="a"
             href="#"
-            style={styles.navLink}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#313131ff')}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+            sx={{
+              borderRadius: 2,
+              mb: 0.5,
+              '&:hover': {
+                backgroundColor: theme.palette.action.hover,
+              },
+            }}
           >
-            <Help style={{ fontSize: 20 }} />
-            <span>Get Help</span>
-          </a>
-          <a
+            <ListItemIcon sx={{ minWidth: 40 }}>
+              <Help sx={{ fontSize: 20 }} />
+            </ListItemIcon>
+            <ListItemText primary="Get Help" primaryTypographyProps={{ fontSize: 14 }} />
+          </ListItemButton>
+
+          <ListItemButton
+            component="a"
             href="#"
-            style={styles.navLink}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#313131ff')}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+            sx={{
+              borderRadius: 2,
+              mb: 0.5,
+              '&:hover': {
+                backgroundColor: theme.palette.action.hover,
+              },
+            }}
           >
-            <Search style={{ fontSize: 20 }} />
-            <span>Search</span>
-          </a>
-          <a
+            <ListItemIcon sx={{ minWidth: 40 }}>
+              <Search sx={{ fontSize: 20 }} />
+            </ListItemIcon>
+            <ListItemText primary="Search" primaryTypographyProps={{ fontSize: 14 }} />
+          </ListItemButton>
+
+          <ListItemButton
+            component="a"
             href="#"
-            style={styles.navLink}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#313131ff')}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+            sx={{
+              borderRadius: 2,
+              '&:hover': {
+                backgroundColor: theme.palette.action.hover,
+              },
+            }}
           >
-            <PersonIcon style={{ fontSize: 20 }} />
-            <span>Logout</span>
-          </a>
-        </div>
-      </div>
+            <ListItemIcon sx={{ minWidth: 40 }}>
+              <PersonIcon sx={{ fontSize: 20 }} />
+            </ListItemIcon>
+            <ListItemText primary="Logout" primaryTypographyProps={{ fontSize: 14 }} />
+          </ListItemButton>
+        </List>
+      </Box>
+    </Box>
+  );
+
+  return (
+    <>
+      {/* Mobile Drawer */}
+      <Drawer
+        anchor="left"
+        open={isOpen}
+        onClose={onClose}
+        sx={{
+          display: { xs: 'block', md: 'none' },
+          '& .MuiDrawer-paper': {
+            width: 250,
+            backgroundColor: theme.palette.background.paper,
+          },
+        }}
+      >
+        {drawerContent}
+      </Drawer>
+
+      {/* Desktop Drawer */}
+      <Drawer
+        variant="permanent"
+        sx={{
+          display: { xs: 'none', md: 'block' },
+          '& .MuiDrawer-paper': {
+            width: 250,
+            backgroundColor: theme.palette.background.paper,
+            borderRight: `1px solid ${theme.palette.divider}`,
+          },
+        }}
+      >
+        {drawerContent}
+      </Drawer>
     </>
   );
 };
