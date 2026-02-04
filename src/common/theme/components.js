@@ -38,57 +38,6 @@ export default {
     },
   },
 
-  // AUTO-HIDE OVERLAY SCROLLBAR - Appears only when scrolling/hovering
-  MuiCssBaseline: {
-    styleOverrides: (theme) => ({
-      // Webkit browsers (Chrome, Safari, Edge, Opera)
-      '*': {
-        // Make scrollbar overlay (not take up space)
-        scrollbarGutter: 'stable',
-      },
-      '*::-webkit-scrollbar': {
-        width: '8px',
-        height: '8px',
-      },
-      '*::-webkit-scrollbar-track': {
-        backgroundColor: 'transparent',
-      },
-      '*::-webkit-scrollbar-thumb': {
-        backgroundColor: 'transparent', // Hidden by default
-        borderRadius: '10px',
-        transition: 'background-color 0.3s ease',
-      },
-      // Show scrollbar on hover or when scrolling
-      '*:hover::-webkit-scrollbar-thumb': {
-        backgroundColor: theme.palette.mode === 'dark'
-          ? 'rgba(255, 255, 255, 0.3)'
-          : 'rgba(0, 0, 0, 0.3)',
-      },
-      '*::-webkit-scrollbar-thumb:hover': {
-        backgroundColor: theme.palette.mode === 'dark'
-          ? 'rgba(255, 255, 255, 0.5)'
-          : 'rgba(0, 0, 0, 0.5)',
-      },
-      '*::-webkit-scrollbar-thumb:active': {
-        backgroundColor: theme.palette.mode === 'dark'
-          ? 'rgba(255, 255, 255, 0.6)'
-          : 'rgba(0, 0, 0, 0.6)',
-      },
-
-      // Additional styling for specific scrollable containers
-      '.scrollable-container': {
-        '&::-webkit-scrollbar-thumb': {
-          backgroundColor: 'transparent',
-        },
-        '&:hover::-webkit-scrollbar-thumb, &.scrolling::-webkit-scrollbar-thumb': {
-          backgroundColor: theme.palette.mode === 'dark'
-            ? 'rgba(255, 255, 255, 0.3)'
-            : 'rgba(0, 0, 0, 0.3)',
-        },
-      },
-    }),
-  },
-
   MuiListItemButton: {
     styleOverrides: {
       root: ({ theme }) => ({

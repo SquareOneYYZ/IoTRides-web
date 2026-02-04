@@ -8,28 +8,28 @@ export const TableWrapper = styled('div')(({ theme }) => ({
   borderRadius: '20px',
   overflow: 'hidden',
   border: `1px solid ${theme.palette.divider}`,
+  backgroundColor: theme.palette.background.paper,
 }));
 
 export const DarkTable = styled(Table)(({ theme }) => ({
   borderCollapse: 'separate',
   borderSpacing: 0,
-  borderLeft: `1px solid ${theme.palette.divider}`,
-  borderRight: `1px solid ${theme.palette.divider}`,
+  backgroundColor: theme.palette.background.paper,
 }));
 
 export const DarkTableHead = styled(TableHead)(({ theme }) => ({
-  background: theme.palette.mode === 'dark'
-    ? 'rgba(255, 255, 255, 0.05)' // Subtle highlight in dark mode
-    : 'rgba(0, 0, 0, 0.02)', // Subtle grey in light mode
+  backgroundColor: theme.palette.mode === 'dark'
+    ? '#2a2a2a' // Slightly lighter than paper in dark mode for contrast
+    : '#f5f5f5', // Light grey in light mode
 }));
 
 export const DarkTableCell = styled(TableCell)(({ theme }) => ({
   borderBottom: `1px solid ${theme.palette.divider}`,
-  color: theme.palette.text.primary,
+  color: theme.palette.text.primary, // This ensures text is visible
   fontSize: '14px',
   padding: '12px 16px',
   '&.MuiTableCell-head': {
-    color: theme.palette.text.primary,
+    color: theme.palette.text.primary, // Header text color
     fontWeight: 600,
     fontSize: '14px',
     letterSpacing: '0.5px',
@@ -40,14 +40,18 @@ export const DarkTableRow = styled(TableRow)(({ theme }) => ({
   transition: 'background-color 0.2s',
   backgroundColor: theme.palette.background.paper,
   '&:hover': {
-    backgroundColor: theme.palette.action.hover,
+    backgroundColor: theme.palette.mode === 'dark'
+      ? 'rgba(255, 255, 255, 0.05)' // Subtle white overlay in dark mode
+      : 'rgba(0, 0, 0, 0.04)', // Subtle black overlay in light mode
   },
   '&:last-child td': {
     borderBottom: 'none',
   },
 }));
 
-export const DarkTableBody = styled(TableBody)(({ theme }) => ({}));
+export const DarkTableBody = styled(TableBody)(({ theme }) => ({
+  backgroundColor: theme.palette.background.paper,
+}));
 
 export const FirstHeaderCell = styled(DarkTableCell)(({ theme }) => ({
   borderTopLeftRadius: '20px',
@@ -65,6 +69,7 @@ export const LastHeaderCell = styled(DarkTableCell)(({ theme }) => ({
 
 export const TableContainer = styled('div')(({ theme }) => ({
   padding: '20px',
+  backgroundColor: theme.palette.background.default, // Ensure container has background
 }));
 
 export const ReportTable = ({ headers, children, loading, loadingComponent }) => (
