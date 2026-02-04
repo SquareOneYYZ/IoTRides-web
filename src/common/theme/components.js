@@ -42,7 +42,6 @@ export default {
     styleOverrides: {
       root: ({ theme }) => ({
         borderRadius: 10,
-        gap: 20,
         marginBottom: theme.spacing(0.5),
 
         '&:hover': {
