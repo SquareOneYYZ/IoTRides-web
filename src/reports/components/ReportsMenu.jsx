@@ -16,79 +16,77 @@ import { useTranslation } from '../../common/components/LocalizationProvider';
 import { useAdministrator, useRestriction } from '../../common/util/permissions';
 import MenuItem from '../../common/components/MenuItem';
 
-const ReportsMenu = ({ miniVariant = false }) => {
+const ReportsMenu = () => {
   const t = useTranslation();
   const location = useLocation();
+
   const admin = useAdministrator();
   const readonly = useRestriction('readonly');
 
   return (
     <>
-      <List sx={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: '4px', background: '#171717' }}>
+      <List>
         <MenuItem
           title={t('reportCombined')}
           link="/reports/combined"
           icon={<StarIcon />}
           selected={location.pathname === '/reports/combined'}
-          miniVariant={miniVariant}
         />
+        {/* <MenuItem
+          title={t('reportRoute')}
+          link="/reports/route"
+          icon={<TimelineIcon />}
+          selected={location.pathname === '/reports/route'}
+        /> */}
         <MenuItem
           title={t('reportEvents')}
           link="/reports/event"
           icon={<NotificationsActiveIcon />}
           selected={location.pathname === '/reports/event'}
-          miniVariant={miniVariant}
         />
         <MenuItem
           title={t('reportGeofenceActivity')}
           link="/reports/geofence-activity"
           icon={<CreateIcon />}
           selected={location.pathname === '/reports/geofence-activity'}
-          miniVariant={miniVariant}
         />
         <MenuItem
           title={t('reportTrips')}
           link="/reports/trip"
           icon={<PlayCircleFilledIcon />}
           selected={location.pathname === '/reports/trip'}
-          miniVariant={miniVariant}
         />
         <MenuItem
           title={t('reportStops')}
           link="/reports/stop"
           icon={<PauseCircleFilledIcon />}
           selected={location.pathname === '/reports/stop'}
-          miniVariant={miniVariant}
         />
         <MenuItem
           title={t('reportSummary')}
           link="/reports/summary"
           icon={<FormatListBulletedIcon />}
           selected={location.pathname === '/reports/summary'}
-          miniVariant={miniVariant}
         />
         <MenuItem
           title={t('reportChart')}
           link="/reports/chart"
           icon={<TrendingUpIcon />}
           selected={location.pathname === '/reports/chart'}
-          miniVariant={miniVariant}
         />
         <MenuItem
           title={t('reportReplay')}
           link="/replay"
           icon={<RouteIcon />}
-          miniVariant={miniVariant}
         />
       </List>
-      <Divider sx={{ borderColor: '#404244' }} />
-      <List sx={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: '4px', background: '#171717' }}>
+      <Divider />
+      <List>
         <MenuItem
           title={t('sharedLogs')}
           link="/reports/logs"
           icon={<NotesIcon />}
           selected={location.pathname === '/reports/logs'}
-          miniVariant={miniVariant}
         />
         {!readonly && (
           <MenuItem
@@ -96,7 +94,6 @@ const ReportsMenu = ({ miniVariant = false }) => {
             link="/reports/scheduled"
             icon={<EventRepeatIcon />}
             selected={location.pathname === '/reports/scheduled'}
-            miniVariant={miniVariant}
           />
         )}
         {admin && (
@@ -105,7 +102,6 @@ const ReportsMenu = ({ miniVariant = false }) => {
             link="/reports/statistics"
             icon={<BarChartIcon />}
             selected={location.pathname === '/reports/statistics'}
-            miniVariant={miniVariant}
           />
         )}
       </List>

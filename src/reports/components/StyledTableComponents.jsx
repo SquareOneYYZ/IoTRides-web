@@ -4,30 +4,32 @@ import {
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 
-export const TableWrapper = styled('div')({
+export const TableWrapper = styled('div')(({ theme }) => ({
   borderRadius: '20px',
   overflow: 'hidden',
-  border: '1px solid #2a2a2a',
-});
+  border: `1px solid ${theme.palette.divider}`,
+}));
 
 export const DarkTable = styled(Table)(({ theme }) => ({
   borderCollapse: 'separate',
   borderSpacing: 0,
-  borderLeft: '1px solid #2a2a2a',
-  borderRight: '1px solid #2a2a2a',
+  borderLeft: `1px solid ${theme.palette.divider}`,
+  borderRight: `1px solid ${theme.palette.divider}`,
 }));
 
 export const DarkTableHead = styled(TableHead)(({ theme }) => ({
-  background: '#171717',
+  background: theme.palette.mode === 'dark'
+    ? 'rgba(255, 255, 255, 0.05)' // Subtle highlight in dark mode
+    : 'rgba(0, 0, 0, 0.02)', // Subtle grey in light mode
 }));
 
 export const DarkTableCell = styled(TableCell)(({ theme }) => ({
-  borderBottom: '1px solid #2a2a2a',
-  color: '#e5e5e5',
+  borderBottom: `1px solid ${theme.palette.divider}`,
+  color: theme.palette.text.primary,
   fontSize: '14px',
   padding: '12px 16px',
   '&.MuiTableCell-head': {
-    color: '#fff',
+    color: theme.palette.text.primary,
     fontWeight: 600,
     fontSize: '14px',
     letterSpacing: '0.5px',
@@ -36,8 +38,9 @@ export const DarkTableCell = styled(TableCell)(({ theme }) => ({
 
 export const DarkTableRow = styled(TableRow)(({ theme }) => ({
   transition: 'background-color 0.2s',
+  backgroundColor: theme.palette.background.paper,
   '&:hover': {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: theme.palette.action.hover,
   },
   '&:last-child td': {
     borderBottom: 'none',
