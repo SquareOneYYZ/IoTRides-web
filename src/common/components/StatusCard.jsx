@@ -41,6 +41,8 @@ const useStyles = makeStyles((theme) => ({
   card: {
     pointerEvents: 'auto',
     width: theme.dimensions.popupMaxWidth,
+    borderRadius: theme.spacing(2),
+    overflow: 'hidden',
   },
   media: {
     height: theme.dimensions.popupImageHeight,
