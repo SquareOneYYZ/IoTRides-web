@@ -21,7 +21,7 @@ export default (server, darkMode) => ({
 
   // Secondary color
   secondary: {
-    main: validatedColor(server?.attributes?.colorSecondary) || '#99D5C9',
+    main: darkMode ? '#ffffff' : '#3385F0',
     light: '#b3e0d7',
     dark: '#6fb3a8',
     contrastText: '#000000',
