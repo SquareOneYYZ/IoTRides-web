@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FormControl,
@@ -6,8 +6,13 @@ import {
   Select,
   MenuItem,
   IconButton,
+  TableSortLabel,
+  Box,
+  Pagination,
+  Typography,
   Link,
 } from '@mui/material';
+import { visuallyHidden } from '@mui/utils';
 import GpsFixedIcon from '@mui/icons-material/GpsFixed';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
 import ReplayIcon from '@mui/icons-material/Replay';
@@ -96,6 +101,11 @@ const EventReportPage = () => {
   const [replayLoading, setReplayLoading] = useState(false);
   const [eventPosition, setEventPosition] = useState(null);
 
+  const [order, setOrder] = useState('desc');
+  const [orderBy, setOrderBy] = useState('eventTime');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
+
   const deviceName = useSelector((state) => {
     if (selectedItem?.deviceId) {
       const device = state.devices.items[selectedItem.deviceId];
@@ -146,6 +156,75 @@ const EventReportPage = () => {
     }
   }, []);
 
+  const handleRequestSort = (property) => {
+    const isAsc = orderBy === property && order === 'asc';
+    setOrder(isAsc ? 'desc' : 'asc');
+    setOrderBy(property);
+    setPage(0);
+  };
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage - 1);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const preparedData = useMemo(() => items.map((item) => ({
+    ...item,
+    deviceName: devices[item.deviceId]?.name || '',
+  })), [items, devices]);
+
+  const sortedAndPaginatedData = useMemo(() => {
+    if (!preparedData || preparedData.length === 0) return [];
+
+    const comparator = (a, b) => {
+      let aVal = a[orderBy];
+      let bVal = b[orderBy];
+
+      if (aVal == null) return 1;
+      if (bVal == null) return -1;
+
+      if (orderBy.toLowerCase().includes('time') || orderBy.toLowerCase().includes('date')) {
+        aVal = new Date(aVal).getTime();
+        bVal = new Date(bVal).getTime();
+      } else if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return order === 'asc' ? aVal - bVal : bVal - aVal;
+      } else if (typeof aVal === 'string') {
+        aVal = aVal.toLowerCase();
+        bVal = String(bVal).toLowerCase();
+      }
+
+      if (order === 'asc') {
+        if (aVal < bVal) {
+          return -1;
+        }
+        if (aVal > bVal) {
+          return 1;
+        }
+        return 0;
+      }
+
+      if (aVal > bVal) {
+        return -1;
+      }
+      if (aVal < bVal) {
+        return 1;
+      }
+      return 0;
+    };
+
+    const sorted = [...preparedData].sort(comparator);
+    return sorted.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  }, [preparedData, order, orderBy, page, rowsPerPage]);
+
+  const totalCount = preparedData.length;
+  const totalPages = Math.ceil(totalCount / rowsPerPage);
+  const startRow = totalCount === 0 ? 0 : page * rowsPerPage + 1;
+  const endRow = Math.min((page + 1) * rowsPerPage, totalCount);
+
   const handleSubmit = useCatch(async ({ deviceId, from, to, type }) => {
     const query = new URLSearchParams({ deviceId, from, to });
     eventTypes.forEach((it) => query.append('type', it));
@@ -186,6 +265,7 @@ const EventReportPage = () => {
           }));
           const filteredEvents = filterEvents(modifiedData, typesToExclude);
           setItems(filteredEvents);
+          setPage(0);
         } else {
           throw Error(await response.text());
         }
@@ -265,77 +345,73 @@ const EventReportPage = () => {
       case 'type':
         return t(prefixString('event', value));
 
-      case 'geofenceId':
+      case 'geofenceId': {
         if (value > 0) {
           const geofence = geofences[value];
           return geofence && geofence.name;
         }
         return null;
+      }
 
       case 'maintenanceId':
         return value > 0 ? value : null;
 
-      case 'speedLimit':
+      case 'speedLimit': {
         if (item.type === 'deviceOverspeed' && item.attributes?.speedLimit) {
           return formatSpeed(item.attributes.speedLimit, speedUnit, t);
         }
         return null;
+      }
 
-      case 'attributes':
-        switch (item.type) {
-          case 'alarm':
-            return t(prefixString('alarm', item.attributes.alarm));
-
-          case 'deviceOverspeed':
-            return formatSpeed(item.attributes.speed, speedUnit, t);
-
-          case 'driverChanged':
-            return item.attributes.driverUniqueId;
-
-          case 'media':
-            return (
-              <Link
-                href={`/api/media/${devices[item.deviceId]?.uniqueId}/${
-                  item.attributes.file
-                }`}
-                target="_blank"
-              >
-                {item.attributes.file}
-              </Link>
-            );
-
-          case 'commandResult':
-            return item.attributes.result;
-
-          case 'deviceTollRouteExit': {
-            let tollDetails = '';
-            if ('tollName' in item.attributes) {
-              tollDetails += `Toll name: ${item.attributes.tollName} | `;
-            }
-            if ('tollDistance' in item.attributes) {
-              tollDetails += `Toll Distance: ${formatDistance(
-                item.attributes.tollDistance,
-                distanceUnit,
-                t,
-              )}`;
-            }
-            return tollDetails;
-          }
-
-          case 'deviceTollRouteEnter': {
-            let tollDetails = '';
-            if ('tollName' in item.attributes) {
-              tollDetails += `Toll name: ${item.attributes.trollName} | `;
-            }
-            if ('tollRef' in item.attributes) {
-              tollDetails += `Toll Reference: ${item.attributes.tollRef} | `;
-            }
-            return tollDetails;
-          }
-
-          default:
-            return '';
+      case 'attributes': {
+        if (item.type === 'alarm') {
+          return t(prefixString('alarm', item.attributes.alarm));
         }
+        if (item.type === 'deviceOverspeed') {
+          return formatSpeed(item.attributes.speed, speedUnit, t);
+        }
+        if (item.type === 'driverChanged') {
+          return item.attributes.driverUniqueId;
+        }
+        if (item.type === 'media') {
+          return (
+            <Link
+              href={`/api/media/${devices[item.deviceId]?.uniqueId}/${item.attributes.file}`}
+              target="_blank"
+            >
+              {item.attributes.file}
+            </Link>
+          );
+        }
+        if (item.type === 'commandResult') {
+          return item.attributes.result;
+        }
+        if (item.type === 'deviceTollRouteExit') {
+          let tollDetails = '';
+          if ('tollName' in item.attributes) {
+            tollDetails += `Toll name: ${item.attributes.tollName} | `;
+          }
+          if ('tollDistance' in item.attributes) {
+            tollDetails += `Toll Distance: ${formatDistance(
+              item.attributes.tollDistance,
+              distanceUnit,
+              t,
+            )}`;
+          }
+          return tollDetails;
+        }
+        if (item.type === 'deviceTollRouteEnter') {
+          let tollDetails = '';
+          if ('tollName' in item.attributes) {
+            tollDetails += `Toll name: ${item.attributes.trollName} | `;
+          }
+          if ('tollRef' in item.attributes) {
+            tollDetails += `Toll Reference: ${item.attributes.tollRef} | `;
+          }
+          return tollDetails;
+        }
+        return '';
+      }
 
       default:
         return value;
@@ -354,6 +430,94 @@ const EventReportPage = () => {
         initialSpeed={1}
       />
     );
+  }
+
+  const showAlarmSelect = eventTypes[0] !== 'allEvents' && eventTypes.includes('alarm');
+
+  // Create headers with sortable columns
+  const headers = [
+    '', // Location icon column
+    '', // Replay icon column
+    ...columns.map((key) => {
+      const isSortable = key === 'eventTime' || key === 'type';
+      if (isSortable) {
+        return (
+          <TableSortLabel
+            key={key}
+            active={orderBy === key}
+            direction={orderBy === key ? order : 'asc'}
+            onClick={() => handleRequestSort(key)}
+          >
+            {t(columnsMap.get(key))}
+            {orderBy === key ? (
+              <Box component="span" sx={visuallyHidden}>
+                {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
+              </Box>
+            ) : null}
+          </TableSortLabel>
+        );
+      }
+      return t(columnsMap.get(key));
+    }),
+  ];
+
+  let tableBodyContent;
+
+  if (loading) {
+    tableBodyContent = <TableShimmer columns={columns.length + 2} />;
+  } else if (sortedAndPaginatedData.length === 0) {
+    tableBodyContent = (
+      <DarkTableRow>
+        <DarkTableCell colSpan={columns.length + 2} align="center">
+          <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
+            {t('sharedNoData') || 'No data available'}
+          </Typography>
+        </DarkTableCell>
+      </DarkTableRow>
+    );
+  } else {
+    tableBodyContent = sortedAndPaginatedData.map((item) => {
+      const isSelectedItem = selectedItem === item;
+      const hasPositionId = Boolean(item.positionId);
+
+      let locationAction = null;
+
+      if (hasPositionId) {
+        locationAction = isSelectedItem ? (
+          <IconButton size="small" onClick={() => setSelectedItem(null)}>
+            <GpsFixedIcon fontSize="small" />
+          </IconButton>
+        ) : (
+          <IconButton size="small" onClick={() => setSelectedItem(item)}>
+            <LocationSearchingIcon fontSize="small" />
+          </IconButton>
+        );
+      }
+
+      return (
+        <DarkTableRow key={item.id}>
+          <DarkTableCell className={classes.columnAction} padding="none">
+            {locationAction}
+          </DarkTableCell>
+
+          <DarkTableCell className={classes.columnAction} padding="none">
+            {hasPositionId && (
+              <IconButton
+                size="small"
+                onClick={() => handleReplayStart(item)}
+                disabled={replayLoading}
+              >
+                <ReplayIcon fontSize="small" />
+              </IconButton>
+            )}
+          </DarkTableCell>
+
+          {columns.map((key) => (
+            <DarkTableCell key={key}>{formatValue(item, key)}</DarkTableCell>
+          ))}
+        </DarkTableRow>
+      );
+    });
   }
 
   return (
@@ -469,7 +633,7 @@ const EventReportPage = () => {
                   </Select>
                 </FormControl>
               </div>
-              {eventTypes[0] !== 'allEvents' && eventTypes.includes('alarm') && (
+              {showAlarmSelect && (
                 <div className={classes.filterItem}>
                   <SelectField
                     multiple
@@ -491,53 +655,65 @@ const EventReportPage = () => {
           </div>
 
           <ReportTable
-            headers={[
-              '',
-              '',
-              ...columns.map((key) => t(columnsMap.get(key))),
-            ]}
+            headers={headers}
             loading={loading}
             loadingComponent={<TableShimmer columns={columns.length + 2} />}
           >
-
-            {items.map((item) => (
-              <DarkTableRow key={item.id}>
-                <DarkTableCell className={classes.columnAction} padding="none">
-                  {item.positionId && (
-                    selectedItem === item ? (
-                      <IconButton
-                        size="small"
-                        onClick={() => setSelectedItem(null)}
-                      >
-                        <GpsFixedIcon fontSize="small" />
-                      </IconButton>
-                    ) : (
-                      <IconButton
-                        size="small"
-                        onClick={() => setSelectedItem(item)}
-                      >
-                        <LocationSearchingIcon fontSize="small" />
-                      </IconButton>
-                    )
-                  )}
-                </DarkTableCell>
-                <DarkTableCell className={classes.columnAction} padding="none">
-                  {item.positionId && (
-                  <IconButton
-                    size="small"
-                    onClick={() => handleReplayStart(item)}
-                    disabled={replayLoading}
-                  >
-                    <ReplayIcon fontSize="small" />
-                  </IconButton>
-                  )}
-                </DarkTableCell>
-                {columns.map((key) => (
-                  <DarkTableCell key={key}>{formatValue(item, key)}</DarkTableCell>
-                ))}
-              </DarkTableRow>
-            ))}
+            {tableBodyContent}
           </ReportTable>
+
+          {!loading && sortedAndPaginatedData.length > 0 && (
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-evenly',
+                alignItems: 'center',
+                p: 2,
+                borderTop: '1px solid rgba(224, 224, 224, 1)',
+                flexWrap: 'wrap',
+                gap: 2,
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="body2">
+                  {t('sharedRowsPerPage') || 'Rows per page'}
+                  :
+                </Typography>
+                <FormControl size="small">
+                  <Select
+                    value={rowsPerPage}
+                    onChange={handleChangeRowsPerPage}
+                    sx={{ minWidth: 80 }}
+                  >
+                    <MenuItem value={10}>10</MenuItem>
+                    <MenuItem value={25}>25</MenuItem>
+                    <MenuItem value={50}>50</MenuItem>
+                    <MenuItem value={100}>100</MenuItem>
+                  </Select>
+                </FormControl>
+                <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
+                  {startRow}
+                  -
+                  {endRow}
+                  {' '}
+                  {t('sharedOf') || 'of'}
+                  {' '}
+                  {totalCount}
+                </Typography>
+              </Box>
+
+              <Pagination
+                count={totalPages}
+                page={page + 1}
+                onChange={handleChangePage}
+                color="primary"
+                showFirstButton
+                showLastButton
+                siblingCount={1}
+                boundaryCount={1}
+              />
+            </Box>
+          )}
         </div>
       </div>
     </PageLayout>

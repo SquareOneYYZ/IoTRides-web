@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  FormControl, InputLabel, MenuItem, Select, Autocomplete, TextField,
+  FormControl, InputLabel, MenuItem, Select, Autocomplete, TextField, Tooltip,
 } from '@mui/material';
 import { useEffectAsync } from '../../reactHelper';
 
@@ -16,6 +16,8 @@ const SelectField = ({
   data,
   keyGetter = (item) => item.id,
   titleGetter = (item) => item.name,
+  renderValue,
+  MenuProps,
   sx, // ✅ Accept sx prop from parent
 }) => {
   const [items, setItems] = useState();
@@ -58,6 +60,8 @@ const SelectField = ({
               multiple
               value={value}
               onChange={onChange}
+              renderValue={renderValue}
+              MenuProps={MenuProps}
               sx={{
                 borderRadius: '13px',
                 '& .MuiOutlinedInput-notchedOutline': {
@@ -68,7 +72,18 @@ const SelectField = ({
             >
               {items.map((item) => (
                 <MenuItem key={keyGetter(item)} value={keyGetter(item)}>
-                  {titleGetter(item)}
+                  <Tooltip title={titleGetter(item)} placement="right" arrow>
+                    <span style={{
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      display: 'block',
+                      width: '100%',
+                    }}
+                    >
+                      {titleGetter(item)}
+                    </span>
+                  </Tooltip>
                 </MenuItem>
               ))}
             </Select>
@@ -80,27 +95,43 @@ const SelectField = ({
             getOptionLabel={getOptionLabel}
             renderOption={(props, option) => (
               <MenuItem {...props} key={keyGetter(option)} value={keyGetter(option)}>
-                {titleGetter(option)}
+                <Tooltip title={titleGetter(option)} placement="right" arrow>
+                  <span style={{
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    display: 'block',
+                    width: '100%',
+                  }}
+                  >
+                    {titleGetter(option)}
+                  </span>
+                </Tooltip>
               </MenuItem>
             )}
             isOptionEqualToValue={(option, value) => keyGetter(option) === value}
             value={value}
             onChange={(_, value) => onChange({ target: { value: value ? keyGetter(value) : emptyValue } })}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label={label}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '13px',
-                    '& fieldset': {
-                      borderRadius: '13px',
-                    },
-                  },
-                  ...sx, // ✅ Merge with parent sx
-                }}
-              />
-            )}
+            renderInput={(params) => {
+              const displayValue = getOptionLabel(value);
+              return (
+                <Tooltip title={displayValue || ''} placement="bottom-start" arrow>
+                  <TextField
+                    {...params}
+                    label={label}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '13px',
+                        '& fieldset': {
+                          borderRadius: '13px',
+                        },
+                      },
+                      ...sx,
+                    }}
+                  />
+                </Tooltip>
+              );
+            }}
           />
         )}
       </FormControl>

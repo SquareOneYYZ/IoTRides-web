@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  FormControl, InputLabel, Select, MenuItem, Button, TextField, Typography,
+  FormControl, InputLabel, Select, MenuItem, Button, TextField, Typography, Tooltip,
 } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
 import dayjs from 'dayjs';
@@ -89,16 +89,55 @@ const ReportFilter = ({
   return (
     <div className={classes.filter}>
       {!ignoreDevice && (
-        <div className={classes.filterItem}>
-          <SelectField
-            label={t(multiDevice ? 'deviceTitle' : 'reportDevice')}
-            data={Object.values(devices).sort((a, b) => a.name.localeCompare(b.name))}
-            value={multiDevice ? deviceIds : deviceId}
-            onChange={(e) => dispatch(multiDevice ? devicesActions.selectIds(e.target.value) : devicesActions.selectId(e.target.value))}
-            multiple={multiDevice}
-            fullWidth
-          />
-        </div>
+      <div className={classes.filterItem} style={{ minWidth: '280px', flex: '1.5' }}>
+        <SelectField
+          label={t(multiDevice ? 'deviceTitle' : 'reportDevice')}
+          data={Object.values(devices).sort((a, b) => a.name.localeCompare(b.name))}
+          value={multiDevice ? deviceIds : deviceId}
+          onChange={(e) => dispatch(multiDevice ? devicesActions.selectIds(e.target.value) : devicesActions.selectId(e.target.value))}
+          multiple={multiDevice}
+          fullWidth
+          renderValue={(selected) => {
+            if (multiDevice && Array.isArray(selected)) {
+              const selectedDevices = selected.map((id) => devices[id]?.name || id).join(', ');
+              return (
+                <Tooltip title={selectedDevices} placement="bottom-start" arrow>
+                  <span style={{
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    display: 'block',
+                  }}
+                  >
+                    {selectedDevices}
+                  </span>
+                </Tooltip>
+              );
+            }
+            const deviceName = devices[selected]?.name || selected || '';
+            return (
+              <Tooltip title={deviceName} placement="bottom-start" arrow>
+                <span style={{
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  display: 'block',
+                }}
+                >
+                  {deviceName}
+                </span>
+              </Tooltip>
+            );
+          }}
+          MenuProps={{
+            PaperProps: {
+              style: {
+                maxWidth: '400px',
+              },
+            },
+          }}
+        />
+      </div>
       )}
       {includeGroups && (
         <div className={classes.filterItem}>
