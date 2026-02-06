@@ -1,8 +1,9 @@
 import React from 'react';
 import {
-  Table, TableBody, TableCell, TableHead, TableRow,
+  Table, TableBody, TableCell, TableHead, TableRow, TableSortLabel, Box,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import { visuallyHidden } from '@mui/utils';
 
 export const TableWrapper = styled('div')(({ theme }) => ({
   borderRadius: '20px',
@@ -19,17 +20,17 @@ export const DarkTable = styled(Table)(({ theme }) => ({
 
 export const DarkTableHead = styled(TableHead)(({ theme }) => ({
   backgroundColor: theme.palette.mode === 'dark'
-    ? '#2a2a2a' // Slightly lighter than paper in dark mode for contrast
-    : 'rgba(0, 132, 255, 0.08)', // Light grey in light mode
+    ? '#2a2a2a'
+    : 'rgba(0, 132, 255, 0.08)',
 }));
 
 export const DarkTableCell = styled(TableCell)(({ theme }) => ({
   borderBottom: `1px solid ${theme.palette.divider}`,
-  color: theme.palette.text.primary, // This ensures text is visible
+  color: theme.palette.text.primary,
   fontSize: '14px',
   padding: '12px 16px',
   '&.MuiTableCell-head': {
-    color: theme.palette.text.primary, // Header text color
+    color: theme.palette.text.primary,
     fontWeight: 600,
     fontSize: '14px',
     letterSpacing: '0.5px',
@@ -41,8 +42,8 @@ export const DarkTableRow = styled(TableRow)(({ theme }) => ({
   backgroundColor: theme.palette.background.paper,
   '&:hover': {
     backgroundColor: theme.palette.mode === 'dark'
-      ? 'rgba(255, 255, 255, 0.05)' // Subtle white overlay in dark mode
-      : 'rgba(0, 0, 0, 0.04)', // Subtle black overlay in light mode
+      ? 'rgba(255, 255, 255, 0.05)'
+      : 'rgba(0, 0, 0, 0.04)',
   },
   '&:last-child td': {
     borderBottom: 'none',
@@ -69,44 +70,73 @@ export const LastHeaderCell = styled(DarkTableCell)(({ theme }) => ({
 
 export const TableContainer = styled('div')(({ theme }) => ({
   padding: '20px',
-  backgroundColor: theme.palette.background.default, // Ensure container has background
+  backgroundColor: theme.palette.background.default,
 }));
 
-export const ReportTable = ({ headers, children, loading, loadingComponent }) => (
-  <TableContainer>
-    <TableWrapper>
-      <DarkTable>
-        <DarkTableHead>
-          <TableRow>
-            {headers.map((header, index) => {
-              if (index === 0) {
-                return (
-                  <FirstHeaderCell key={header}>
-                    {header}
-                  </FirstHeaderCell>
-                );
-              }
+export const ReportTable = ({
+  headers,
+  children,
+  loading,
+  loadingComponent,
+  sortable = false,
+  sortConfig = null,
+  onSort = null,
+}) => {
+  const renderHeader = (header, index) => {
+    const isFirstColumn = index === 0;
+    const isLastColumn = index === headers.length - 1;
 
-              if (index === headers.length - 1) {
-                return (
-                  <LastHeaderCell key={header}>
-                    {header}
-                  </LastHeaderCell>
-                );
-              }
+    let CellComponent = DarkTableCell;
+    if (isFirstColumn) {
+      CellComponent = FirstHeaderCell;
+    } else if (isLastColumn) {
+      CellComponent = LastHeaderCell;
+    }
 
-              return (
-                <DarkTableCell key={header}>
-                  {header}
-                </DarkTableCell>
-              );
-            })}
-          </TableRow>
-        </DarkTableHead>
-        <DarkTableBody>
-          {loading ? loadingComponent : children}
-        </DarkTableBody>
-      </DarkTable>
-    </TableWrapper>
-  </TableContainer>
-);
+    if (React.isValidElement(header)) {
+      return <CellComponent key={index}>{header}</CellComponent>;
+    }
+
+    if (sortable && sortConfig && onSort && typeof header === 'object' && header !== null && header.sortKey) {
+      const active = sortConfig.orderBy === header.sortKey;
+      const direction = active ? sortConfig.order : 'asc';
+
+      return (
+        <CellComponent key={index}>
+          <TableSortLabel
+            active={active}
+            direction={direction}
+            onClick={() => onSort(header.sortKey)}
+          >
+            {header.label}
+            {active && (
+              <Box component="span" sx={visuallyHidden}>
+                {direction === 'desc' ? 'sorted descending' : 'sorted ascending'}
+              </Box>
+            )}
+          </TableSortLabel>
+        </CellComponent>
+      );
+    }
+
+    const headerText = typeof header === 'string' ? header : (header?.label || '');
+    return <CellComponent key={index}>{headerText}</CellComponent>;
+  };
+
+  return (
+    <TableContainer>
+      <TableWrapper>
+        <DarkTable>
+          <DarkTableHead>
+            <TableRow>
+              {headers.map((header, index) => renderHeader(header, index))}
+            </TableRow>
+          </DarkTableHead>
+          <DarkTableBody>
+            {loading ? loadingComponent : children}
+          </DarkTableBody>
+        </DarkTable>
+      </TableWrapper>
+    </TableContainer>
+  );
+};

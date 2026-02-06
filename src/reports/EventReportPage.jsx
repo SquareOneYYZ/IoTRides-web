@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FormControl,
@@ -7,6 +7,9 @@ import {
   MenuItem,
   IconButton,
   Link,
+  Box,
+  Pagination,
+  Typography,
 } from '@mui/material';
 import GpsFixedIcon from '@mui/icons-material/GpsFixed';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
@@ -95,6 +98,11 @@ const EventReportPage = () => {
   const [replayPositions, setReplayPositions] = useState([]);
   const [replayLoading, setReplayLoading] = useState(false);
   const [eventPosition, setEventPosition] = useState(null);
+
+  const [order, setOrder] = useState('desc');
+  const [orderBy, setOrderBy] = useState('eventTime');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
 
   const deviceName = useSelector((state) => {
     if (selectedItem?.deviceId) {
@@ -186,6 +194,7 @@ const EventReportPage = () => {
           }));
           const filteredEvents = filterEvents(modifiedData, typesToExclude);
           setItems(filteredEvents);
+          setPage(0);
         } else {
           throw Error(await response.text());
         }
@@ -255,6 +264,68 @@ const EventReportPage = () => {
     setEventPosition(null);
     setSelectedItem(null);
   };
+
+  const handleRequestSort = (property) => {
+    const isAsc = orderBy === property && order === 'asc';
+    setOrder(isAsc ? 'desc' : 'asc');
+    setOrderBy(property);
+    setPage(0);
+  };
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage - 1);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const preparedData = useMemo(() => items.map((item) => ({
+    ...item,
+    typeLabel: t(prefixString('event', item.type)),
+    geofenceName: item.geofenceId > 0 ? geofences[item.geofenceId]?.name || '' : '',
+  })), [items, geofences, t]);
+
+  const sortedAndPaginatedData = useMemo(() => {
+    if (!preparedData || preparedData.length === 0) return [];
+
+    const comparator = (a, b) => {
+      let aVal = a[orderBy];
+      let bVal = b[orderBy];
+
+      if (aVal == null) return 1;
+      if (bVal == null) return -1;
+
+      if (orderBy.toLowerCase().includes('time') || orderBy.toLowerCase().includes('date')) {
+        aVal = new Date(aVal).getTime();
+        bVal = new Date(bVal).getTime();
+      } else if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return order === 'asc' ? aVal - bVal : bVal - aVal;
+      } else if (typeof aVal === 'string') {
+        aVal = aVal.toLowerCase();
+        bVal = String(bVal).toLowerCase();
+      }
+
+      if (order === 'asc') {
+        if (aVal < bVal) return -1;
+        if (aVal > bVal) return 1;
+        return 0;
+      }
+
+      if (aVal > bVal) return -1;
+      if (aVal < bVal) return 1;
+      return 0;
+    };
+
+    const sorted = [...preparedData].sort(comparator);
+    return sorted.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  }, [preparedData, order, orderBy, page, rowsPerPage]);
+
+  const totalCount = preparedData.length;
+  const totalPages = Math.ceil(totalCount / rowsPerPage);
+  const startRow = totalCount === 0 ? 0 : page * rowsPerPage + 1;
+  const endRow = Math.min((page + 1) * rowsPerPage, totalCount);
 
   const formatValue = (item, key) => {
     const value = item[key];
@@ -342,6 +413,30 @@ const EventReportPage = () => {
     }
   };
 
+  const sortableColumns = [
+    'eventTime',
+    'typeLabel',
+    'geofenceName',
+    'maintenanceId',
+  ];
+  const headers = [
+    '',
+    '',
+    ...columns.map((key) => {
+      let sortKey = key;
+      if (key === 'type') sortKey = 'typeLabel';
+      if (key === 'geofenceId') sortKey = 'geofenceName';
+
+      if (sortableColumns.includes(sortKey)) {
+        return {
+          label: t(columnsMap.get(key)),
+          sortKey,
+        };
+      }
+      return t(columnsMap.get(key));
+    }),
+  ];
+
   if (replayMode) {
     return (
       <ReplayControl
@@ -399,7 +494,7 @@ const EventReportPage = () => {
 
             <button
               type="button"
-              aria-label="button"
+              aria-label="Resize map"
               onMouseDown={handleMouseDown}
               style={{
                 height: '8px',
@@ -411,7 +506,10 @@ const EventReportPage = () => {
                 flexShrink: 0,
                 borderTop: '1px solid #ccc',
                 borderBottom: '1px solid #ccc',
+                transition: 'background-color 0.2s',
               }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#d0d0d0')}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#e0e0e0')}
             >
               <div
                 style={{
@@ -491,16 +589,14 @@ const EventReportPage = () => {
           </div>
 
           <ReportTable
-            headers={[
-              '',
-              '',
-              ...columns.map((key) => t(columnsMap.get(key))),
-            ]}
+            headers={headers}
             loading={loading}
             loadingComponent={<TableShimmer columns={columns.length + 2} />}
+            sortable
+            sortConfig={{ order, orderBy }}
+            onSort={handleRequestSort}
           >
-
-            {items.map((item) => (
+            {sortedAndPaginatedData.map((item) => (
               <DarkTableRow key={item.id}>
                 <DarkTableCell className={classes.columnAction} padding="none">
                   {item.positionId && (
@@ -523,13 +619,13 @@ const EventReportPage = () => {
                 </DarkTableCell>
                 <DarkTableCell className={classes.columnAction} padding="none">
                   {item.positionId && (
-                  <IconButton
-                    size="small"
-                    onClick={() => handleReplayStart(item)}
-                    disabled={replayLoading}
-                  >
-                    <ReplayIcon fontSize="small" />
-                  </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleReplayStart(item)}
+                      disabled={replayLoading}
+                    >
+                      <ReplayIcon fontSize="small" />
+                    </IconButton>
                   )}
                 </DarkTableCell>
                 {columns.map((key) => (
@@ -538,6 +634,59 @@ const EventReportPage = () => {
               </DarkTableRow>
             ))}
           </ReportTable>
+
+          {!loading && sortedAndPaginatedData.length > 0 && (
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-evenly',
+                alignItems: 'center',
+                p: 2,
+                borderTop: '1px solid rgba(224, 224, 224, 1)',
+                flexWrap: 'wrap',
+                gap: 2,
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="body2">
+                  {t('sharedRowsPerPage') || 'Rows per page'}
+                  :
+                </Typography>
+                <FormControl size="small">
+                  <Select
+                    value={rowsPerPage}
+                    onChange={handleChangeRowsPerPage}
+                    sx={{ minWidth: 80 }}
+                  >
+                    <MenuItem value={10}>10</MenuItem>
+                    <MenuItem value={25}>25</MenuItem>
+                    <MenuItem value={50}>50</MenuItem>
+                    <MenuItem value={100}>100</MenuItem>
+                  </Select>
+                </FormControl>
+                <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
+                  {startRow}
+                  -
+                  {endRow}
+                  {' '}
+                  {t('sharedOf') || 'of'}
+                  {' '}
+                  {totalCount}
+                </Typography>
+              </Box>
+
+              <Pagination
+                count={totalPages}
+                page={page + 1}
+                onChange={handleChangePage}
+                color="primary"
+                showFirstButton
+                showLastButton
+                siblingCount={1}
+                boundaryCount={1}
+              />
+            </Box>
+          )}
         </div>
       </div>
     </PageLayout>

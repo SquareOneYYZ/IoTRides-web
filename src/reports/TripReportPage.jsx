@@ -1,7 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  IconButton, Table, TableBody, TableCell, TableHead, TableRow,
+  IconButton,
+  Box,
+  Pagination,
+  Typography,
+  FormControl,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import GpsFixedIcon from '@mui/icons-material/GpsFixed';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
@@ -60,6 +66,12 @@ const TripReportPage = () => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [route, setRoute] = useState(null);
 
+  // Sorting and pagination state
+  const [order, setOrder] = useState('desc');
+  const [orderBy, setOrderBy] = useState('startTime');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
+
   const createMarkers = () => ([
     {
       latitude: selectedItem.startLat,
@@ -112,6 +124,7 @@ const TripReportPage = () => {
         });
         if (response.ok) {
           setItems(await response.json());
+          setPage(0); // Reset to first page on new data
         } else {
           throw Error(await response.text());
         }
@@ -130,6 +143,70 @@ const TripReportPage = () => {
       navigate('/reports/scheduled');
     }
   });
+
+  // Handler functions
+  const handleRequestSort = (property) => {
+    const isAsc = orderBy === property && order === 'asc';
+    setOrder(isAsc ? 'desc' : 'asc');
+    setOrderBy(property);
+    setPage(0);
+  };
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage - 1);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  // Prepare data
+  const preparedData = useMemo(() => items.map((item) => ({
+    ...item,
+  })), [items]);
+
+  // Sorting and pagination logic
+  const sortedAndPaginatedData = useMemo(() => {
+    if (!preparedData || preparedData.length === 0) return [];
+
+    const comparator = (a, b) => {
+      let aVal = a[orderBy];
+      let bVal = b[orderBy];
+
+      if (aVal == null) return 1;
+      if (bVal == null) return -1;
+
+      if (orderBy.toLowerCase().includes('time') || orderBy.toLowerCase().includes('date')) {
+        aVal = new Date(aVal).getTime();
+        bVal = new Date(bVal).getTime();
+      } else if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return order === 'asc' ? aVal - bVal : bVal - aVal;
+      } else if (typeof aVal === 'string') {
+        aVal = aVal.toLowerCase();
+        bVal = String(bVal).toLowerCase();
+      }
+
+      if (order === 'asc') {
+        if (aVal < bVal) return -1;
+        if (aVal > bVal) return 1;
+        return 0;
+      }
+
+      if (aVal > bVal) return -1;
+      if (aVal < bVal) return 1;
+      return 0;
+    };
+
+    const sorted = [...preparedData].sort(comparator);
+    return sorted.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  }, [preparedData, order, orderBy, page, rowsPerPage]);
+
+  // Pagination counts
+  const totalCount = preparedData.length;
+  const totalPages = Math.ceil(totalCount / rowsPerPage);
+  const startRow = totalCount === 0 ? 0 : page * rowsPerPage + 1;
+  const endRow = Math.min((page + 1) * rowsPerPage, totalCount);
 
   const formatValue = (item, key) => {
     const value = item[key];
@@ -157,6 +234,34 @@ const TripReportPage = () => {
     }
   };
 
+  // Define sortable columns
+  const sortableColumns = [
+    'startTime',
+    'endTime',
+    'distance',
+    'averageSpeed',
+    'maxSpeed',
+    'duration',
+    'spentFuel',
+    'startOdometer',
+    'endOdometer',
+    'driverName',
+  ];
+
+  // Create headers array with sort configuration
+  const headers = [
+    '', // Action column (location icon)
+    ...columns.map((key) => {
+      if (sortableColumns.includes(key)) {
+        return {
+          label: t(columnsMap.get(key)),
+          sortKey: key,
+        };
+      }
+      return t(columnsMap.get(key));
+    }),
+  ];
+
   return (
     <PageLayout menu={<ReportsMenu />} breadcrumbs={['reportTitle', 'reportTrips']}>
       <div
@@ -170,58 +275,58 @@ const TripReportPage = () => {
         }}
       >
         {selectedItem && (
-        <>
-          <div
-            className={classes.containerMap}
-            style={{
-              height: `${mapHeight}%`,
-              minHeight: '150px',
-              position: 'relative',
-              overflow: 'hidden',
-            }}
-          >
-            <MapView>
-              <MapGeofence />
-              {route && (
-              <>
-                <MapRoutePath positions={route} />
-                <MapMarkers markers={createMarkers()} />
-                <MapCamera positions={route} />
-              </>
-              )}
-            </MapView>
-            <MapScale />
-          </div>
-
-          <button
-            type="button"
-            onMouseDown={handleMouseDown}
-            style={{
-              height: '8px',
-              backgroundColor: '#e0e0e0',
-              cursor: 'row-resize',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              borderTop: '1px solid #ccc',
-              borderBottom: '1px solid #ccc',
-              transition: 'background-color 0.2s',
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#d0d0d0')}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#e0e0e0')}
-          >
-            {' '}
+          <>
             <div
+              className={classes.containerMap}
               style={{
-                width: '40px',
-                height: '4px',
-                backgroundColor: '#999',
-                borderRadius: '2px',
+                height: `${mapHeight}%`,
+                minHeight: '150px',
+                position: 'relative',
+                overflow: 'hidden',
               }}
-            />
-          </button>
-        </>
+            >
+              <MapView>
+                <MapGeofence />
+                {route && (
+                  <>
+                    <MapRoutePath positions={route} />
+                    <MapMarkers markers={createMarkers()} />
+                    <MapCamera positions={route} />
+                  </>
+                )}
+              </MapView>
+              <MapScale />
+            </div>
+
+            <button
+              type="button"
+              aria-label="Resize map"
+              onMouseDown={handleMouseDown}
+              style={{
+                height: '8px',
+                backgroundColor: '#e0e0e0',
+                cursor: 'row-resize',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                borderTop: '1px solid #ccc',
+                borderBottom: '1px solid #ccc',
+                transition: 'background-color 0.2s',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#d0d0d0')}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#e0e0e0')}
+            >
+              <div
+                style={{
+                  width: '40px',
+                  height: '4px',
+                  backgroundColor: '#999',
+                  borderRadius: '2px',
+                }}
+              />
+            </button>
+          </>
         )}
 
         <div
@@ -238,11 +343,14 @@ const TripReportPage = () => {
             </ReportFilter>
           </div>
           <ReportTable
-            headers={['', ...columns.map((key) => t(columnsMap.get(key)))]}
+            headers={headers}
             loading={loading}
             loadingComponent={<TableShimmer columns={columns.length + 1} startAction />}
+            sortable
+            sortConfig={{ order, orderBy }}
+            onSort={handleRequestSort}
           >
-            {items.map((item) => (
+            {sortedAndPaginatedData.map((item) => (
               <DarkTableRow key={item.startPositionId}>
                 <DarkTableCell className={classes.columnAction} padding="none">
                   {selectedItem === item ? (
@@ -263,9 +371,61 @@ const TripReportPage = () => {
               </DarkTableRow>
             ))}
           </ReportTable>
+
+          {!loading && sortedAndPaginatedData.length > 0 && (
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-evenly',
+                alignItems: 'center',
+                p: 2,
+                borderTop: '1px solid rgba(224, 224, 224, 1)',
+                flexWrap: 'wrap',
+                gap: 2,
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="body2">
+                  {t('sharedRowsPerPage') || 'Rows per page'}
+                  :
+                </Typography>
+                <FormControl size="small">
+                  <Select
+                    value={rowsPerPage}
+                    onChange={handleChangeRowsPerPage}
+                    sx={{ minWidth: 80 }}
+                  >
+                    <MenuItem value={10}>10</MenuItem>
+                    <MenuItem value={25}>25</MenuItem>
+                    <MenuItem value={50}>50</MenuItem>
+                    <MenuItem value={100}>100</MenuItem>
+                  </Select>
+                </FormControl>
+                <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
+                  {startRow}
+                  -
+                  {endRow}
+                  {' '}
+                  {t('sharedOf') || 'of'}
+                  {' '}
+                  {totalCount}
+                </Typography>
+              </Box>
+
+              <Pagination
+                count={totalPages}
+                page={page + 1}
+                onChange={handleChangePage}
+                color="primary"
+                showFirstButton
+                showLastButton
+                siblingCount={1}
+                boundaryCount={1}
+              />
+            </Box>
+          )}
         </div>
       </div>
-
     </PageLayout>
   );
 };
