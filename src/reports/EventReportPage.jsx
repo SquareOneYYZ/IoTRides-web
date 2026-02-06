@@ -1,24 +1,16 @@
-import React, {
-  useState,
-  useMemo,
-} from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
-  Link,
   IconButton,
   TableSortLabel,
   Box,
   Pagination,
   Typography,
+  Link,
 } from '@mui/material';
 import { visuallyHidden } from '@mui/utils';
 import GpsFixedIcon from '@mui/icons-material/GpsFixed';
@@ -52,6 +44,8 @@ import scheduleReport from './common/scheduleReport';
 import MapScale from '../map/MapScale';
 import SelectField from '../common/components/SelectField';
 import ReplayControl from './components/ReplayControl';
+import { ReportTable, DarkTableRow, DarkTableCell } from './components/StyledTableComponents';
+import useResizableMap from './common/useResizableMap';
 
 const columnsArray = [
   ['eventTime', 'positionFixTime'],
@@ -73,16 +67,15 @@ const EventReportPage = () => {
   const navigate = useNavigate();
   const classes = useReportStyles();
   const t = useTranslation();
-
   const devices = useSelector((state) => state.devices.items);
   const geofences = useSelector((state) => state.geofences.items);
-
   const speedUnit = useAttributePreference('speedUnit');
   const distanceUnit = useAttributePreference('distanceUnit');
-
   const [allEventTypes, setAllEventTypes] = useState([
     ['allEvents', 'eventAll'],
   ]);
+
+  const { containerRef, mapHeight, handleMouseDown } = useResizableMap(60, 20, 80);
 
   const alarms = useTranslationKeys((it) => it.startsWith('alarm')).map(
     (it) => ({
@@ -441,19 +434,46 @@ const EventReportPage = () => {
 
   const showAlarmSelect = eventTypes[0] !== 'allEvents' && eventTypes.includes('alarm');
 
+  // Create headers with sortable columns
+  const headers = [
+    '', // Location icon column
+    '', // Replay icon column
+    ...columns.map((key) => {
+      const isSortable = key === 'eventTime' || key === 'type';
+      if (isSortable) {
+        return (
+          <TableSortLabel
+            key={key}
+            active={orderBy === key}
+            direction={orderBy === key ? order : 'asc'}
+            onClick={() => handleRequestSort(key)}
+          >
+            {t(columnsMap.get(key))}
+            {orderBy === key ? (
+              <Box component="span" sx={visuallyHidden}>
+                {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
+              </Box>
+            ) : null}
+          </TableSortLabel>
+        );
+      }
+      return t(columnsMap.get(key));
+    }),
+  ];
+
   let tableBodyContent;
 
   if (loading) {
     tableBodyContent = <TableShimmer columns={columns.length + 2} />;
   } else if (sortedAndPaginatedData.length === 0) {
     tableBodyContent = (
-      <TableRow>
-        <TableCell colSpan={columns.length + 2} align="center">
+      <DarkTableRow>
+        <DarkTableCell colSpan={columns.length + 2} align="center">
           <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
             {t('sharedNoData') || 'No data available'}
           </Typography>
-        </TableCell>
-      </TableRow>
+        </DarkTableCell>
+      </DarkTableRow>
     );
   } else {
     tableBodyContent = sortedAndPaginatedData.map((item) => {
@@ -475,27 +495,27 @@ const EventReportPage = () => {
       }
 
       return (
-        <TableRow key={item.id} hover>
-          <TableCell className={classes.columnAction} padding="none">
+        <DarkTableRow key={item.id}>
+          <DarkTableCell className={classes.columnAction} padding="none">
             {locationAction}
-          </TableCell>
+          </DarkTableCell>
 
-          <TableCell className={classes.columnAction} padding="none">
+          <DarkTableCell className={classes.columnAction} padding="none">
             {hasPositionId && (
-            <IconButton
-              size="small"
-              onClick={() => handleReplayStart(item)}
-              disabled={replayLoading}
-            >
-              <ReplayIcon fontSize="small" />
-            </IconButton>
+              <IconButton
+                size="small"
+                onClick={() => handleReplayStart(item)}
+                disabled={replayLoading}
+              >
+                <ReplayIcon fontSize="small" />
+              </IconButton>
             )}
-          </TableCell>
+          </DarkTableCell>
 
           {columns.map((key) => (
-            <TableCell key={key}>{formatValue(item, key)}</TableCell>
+            <DarkTableCell key={key}>{formatValue(item, key)}</DarkTableCell>
           ))}
-        </TableRow>
+        </DarkTableRow>
       );
     });
   }
@@ -505,25 +525,78 @@ const EventReportPage = () => {
       menu={<ReportsMenu />}
       breadcrumbs={['reportTitle', 'reportEvents']}
     >
-      <div className={classes.container}>
+      <div
+        ref={containerRef}
+        className={classes.container}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: 'calc(100vh - 64px)',
+          overflow: 'hidden',
+        }}
+      >
         {selectedItem && (
-          <div className={classes.containerMap}>
-            <MapView>
-              <MapGeofence />
+          <>
+            <div
+              className={classes.containerMap}
+              style={{
+                height: `${mapHeight}%`,
+                minHeight: '150px',
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+            >
+              <MapView>
+                <MapGeofence />
+                {position && (
+                  <MapPositions positions={[position]} titleField="fixTime" />
+                )}
+              </MapView>
+              <MapScale />
               {position && (
-                <MapPositions positions={[position]} titleField="fixTime" />
+                <MapCamera
+                  latitude={position.latitude}
+                  longitude={position.longitude}
+                />
               )}
-            </MapView>
-            <MapScale />
-            {position && (
-              <MapCamera
-                latitude={position.latitude}
-                longitude={position.longitude}
+            </div>
+
+            <button
+              type="button"
+              aria-label="button"
+              onMouseDown={handleMouseDown}
+              style={{
+                height: '8px',
+                backgroundColor: '#e0e0e0',
+                cursor: 'row-resize',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                borderTop: '1px solid #ccc',
+                borderBottom: '1px solid #ccc',
+              }}
+            >
+              <div
+                style={{
+                  width: '40px',
+                  height: '4px',
+                  backgroundColor: '#999',
+                  borderRadius: '2px',
+                }}
               />
-            )}
-          </div>
+            </button>
+          </>
         )}
-        <div className={classes.containerMain}>
+
+        <div
+          className={classes.containerMain}
+          style={{
+            flex: 1,
+            overflow: 'auto',
+            minHeight: '150px',
+          }}
+        >
           <div className={classes.header}>
             <ReportFilter
               handleSubmit={handleSubmit}
@@ -545,6 +618,12 @@ const EventReportPage = () => {
                       setEventTypes(values);
                     }}
                     multiple
+                    sx={{
+                      borderRadius: '13px',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderRadius: '13px',
+                      },
+                    }}
                   >
                     {allEventTypes.map(([key, string]) => (
                       <MenuItem key={key} value={key}>
@@ -574,39 +653,15 @@ const EventReportPage = () => {
               />
             </ReportFilter>
           </div>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell className={classes.columnAction} />
-                <TableCell className={classes.columnAction} />
-                {columns.map((key) => {
-                  const isSortable = key === 'eventTime' || key === 'type';
-                  if (isSortable) {
-                    return (
-                      <TableCell key={key}>
-                        <TableSortLabel
-                          active={orderBy === key}
-                          direction={orderBy === key ? order : 'asc'}
-                          onClick={() => handleRequestSort(key)}
-                        >
-                          {t(columnsMap.get(key))}
-                          {orderBy === key ? (
-                            <Box component="span" sx={visuallyHidden}>
-                              {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
-                            </Box>
-                          ) : null}
-                        </TableSortLabel>
-                      </TableCell>
-                    );
-                  }
-                  return (
-                    <TableCell key={key}>{t(columnsMap.get(key))}</TableCell>
-                  );
-                })}
-              </TableRow>
-            </TableHead>
-            <TableBody>{tableBodyContent}</TableBody>
-          </Table>
+
+          <ReportTable
+            headers={headers}
+            loading={loading}
+            loadingComponent={<TableShimmer columns={columns.length + 2} />}
+          >
+            {tableBodyContent}
+          </ReportTable>
+
           {!loading && sortedAndPaginatedData.length > 0 && (
             <Box
               sx={{

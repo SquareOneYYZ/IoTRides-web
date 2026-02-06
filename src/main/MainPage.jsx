@@ -25,6 +25,8 @@ const useStyles = makeStyles((theme) => ({
     pointerEvents: 'none',
     display: 'flex',
     flexDirection: 'column',
+    borderRadius: theme.spacing(2),
+    overflow: 'hidden',
     [theme.breakpoints.up('md')]: {
       position: 'fixed',
       left: 0,

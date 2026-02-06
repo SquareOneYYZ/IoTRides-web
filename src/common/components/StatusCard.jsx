@@ -41,6 +41,8 @@ const useStyles = makeStyles((theme) => ({
   card: {
     pointerEvents: 'auto',
     width: theme.dimensions.popupMaxWidth,
+    borderRadius: theme.spacing(2),
+    overflow: 'hidden',
   },
   media: {
     height: theme.dimensions.popupImageHeight,
@@ -72,6 +74,9 @@ const useStyles = makeStyles((theme) => ({
     filter: 'brightness(0) invert(1)',
   },
   table: {
+    '& .MuiTableCell-root': {
+      borderBottom: 'none',
+    },
     '& .MuiTableCell-sizeSmall': {
       paddingLeft: 0,
       paddingRight: 0,
@@ -81,7 +86,7 @@ const useStyles = makeStyles((theme) => ({
     },
   },
   cell: {
-    borderBottom: 'none',
+    borderBottom: 'none !important',
   },
   actions: {
     justifyContent: 'space-between',

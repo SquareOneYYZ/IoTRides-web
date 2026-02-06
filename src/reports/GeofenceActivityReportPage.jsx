@@ -5,11 +5,6 @@ import React, {
 } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
   FormControl,
   InputLabel,
   Select,
@@ -47,6 +42,7 @@ import MapMarkers from '../map/MapMarkers';
 import MapCamera from '../map/MapCamera';
 import MapScale from '../map/MapScale';
 import useResizableMap from './common/useResizableMap';
+import { ReportTable, DarkTableRow, DarkTableCell } from './components/StyledTableComponents';
 
 const columnsArray = [
   ['deviceId', 'sharedDevice'],
@@ -78,12 +74,9 @@ const GeofenceDistanceReportPage = () => {
   const classes = useReportStyles();
   const t = useTranslation();
   const { containerRef, mapHeight, handleMouseDown } = useResizableMap(60, 20, 80);
-
   const devices = useSelector((state) => state.devices.items);
-
   const distanceUnit = useAttributePreference('distanceUnit');
   const [filterRange, setFilterRange] = useState({ from: null, to: null });
-
   const [columns, setColumns] = usePersistedState('geofenceDistanceColumns', [
     'deviceId',
     'geofenceId',
@@ -578,6 +571,12 @@ const GeofenceDistanceReportPage = () => {
                       label="Segment Type"
                       value={selectedSegmentType}
                       onChange={(e) => setSelectedSegmentType(e.target.value)}
+                      sx={{
+                        borderRadius: '13px',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderRadius: '13px',
+                        },
+                      }}
                     >
                       {segmentTypes.map(([key, label]) => (
                         <MenuItem key={key} value={key}>
@@ -595,6 +594,12 @@ const GeofenceDistanceReportPage = () => {
                     value={minDistance}
                     onChange={(e) => setMinDistance(e.target.value)}
                     inputProps={{ min: 0, step: 0.1 }}
+                    sx={{
+                      borderRadius: '5px',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderRadius: '5px',
+                      },
+                    }}
                   />
                 </div>
                 <div className={classes.filterItem}>
@@ -612,6 +617,12 @@ const GeofenceDistanceReportPage = () => {
                         setSelectedTypes(values);
                       }}
                       multiple
+                      sx={{
+                        borderRadius: '13px',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderRadius: '13px',
+                        },
+                      }}
                     >
                       {allEventTypes.map(([key, string]) => (
                         <MenuItem key={key} value={key}>
@@ -636,6 +647,12 @@ const GeofenceDistanceReportPage = () => {
                         setSelectedGeofences(values);
                       }}
                       multiple
+                      sx={{
+                        borderRadius: '13px',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderRadius: '13px',
+                        },
+                      }}
                     >
                       <MenuItem key="allGeofences" value="allGeofences">
                         All Geofences
@@ -655,90 +672,39 @@ const GeofenceDistanceReportPage = () => {
                 />
               </ReportFilter>
             </div>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell className={classes.columnAction} />
-                  {columns.map((key) => {
-                    const isSortable = key === 'startTime' || key === 'endTime' || key === 'deviceId' || key === 'geofenceId';
-                    if (isSortable) {
-                      return (
-                        <TableCell key={key}>
-                          <TableSortLabel
-                            active={orderBy === key}
-                            direction={orderBy === key ? order : 'asc'}
-                            onClick={() => handleRequestSort(key)}
-                          >
-                            {t(columnsMap.get(key))}
-                            {orderBy === key ? (
-                              <Box component="span" sx={visuallyHidden}>
-                                {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
-                              </Box>
-                            ) : null}
-                          </TableSortLabel>
-                        </TableCell>
-                      );
-                    }
-                    return (
-                      <TableCell key={key}>{t(columnsMap.get(key))}</TableCell>
-                    );
-                  })}
-                </TableRow>
-              </TableHead>
-              <TableBody>{tableBodyContent}</TableBody>
-            </Table>
-            {!loading && sortedAndPaginatedData.length > 0 && (
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'space-evenly',
-                  alignItems: 'center',
-                  p: 2,
-                  borderTop: '1px solid rgba(224, 224, 224, 1)',
-                  flexWrap: 'wrap',
-                  gap: 2,
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography variant="body2">
-                    {t('sharedRowsPerPage') || 'Rows per page'}
-                    :
-                  </Typography>
-                  <FormControl size="small">
-                    <Select
-                      value={rowsPerPage}
-                      onChange={handleChangeRowsPerPage}
-                      sx={{ minWidth: 80 }}
-                    >
-                      <MenuItem value={10}>10</MenuItem>
-                      <MenuItem value={25}>25</MenuItem>
-                      <MenuItem value={50}>50</MenuItem>
-                      <MenuItem value={100}>100</MenuItem>
-                    </Select>
-                  </FormControl>
-                  <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
-                    {startRow}
-                    -
-                    {endRow}
-                    {' '}
-                    {t('sharedOf') || 'of'}
-                    {' '}
-                    {totalCount}
-                  </Typography>
-                </Box>
 
-                <Pagination
-                  count={totalPages}
-                  page={page + 1}
-                  onChange={handleChangePage}
-                  color="primary"
-                  showFirstButton
-                  showLastButton
-                  siblingCount={1}
-                  boundaryCount={1}
-                />
-              </Box>
-            )}
+            <ReportTable
+              headers={['', ...columns.map((key) => t(columnsMap.get(key)))]}
+              loading={loading}
+              loadingComponent={<TableShimmer columns={columns.length + 1} startAction />}
+            >
+              {items.map((item) => (
+                <DarkTableRow key={item.id}>
+                  <DarkTableCell className={classes.columnAction} padding="none">
+                    {!item.isPlaceholder && (item.enterPositionId || item.exitPositionId) && (
+                      selectedItem === item ? (
+                        <IconButton
+                          size="small"
+                          onClick={() => setSelectedItem(null)}
+                        >
+                          <GpsFixedIcon fontSize="small" />
+                        </IconButton>
+                      ) : (
+                        <IconButton
+                          size="small"
+                          onClick={() => setSelectedItem(item)}
+                        >
+                          <LocationSearchingIcon fontSize="small" />
+                        </IconButton>
+                      )
+                    )}
+                  </DarkTableCell>
+                  {columns.map((key) => (
+                    <DarkTableCell key={key}>{formatValue(item, key)}</DarkTableCell>
+                  ))}
+                </DarkTableRow>
+              ))}
+            </ReportTable>
           </div>
         </div>
       </div>
