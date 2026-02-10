@@ -256,6 +256,7 @@
 	"settingsServiceWorkerUpdateInterval": "ServiceWorker Update Interval",
 	"settingsUpdateAvailable": "There is an update available.",
 	"settingsSupport": "Support",
+	"sharedQuickUpdate": "Quick Update",
 	"reportTitle": "Reports",
 	"reportScheduled": "Scheduled Reports",
 	"reportDevice": "Device",

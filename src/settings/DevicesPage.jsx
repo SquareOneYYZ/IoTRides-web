@@ -298,10 +298,23 @@ const DevicesPage = () => {
     }
   };
 
-  const handleBulkAssign = async (groupId) => {
+  const handleBulkAssign = async (groupIdOrSelections) => {
     const affected = items.filter((item) => selectedIds.includes(item.id));
+
+    // Check if it's individual selections (object) or bulk assign (number)
+    const isIndividualMode = typeof groupIdOrSelections === 'object';
+
     const results = await Promise.allSettled(
       affected.map(async (item) => {
+        const groupId = isIndividualMode
+          ? groupIdOrSelections[item.id]
+          : groupIdOrSelections;
+
+        // Skip devices without group selection in individual mode
+        if (isIndividualMode && !groupId) {
+          return null;
+        }
+
         const updated = { ...item, groupId };
         const response = await fetch(`/api/devices/${item.id}`, {
           method: 'PUT',
@@ -314,36 +327,24 @@ const DevicesPage = () => {
         return updated;
       }),
     );
-
-    const succeeded = results
-      .filter((r) => r.status === 'fulfilled')
-      .map((r) => r.value);
-
-    if (succeeded.length > 0) {
-      setItems((prev) => prev.map((item) => {
-        const match = succeeded.find((x) => x.id === item.id);
-        return match || item;
-      }));
-    }
-
-    const failedCount = results.filter((r) => r.status === 'rejected').length;
-    const successCount = succeeded.length;
-
-    setSnackbar({
-      open: true,
-      message: `Assigned group to ${successCount} device(s)${
-        failedCount ? `, ${failedCount} failed` : ''
-      }`,
-    });
-
-    setBulkAssignOpen(false);
-    clearSelection();
   };
 
-  const handleBulkUpdate = async (payload) => {
+  const handleBulkUpdate = async (data) => {
     const affected = items.filter((item) => selectedIds.includes(item.id));
+
+    const isBulkMode = data.mode === 'bulk';
+
     const results = await Promise.allSettled(
       affected.map(async (item) => {
+        const payload = isBulkMode
+          ? data.payload
+          : data.payloads[item.id];
+
+        // Skip devices without settings in individual mode
+        if (!isBulkMode && !payload) {
+          return null;
+        }
+
         const updated = { ...item, ...payload };
         const response = await fetch(`/api/devices/${item.id}`, {
           method: 'PUT',
@@ -358,7 +359,7 @@ const DevicesPage = () => {
     );
 
     const succeeded = results
-      .filter((r) => r.status === 'fulfilled')
+      .filter((r) => r.status === 'fulfilled' && r.value !== null)
       .map((r) => r.value);
 
     if (succeeded.length > 0) {
@@ -646,14 +647,6 @@ const DevicesPage = () => {
               <Button
                 variant="outlined"
                 size="small"
-                onClick={() => setBulkAssignOpen(true)}
-                disabled={deviceReadonly}
-              >
-                Assign to Group
-              </Button>
-              <Button
-                variant="outlined"
-                size="small"
                 onClick={() => setBulkUpdateOpen(true)}
                 disabled={deviceReadonly}
               >
@@ -830,19 +823,12 @@ const DevicesPage = () => {
 
           <CollectionFab editPath="/settings/device" />
         </Box>
-
-        <DeviceBulkAssignGroupDialog
-          open={bulkAssignOpen}
-          onClose={() => setBulkAssignOpen(false)}
-          onConfirm={handleBulkAssign}
-          groups={groups}
-          selectedCount={selectedIds.length}
-        />
         <DeviceBulkUpdateSettingsDialog
           open={bulkUpdateOpen}
           onClose={() => setBulkUpdateOpen(false)}
           onConfirm={handleBulkUpdate}
           selectedCount={selectedIds.length}
+          selectedDevices={items.filter((item) => selectedIds.includes(item.id))}
         />
         <Snackbar
           open={snackbar.open}
