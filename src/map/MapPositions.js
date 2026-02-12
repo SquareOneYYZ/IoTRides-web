@@ -1,4 +1,6 @@
-import { useId, useCallback, useEffect } from 'react';
+import {
+  useId, useCallback, useEffect, useRef,
+} from 'react';
 import { useSelector } from 'react-redux';
 import { useMediaQuery } from '@mui/material';
 import { useTheme } from '@mui/styles';
@@ -24,7 +26,24 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
   const mapCluster = useAttributePreference('mapCluster', true);
   const directionType = useAttributePreference('mapDirection', 'selected');
 
-  const createFeature = (devices, position, selectedPositionId) => {
+  const baseAnimationDuration = useAttributePreference('mapAnimationDuration', 2500);
+  const enableSmoothing = useAttributePreference('mapEnableSmoothing', true);
+  const useAdaptiveTiming = useAttributePreference('mapAdaptiveTiming', true);
+
+  const animationStateRef = useRef({});
+  const animationFrameRef = useRef(null);
+  const devicesRef = useRef(devices);
+  const selectedDeviceIdRef = useRef(selectedDeviceId);
+  const selectedPositionRef = useRef(selectedPosition);
+  const lastUpdateTimeRef = useRef({});
+
+  useEffect(() => {
+    devicesRef.current = devices;
+    selectedDeviceIdRef.current = selectedDeviceId;
+    selectedPositionRef.current = selectedPosition;
+  }, [devices, selectedDeviceId, selectedPosition]);
+
+  const createFeature = useCallback((devices, position, selectedPositionId) => {
     const device = devices[position.deviceId];
     let showDirection;
     switch (directionType) {
@@ -48,7 +67,200 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
       rotation: position.course,
       direction: showDirection,
     };
+  }, [directionType, showStatus]);
+
+  const lerp = (start, end, t) => start + (end - start) * t;
+
+  const easeInOutQuad = (t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
+
+  const interpolateCoordinates = (startLng, startLat, endLng, endLat, progress) => [
+    lerp(startLng, endLng, progress),
+    lerp(startLat, endLat, progress),
+  ];
+
+  const interpolateRotation = (startRotation, endRotation, progress) => {
+    let diff = endRotation - startRotation;
+
+    if (diff > 180) {
+      diff -= 360;
+    } else if (diff < -180) {
+      diff += 360;
+    }
+
+    let result = startRotation + diff * progress;
+    if (result < 0) result += 360;
+    if (result >= 360) result -= 360;
+
+    return result;
   };
+  const calculateAnimationDuration = useCallback((deviceId, now) => {
+    if (!useAdaptiveTiming) {
+      return baseAnimationDuration;
+    }
+
+    const lastUpdate = lastUpdateTimeRef.current[deviceId];
+    if (!lastUpdate) {
+      return baseAnimationDuration;
+    }
+    const timeBetweenUpdates = now - lastUpdate;
+    const adaptiveDuration = Math.min(timeBetweenUpdates * 0.8, 5000);
+    return Math.max(1000, Math.min(adaptiveDuration, 5000));
+  }, [baseAnimationDuration, useAdaptiveTiming]);
+
+  const updateMapData = useCallback(() => {
+    const state = animationStateRef.current;
+    const currentDevices = devicesRef.current;
+    const currentSelectedDeviceId = selectedDeviceIdRef.current;
+    const currentSelectedPosition = selectedPositionRef.current;
+
+    [id, selected].forEach((source) => {
+      const sourceObj = map.getSource(source);
+      if (!sourceObj) return;
+
+      const features = Object.values(state)
+        .filter((deviceState) => currentDevices.hasOwnProperty(deviceState.properties.deviceId))
+        .filter((deviceState) => {
+          const isSelected = deviceState.properties.deviceId === currentSelectedDeviceId;
+          return source === id ? !isSelected : isSelected;
+        })
+        .map((deviceState) => {
+          const position = deviceState.properties;
+          const { current } = deviceState;
+
+          return {
+            type: 'Feature',
+            geometry: {
+              type: 'Point',
+              coordinates: [current.longitude, current.latitude],
+            },
+            properties: {
+              ...createFeature(currentDevices, position, currentSelectedPosition && currentSelectedPosition.id),
+              rotation: current.rotation,
+            },
+          };
+        });
+
+      sourceObj.setData({
+        type: 'FeatureCollection',
+        features,
+      });
+    });
+  }, [id, selected, createFeature]);
+
+  const animate = useCallback(() => {
+    const now = Date.now();
+    const state = animationStateRef.current;
+    let needsUpdate = false;
+
+    Object.keys(state).forEach((deviceId) => {
+      const deviceState = state[deviceId];
+
+      if (deviceState.target) {
+        const elapsed = now - deviceState.startTime;
+        const duration = deviceState.duration || baseAnimationDuration;
+        const progress = Math.min(elapsed / duration, 1);
+        const easedProgress = easeInOutQuad(progress);
+
+        const [lng, lat] = interpolateCoordinates(
+          deviceState.start.longitude,
+          deviceState.start.latitude,
+          deviceState.target.longitude,
+          deviceState.target.latitude,
+          easedProgress,
+        );
+
+        const rotation = interpolateRotation(
+          deviceState.start.rotation,
+          deviceState.target.rotation,
+          easedProgress,
+        );
+
+        deviceState.current = {
+          longitude: lng,
+          latitude: lat,
+          rotation,
+        };
+
+        if (progress >= 1) {
+          deviceState.current = { ...deviceState.target };
+          deviceState.target = null;
+          deviceState.start = null;
+        }
+
+        needsUpdate = true;
+      }
+    });
+
+    if (needsUpdate) {
+      updateMapData();
+    }
+
+    animationFrameRef.current = requestAnimationFrame(animate);
+  }, [baseAnimationDuration, updateMapData]);
+
+  const updateAnimationState = useCallback((newPositions) => {
+    const now = Date.now();
+    const state = animationStateRef.current;
+
+    newPositions.forEach((position) => {
+      const { deviceId } = position;
+      const currentState = state[deviceId];
+      lastUpdateTimeRef.current[deviceId] = now;
+
+      if (!currentState) {
+        state[deviceId] = {
+          current: {
+            longitude: position.longitude,
+            latitude: position.latitude,
+            rotation: position.course || 0,
+          },
+          target: null,
+          startTime: now,
+          properties: position,
+        };
+      } else {
+        const hasChanged = Math.abs(currentState.current.longitude - position.longitude) > 0.000001
+          || Math.abs(currentState.current.latitude - position.latitude) > 0.000001;
+
+        if (hasChanged && enableSmoothing) {
+          const duration = calculateAnimationDuration(deviceId, now);
+          state[deviceId] = {
+            ...currentState,
+            start: { ...currentState.current },
+            target: {
+              longitude: position.longitude,
+              latitude: position.latitude,
+              rotation: position.course || 0,
+            },
+            startTime: now,
+            duration,
+            properties: position,
+          };
+        } else if (!enableSmoothing) {
+          state[deviceId] = {
+            current: {
+              longitude: position.longitude,
+              latitude: position.latitude,
+              rotation: position.course || 0,
+            },
+            target: null,
+            startTime: now,
+            properties: position,
+          };
+        } else {
+          state[deviceId].properties = position;
+        }
+      }
+    });
+
+    const activeDeviceIds = new Set(newPositions.map((p) => p.deviceId));
+    Object.keys(state).forEach((deviceId) => {
+      if (!activeDeviceIds.has(Number(deviceId))) {
+        delete state[deviceId];
+        delete lastUpdateTimeRef.current[deviceId];
+      }
+    });
+  }, [enableSmoothing, calculateAnimationDuration]);
 
   const onMouseEnter = () => map.getCanvas().style.cursor = 'pointer';
   const onMouseLeave = () => map.getCanvas().style.cursor = '';
@@ -162,6 +374,10 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
     map.on('click', onMapClick);
 
     return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+
       map.off('mouseenter', clusters, onMouseEnter);
       map.off('mouseleave', clusters, onMouseLeave);
       map.off('click', clusters, onClusterClick);
@@ -187,25 +403,28 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
         }
       });
     };
-  }, [mapCluster, clusters, onMarkerClick, onClusterClick]);
+  }, [mapCluster, clusters, onMarkerClick, onClusterClick, iconScale, titleField, id, selected, onMapClick]);
 
   useEffect(() => {
-    [id, selected].forEach((source) => {
-      map.getSource(source)?.setData({
-        type: 'FeatureCollection',
-        features: positions.filter((it) => devices.hasOwnProperty(it.deviceId))
-          .filter((it) => (source === id ? it.deviceId !== selectedDeviceId : it.deviceId === selectedDeviceId))
-          .map((position) => ({
-            type: 'Feature',
-            geometry: {
-              type: 'Point',
-              coordinates: [position.longitude, position.latitude],
-            },
-            properties: createFeature(devices, position, selectedPosition && selectedPosition.id),
-          })),
-      });
-    });
-  }, [mapCluster, clusters, onMarkerClick, onClusterClick, devices, positions, selectedPosition]);
+    if (enableSmoothing) {
+      animationFrameRef.current = requestAnimationFrame(animate);
+    }
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [animate, enableSmoothing]);
+
+  useEffect(() => {
+    const filteredPositions = positions.filter((it) => devices.hasOwnProperty(it.deviceId));
+    updateAnimationState(filteredPositions);
+
+    if (!enableSmoothing) {
+      updateMapData();
+    }
+  }, [positions, devices, enableSmoothing, updateAnimationState, updateMapData]);
 
   return null;
 };
