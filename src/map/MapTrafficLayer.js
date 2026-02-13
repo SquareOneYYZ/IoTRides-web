@@ -1,38 +1,64 @@
-import { useEffect, useMemo, useId } from 'react';
+import {
+  useEffect, useMemo, useId, useState,
+} from 'react';
 import { map } from './core/MapView';
 import { useAttributePreference } from '../common/util/preferences';
 import useMapOverlays from './overlay/useMapOverlays';
 
 const MapTrafficLayer = () => {
   const id = useId();
-  const selectedMapOverlay = useAttributePreference('selectedMapOverlay');
+  const attributeOverlay = useAttributePreference('selectedMapOverlay');
+  const [localOverlay, setLocalOverlay] = useState(() => localStorage.getItem('selectedMapOverlay') || '');
+
+  const selectedMapOverlay = localOverlay || attributeOverlay || '';
   const mapOverlays = useMapOverlays();
   const enabled = selectedMapOverlay === 'traffic';
 
+  useEffect(() => {
+    const handleOverlayChange = (event) => {
+      setLocalOverlay(event.detail.overlay || '');
+    };
+
+    window.addEventListener('mapOverlayChange', handleOverlayChange);
+
+    return () => {
+      window.removeEventListener('mapOverlayChange', handleOverlayChange);
+    };
+  }, []);
+
   const trafficOverlay = useMemo(() => {
-    if (!enabled) {
+    if (!enabled) return null;
+
+    const priorityIds = ['tomTomFlow', 'hereFlow', 'googleTraffic'];
+
+    const available = mapOverlays.filter(
+      (overlay) => overlay.available && !overlay.isSpecial,
+    );
+
+    const foundId = priorityIds.find((overlayId) => available.some((overlay) => overlay.id === overlayId));
+
+    if (!foundId) {
       return null;
     }
-    const priorityIds = ['tomTomFlow', 'hereFlow', 'googleTraffic'];
-    const available = mapOverlays.filter((overlay) => overlay.available && !overlay.isSpecial);
-    for (const overlayId of priorityIds) {
-      const found = available.find((overlay) => overlay.id === overlayId);
-      if (found) {
-        return found;
-      }
-    }
-    return null;
+
+    const foundOverlay = available.find((overlay) => overlay.id === foundId);
+
+    return foundOverlay || null;
   }, [enabled, mapOverlays]);
 
   useEffect(() => {
-    if (!trafficOverlay) {
+    const removeTraffic = () => {
       if (map.getLayer(`${id}-traffic`)) {
         map.removeLayer(`${id}-traffic`);
       }
       if (map.getSource(`${id}-traffic`)) {
         map.removeSource(`${id}-traffic`);
       }
-      return;
+    };
+
+    if (!trafficOverlay) {
+      removeTraffic();
+      return () => {};
     }
 
     if (!map.getSource(`${id}-traffic`)) {
@@ -53,14 +79,9 @@ const MapTrafficLayer = () => {
     }
 
     return () => {
-      if (map.getLayer(`${id}-traffic`)) {
-        map.removeLayer(`${id}-traffic`);
-      }
-      if (map.getSource(`${id}-traffic`)) {
-        map.removeSource(`${id}-traffic`);
-      }
+      removeTraffic();
     };
-  }, [id, trafficOverlay]);
+  }, [id, trafficOverlay, map]);
 
   useEffect(() => {
     const onStyleData = () => {
@@ -88,4 +109,3 @@ const MapTrafficLayer = () => {
 };
 
 export default MapTrafficLayer;
-

@@ -20,17 +20,15 @@ import MapNotification from '../map/notification/MapNotification';
 import useFeatures from '../common/util/useFeatures';
 import MapTollLayer from '../map/MapTollLayer';
 import MapTrafficLayer from '../map/MapTrafficLayer';
+import MapTollControl from '../map/MapTollControl';
+import MapTrafficControl from '../map/MapTrafficControl';
 
 const MainMap = ({ filteredPositions, selectedPosition, onEventsClick }) => {
   const theme = useTheme();
   const dispatch = useDispatch();
-
   const desktop = useMediaQuery(theme.breakpoints.up('md'));
-
   const eventsAvailable = useSelector((state) => !!state.events.items.length);
-
   const features = useFeatures();
-
   const onMarkerClick = useCallback((_, deviceId) => {
     dispatch(devicesActions.selectId(deviceId));
   }, [dispatch]);
@@ -57,6 +55,8 @@ const MainMap = ({ filteredPositions, selectedPosition, onEventsClick }) => {
       <MapScale />
       <MapCurrentLocation />
       <MapGeocoder />
+      <MapTollControl />
+      <MapTrafficControl />
       {!features.disableEvents && (
         <MapNotification enabled={eventsAvailable} onClick={onEventsClick} />
       )}

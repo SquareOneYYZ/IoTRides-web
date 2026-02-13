@@ -1,4 +1,6 @@
-import { useEffect, useId, useState, useCallback } from 'react';
+import {
+  useEffect, useId, useState, useCallback,
+} from 'react';
 import { map } from './core/MapView';
 import { useAttributePreference } from '../common/util/preferences';
 
@@ -27,7 +29,6 @@ const fetchTollRoadsFromOSM = async (bounds) => {
     if (!response.ok) {
       throw new Error(`Overpass API error: ${response.statusText}`);
     }
-
     const data = await response.json();
     const features = [];
 
@@ -53,7 +54,6 @@ const fetchTollRoadsFromOSM = async (bounds) => {
       features,
     };
   } catch (error) {
-    console.error('Error fetching toll roads from OSM:', error);
     return {
       type: 'FeatureCollection',
       features: [],
@@ -63,9 +63,21 @@ const fetchTollRoadsFromOSM = async (bounds) => {
 
 const MapTollLayer = ({ positions }) => {
   const id = useId();
-  const selectedMapOverlay = useAttributePreference('selectedMapOverlay');
+  const attributeOverlay = useAttributePreference('selectedMapOverlay');
+  const [localOverlay, setLocalOverlay] = useState(() => localStorage.getItem('selectedMapOverlay') || '');
+  const selectedMapOverlay = localOverlay || attributeOverlay || '';
   const enabled = selectedMapOverlay === 'tollRoads';
   const [osmTollData, setOsmTollData] = useState(null);
+
+  useEffect(() => {
+    const handleOverlayChange = (event) => {
+      setLocalOverlay(event.detail.overlay || '');
+    };
+    window.addEventListener('mapOverlayChange', handleOverlayChange);
+    return () => {
+      window.removeEventListener('mapOverlayChange', handleOverlayChange);
+    };
+  }, []);
 
   useEffect(() => {
     map.addSource(id, {
@@ -100,7 +112,7 @@ const MapTollLayer = ({ positions }) => {
         map.removeSource(id);
       }
     };
-  }, []);
+  }, [id]);
 
   const loadTollRoadsFromOSM = useCallback(async () => {
     if (!enabled || !map.loaded()) {
@@ -122,36 +134,32 @@ const MapTollLayer = ({ positions }) => {
   useEffect(() => {
     if (!enabled) {
       setOsmTollData(null);
-      return;
-    }
-
-    if (!map.loaded()) {
-      const onLoad = () => {
-        loadTollRoadsFromOSM();
-        map.off('load', onLoad);
-      };
-      map.on('load', onLoad);
-      return () => {
-        map.off('load', onLoad);
-      };
-    } else {
-      loadTollRoadsFromOSM();
+      return () => {};
     }
 
     const onMoveEnd = () => {
-      if (enabled) {
-        loadTollRoadsFromOSM();
-      }
+      loadTollRoadsFromOSM();
     };
+
+    const onLoad = () => {
+      loadTollRoadsFromOSM();
+    };
+
+    if (!map.loaded()) {
+      map.on('load', onLoad);
+    } else {
+      loadTollRoadsFromOSM();
+    }
 
     map.on('moveend', onMoveEnd);
     map.on('zoomend', onMoveEnd);
 
     return () => {
+      map.off('load', onLoad);
       map.off('moveend', onMoveEnd);
       map.off('zoomend', onMoveEnd);
     };
-  }, [enabled, loadTollRoadsFromOSM]);
+  }, [enabled, loadTollRoadsFromOSM, map]);
 
   useEffect(() => {
     if (!map.getSource(id)) {
@@ -167,15 +175,12 @@ const MapTollLayer = ({ positions }) => {
     }
 
     const features = [];
-
-    // Add toll roads from position attributes
     if (positions?.length) {
       for (let i = 0; i < positions.length - 1; i += 1) {
         const current = positions[i];
         const next = positions[i + 1];
-        const hasToll =
-          (current.attributes && (current.attributes.tollName || current.attributes.tollRef)) ||
-          (next.attributes && (next.attributes.tollName || next.attributes.tollRef));
+        const hasToll = (current.attributes && (current.attributes.tollName || current.attributes.tollRef))
+          || (next.attributes && (next.attributes.tollName || next.attributes.tollRef));
 
         if (hasToll) {
           features.push({
@@ -195,7 +200,6 @@ const MapTollLayer = ({ positions }) => {
       }
     }
 
-    // Add toll roads from OSM
     if (osmTollData?.features) {
       features.push(...osmTollData.features.map((feature) => ({
         ...feature,
@@ -214,7 +218,8 @@ const MapTollLayer = ({ positions }) => {
 
   useEffect(() => {
     if (map.getLayer(`${id}-toll-line`)) {
-      map.setLayoutProperty(`${id}-toll-line`, 'visibility', enabled ? 'visible' : 'none');
+      const visibility = enabled ? 'visible' : 'none';
+      map.setLayoutProperty(`${id}-toll-line`, 'visibility', visibility);
     }
   }, [id, enabled]);
 
@@ -222,6 +227,3 @@ const MapTollLayer = ({ positions }) => {
 };
 
 export default MapTollLayer;
-
-
-
