@@ -29,9 +29,6 @@ const SelectField = ({
   titleGetter = (item) => item.name,
   renderValue,
   MenuProps,
-  sx,
-  isVinField = false,
-  vinApiEndpoint = '/api/devices/Vindecoder',
 }) => {
   const [items, setItems] = useState();
   const [vinLoading, setVinLoading] = useState(false);
@@ -69,7 +66,8 @@ const SelectField = ({
         const fetchedData = await response.json();
         if (endpoint === '/api/notifications/types') {
           const FilteredTypes = ['deviceFuelDrop', 'deviceFuelIncrease', 'textMessage', 'driverChanged', 'media'];
-          setItems(fetchedData.filter((item) => !FilteredTypes.includes(item.type)));
+
+          setItems(data.filter((item) => !FilteredTypes.includes(item.type)));
         } else {
           setItems(fetchedData);
         }
@@ -221,11 +219,6 @@ const SelectField = ({
               onChange={onChange}
               renderValue={renderValue}
               MenuProps={MenuProps}
-              sx={{
-                borderRadius: '13px',
-                '& .MuiOutlinedInput-notchedOutline': { borderRadius: '13px' },
-                ...sx,
-              }}
             >
               {items.map((item) => (
                 <MenuItem key={keyGetter(item)} value={keyGetter(item)}>
@@ -273,17 +266,7 @@ const SelectField = ({
               const displayValue = getOptionLabel(value);
               return (
                 <Tooltip title={displayValue || ''} placement="bottom-start" arrow>
-                  <TextField
-                    {...params}
-                    label={label}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: '13px',
-                        '& fieldset': { borderRadius: '13px' },
-                      },
-                      ...sx,
-                    }}
-                  />
+                  <TextField {...params} label={label} />
                 </Tooltip>
               );
             }}
