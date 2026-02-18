@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
-  FormControl, InputLabel, MenuItem, Select, Autocomplete, TextField, Tooltip, CircularProgress,
+  FormControl, InputLabel, MenuItem, Select, Autocomplete, TextField, Tooltip,
+  CircularProgress, InputAdornment, IconButton,
 } from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
 import { useEffectAsync } from '../../reactHelper';
 
 const formatVINInput = (value) => value
@@ -41,7 +43,6 @@ const SelectField = ({
 
   const vinApiEndpointRef = useRef(vinApiEndpoint);
   const onChangeRef = useRef(onChange);
-  const debounceTimer = useRef(null);
 
   useEffect(() => { vinApiEndpointRef.current = vinApiEndpoint; }, [vinApiEndpoint]);
   useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
@@ -80,6 +81,7 @@ const SelectField = ({
   }, []);
 
   const fetchVinSuggestions = useRef(async (searchValue) => {
+    if (!searchValue) return;
     setVinLoading(true);
     try {
       const paddedVin = padVINForApiCall(searchValue);
@@ -87,13 +89,10 @@ const SelectField = ({
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       });
-
       if (!response.ok) throw new Error(`API error: ${response.status}`);
-
       const responseData = await response.json();
       const list = Array.isArray(responseData) ? responseData : [responseData];
       const valid = list.filter((s) => s && s.vin);
-
       setVinSuggestions(valid);
       setVinOpen(valid.length > 0);
     } catch (error) {
@@ -104,30 +103,26 @@ const SelectField = ({
     }
   }).current;
 
-  const debouncedFetch = (searchValue) => {
-    if (debounceTimer.current) clearTimeout(debounceTimer.current);
-    debounceTimer.current = setTimeout(() => fetchVinSuggestions(searchValue), 500);
-  };
-
   const handleVinInputChange = (event, newInputValue, reason) => {
     if (reason === 'reset') return;
-
     const formatted = formatVINInput(newInputValue);
     setVinInputValue(formatted);
+    setVinSuggestions([]);
+    setVinOpen(false);
+  };
 
-    if (formatted.length >= 5) {
-      debouncedFetch(formatted);
-    } else {
-      if (debounceTimer.current) clearTimeout(debounceTimer.current);
-      setVinSuggestions([]);
-      setVinOpen(false);
+  const handleSearchClick = () => fetchVinSuggestions(vinInputValue);
+
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      fetchVinSuggestions(vinInputValue);
     }
   };
 
   const handleVinSelect = (event, selectedOption) => {
     if (!selectedOption) return;
     setVinOpen(false);
-
     onChangeRef.current({
       target: {
         value: vinInputValue,
@@ -137,19 +132,14 @@ const SelectField = ({
   };
 
   const handleVinBlur = () => {
-    if (debounceTimer.current) clearTimeout(debounceTimer.current);
     if (vinInputValue) {
-      const clean = vinInputValue.replace(/\*/g, '');
-      onChangeRef.current({ target: { value: clean } });
+      onChangeRef.current({ target: { value: vinInputValue.replace(/\*/g, '') } });
     }
-    setVinOpen(false);
   };
 
   const getVinHelperText = () => {
     if (vinLoading) return 'Searching VIN...';
-    if (vinInputValue.length > 0 && vinInputValue.length < 5) {
-      return `Enter ${5 - vinInputValue.length} more character(s) to search`;
-    }
+    if (vinInputValue.length === 0) return 'Enter a VIN and press search';
     return `${vinInputValue.length}/17 characters`;
   };
 
@@ -185,6 +175,7 @@ const SelectField = ({
               {...params}
               label={label}
               helperText={getVinHelperText()}
+              onKeyDown={handleKeyDown}
               sx={{
                 '& .MuiOutlinedInput-root': {
                   borderRadius: '13px',
@@ -196,7 +187,20 @@ const SelectField = ({
                 ...params.InputProps,
                 endAdornment: (
                   <>
-                    {vinLoading ? <CircularProgress color="inherit" size={20} /> : null}
+                    {vinLoading
+                      ? <CircularProgress color="inherit" size={20} />
+                      : (
+                        <InputAdornment position="end">
+                          <IconButton
+                            onClick={handleSearchClick}
+                            disabled={vinInputValue.length === 0}
+                            size="small"
+                            title="Search VIN"
+                          >
+                            <SearchIcon fontSize="small" />
+                          </IconButton>
+                        </InputAdornment>
+                      )}
                     {params.InputProps.endAdornment}
                   </>
                 ),

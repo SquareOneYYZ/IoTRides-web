@@ -7,8 +7,11 @@ import {
   FormControlLabel,
   Checkbox,
   TextField,
+  Autocomplete,
+  Chip,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { DropzoneArea } from 'react-mui-dropzone';
 import EditItemView from './components/EditItemView';
 import EditAttributesAccordion from './components/EditAttributesAccordion';
@@ -26,12 +29,9 @@ import useSettingsStyles from './common/useSettingsStyles';
 const DevicePage = () => {
   const classes = useSettingsStyles();
   const t = useTranslation();
-
   const admin = useAdministrator();
-
   const commonDeviceAttributes = useCommonDeviceAttributes(t);
   const deviceAttributes = useDeviceAttributes(t);
-
   const query = useQuery();
   const uniqueId = query.get('uniqueId');
 
@@ -59,22 +59,45 @@ const DevicePage = () => {
   });
 
   const validate = () => item && item.name && item.uniqueId;
-  const acceptVinSuggestion = (field, suggestedValue) => {
-    if (!item[field] && suggestedValue) {
-      setItem((prev) => ({ ...prev, [field]: suggestedValue }));
-    }
-  };
 
-  const renderVinTextField = (field, labelKey, suggestedValue) => (
-    <TextField
-      value={item[field] || ''}
-      onChange={(event) => setItem({ ...item, [field]: event.target.value })}
-      onFocus={() => acceptVinSuggestion(field, suggestedValue)}
-      label={t(labelKey)}
-      placeholder={!item[field] && suggestedValue ? suggestedValue : ''}
-      helperText={!item[field] && suggestedValue ? t('vinClickToAccept') : ''}
-    />
-  );
+  const renderVinAutocomplete = (field, labelKey, suggestedValue) => {
+    const options = suggestedValue ? [suggestedValue] : [];
+
+    return (
+      <Autocomplete
+        freeSolo
+        options={options}
+        value={item[field] || ''}
+        onChange={(event, newValue) => {
+          setItem((prev) => ({ ...prev, [field]: newValue || '' }));
+        }}
+        onInputChange={(event, newInputValue) => {
+          setItem((prev) => ({ ...prev, [field]: newInputValue }));
+        }}
+        renderOption={(props, option) => (
+          <li {...props}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
+              {/* <CheckCircleIcon fontSize="small" style={{ color: '#4caf50' }} /> */}
+              <span style={{ flex: 1 }}>{option}</span>
+              <Chip
+                label={t('vinSuggestion')}
+                size="small"
+                color="success"
+                variant="outlined"
+                style={{ fontSize: '0.7rem' }}
+              />
+            </div>
+          </li>
+        )}
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            label={t(labelKey)}
+          />
+        )}
+      />
+    );
+  };
 
   return (
     <EditItemView
@@ -136,7 +159,6 @@ const DevicePage = () => {
                   if (vinData) {
                     setVinDecodedData(vinData);
                   }
-                  // Strip any * before storing
                   setItem((prev) => ({ ...prev, vin: newVin.replace(/\*/g, '') }));
                 }}
                 label={t('deviceVinNumber')}
@@ -144,17 +166,20 @@ const DevicePage = () => {
                 vinApiEndpoint="/api/devices/Vindecoder"
                 fullWidth
               />
-              {renderVinTextField('model', 'deviceModel', vinDecodedData?.model)}
-              {renderVinTextField('make', 'deviceMake', vinDecodedData?.make)}
-              {renderVinTextField('modelYear', 'deviceModelYear', vinDecodedData?.modelYear)}
-              {renderVinTextField('trim', 'deviceTrim', vinDecodedData?.trim)}
-              {renderVinTextField('bodyClass', 'deviceBodyClass', vinDecodedData?.bodyClass)}
-              {renderVinTextField('vehicleType', 'deviceVehicleType', vinDecodedData?.vehicleType)}
-              {renderVinTextField('displacementL', 'deviceDisplacementL', vinDecodedData?.displacementL)}
-              {renderVinTextField('engineCylinders', 'deviceEngineCylinders', vinDecodedData?.engineCylinders)}
-              {renderVinTextField('engineHP', 'deviceEngineHP', vinDecodedData?.engineHP)}
-              {renderVinTextField('driveType', 'deviceDriveType', vinDecodedData?.driveType)}
-              {renderVinTextField('fuelTypePrimary', 'deviceFuelTypePrimary', vinDecodedData?.fuelTypePrimary)}
+
+              {renderVinAutocomplete('make', 'deviceMake', vinDecodedData?.make)}
+              {renderVinAutocomplete('manufacturer', 'deviceManufacturer', vinDecodedData?.manufacturer)}
+              {renderVinAutocomplete('model', 'deviceModel', vinDecodedData?.model)}
+              {renderVinAutocomplete('modelYear', 'deviceModelYear', vinDecodedData?.modelYear)}
+              {renderVinAutocomplete('trim', 'deviceTrim', vinDecodedData?.trim)}
+              {renderVinAutocomplete('bodyClass', 'deviceBodyClass', vinDecodedData?.bodyClass)}
+              {renderVinAutocomplete('vehicleType', 'deviceVehicleType', vinDecodedData?.vehicleType)}
+              {renderVinAutocomplete('displacementL', 'deviceDisplacementL', vinDecodedData?.displacementL)}
+              {renderVinAutocomplete('engineCylinders', 'deviceEngineCylinders', vinDecodedData?.engineCylinders)}
+              {renderVinAutocomplete('engineHP', 'deviceEngineHP', vinDecodedData?.engineHP)}
+              {renderVinAutocomplete('driveType', 'deviceDriveType', vinDecodedData?.driveType)}
+              {renderVinAutocomplete('fuelTypePrimary', 'deviceFuelTypePrimary', vinDecodedData?.fuelTypePrimary)}
+              {renderVinAutocomplete('batteryType', 'deviceBatteryType', vinDecodedData?.batteryType)}
 
               <TextField
                 value={item.contact || ''}
