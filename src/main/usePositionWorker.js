@@ -19,16 +19,20 @@ const usePositionWorker = () => {
     workerRef.current.onmessage = (e) => {
       const { type, payload } = e.data;
 
-      // Handle chunked progressive updates
+      // Progressive chunked updates (initial load > 500 devices)
       if (type === 'FEATURES_CHUNK') {
-        const { features: chunkFeatures, progress: chunkProgress, stats: chunkStats, isFirstChunk } = payload;
+        const {
+          features: chunkFeatures,
+          progress: chunkProgress,
+          stats: chunkStats,
+          isFirstChunk,
+        } = payload;
 
-        // Reset accumulator on first chunk
+        // Reset accumulator on first chunk so stale data doesn't persist
         if (isFirstChunk) {
           accumulatedFeatures.current = [];
         }
 
-        // Accumulate features
         accumulatedFeatures.current.push(...chunkFeatures);
 
         setFeatures([...accumulatedFeatures.current]);
@@ -36,20 +40,19 @@ const usePositionWorker = () => {
         setProgress(chunkProgress);
         setIsLoading(true);
 
-        // Call callback with accumulated features so far
         if (callbackRef.current) {
           callbackRef.current([...accumulatedFeatures.current]);
         }
       }
 
-      // Handle completion
+      // Chunked load finished
       if (type === 'PROCESSING_COMPLETE') {
         setStats(payload.stats);
         setProgress(100);
         setIsLoading(false);
       }
 
-      // Legacy support for non-chunked responses
+      // Single-batch response (live updates or small initial load <= 500 devices)
       if (type === 'FEATURES_READY') {
         setFeatures(payload.features);
         setStats(payload.stats);
@@ -72,7 +75,8 @@ const usePositionWorker = () => {
 
     callbackRef.current = onComplete;
 
-    // Only reset progress on initial load
+    // Only reset progress indicators on initial load
+    // Live updates (skipProgressiveLoad=true) run silently in background
     if (!skipProgressiveLoad) {
       accumulatedFeatures.current = [];
       setProgress(0);

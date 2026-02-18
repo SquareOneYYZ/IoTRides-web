@@ -32,6 +32,7 @@ const getChangedPositions = (positions, precision) => {
     return acc;
   }, { changed: [] });
 
+  // Remove positions for devices no longer in the list
   Array.from(lastPositions.keys())
     .filter((key) => !currentIds.has(key))
     .forEach((key) => lastPositions.delete(key));
@@ -40,6 +41,7 @@ const getChangedPositions = (positions, precision) => {
 };
 
 const createFeatures = (positions, devices, selectedDeviceId, selectedPositionId, precision, changedPositions) => {
+  // Invalidate cache entries for changed positions only
   changedPositions.forEach((position) => {
     const oldKey = `${position.deviceId}-`;
     Array.from(featureCache.keys())
@@ -81,9 +83,17 @@ const createFeatures = (positions, devices, selectedDeviceId, selectedPositionId
     return acc;
   }, []);
 
+  // Smart cache eviction — only remove keys not in the current active set
+  // This prevents markers from disappearing (old approach deleted arbitrary keys)
   if (featureCache.size > 2500) {
+    const activeKeys = new Set(
+      positions
+        .filter((p) => devices[p.deviceId] && p.deviceId !== selectedDeviceId)
+        .map((p) => `${p.deviceId}-${p.latitude.toFixed(precision)}-${p.longitude.toFixed(precision)}-${selectedPositionId}-${p.course}`),
+    );
+
     Array.from(featureCache.keys())
-      .slice(0, 1200)
+      .filter((key) => !activeKeys.has(key))
       .forEach((key) => featureCache.delete(key));
   }
 
@@ -91,8 +101,8 @@ const createFeatures = (positions, devices, selectedDeviceId, selectedPositionId
 };
 
 // Progressive chunk processing
-const CHUNK_SIZE = 150; // Process 150 positions at a time
-const CHUNK_DELAY = 8; // 8ms delay between chunks (~120fps)
+const CHUNK_SIZE = 500; // Increased from 150 — fewer scheduler roundtrips
+const CHUNK_DELAY = 16; // One frame per chunk (~60fps)
 
 let processingController = null;
 
@@ -102,13 +112,12 @@ const processInChunks = (positions, devices, selectedDeviceId, selectedPositionI
     clearTimeout(processingController.timeoutId);
   }
 
-  // Separate ALL positions into viewport and non-viewport (prioritize, don't filter)
+  // Separate ALL positions into viewport and non-viewport
   const inViewport = [];
   const outViewport = [];
 
   if (bounds) {
     positions.forEach((p) => {
-      // Use generous buffer to include nearby markers
       if (isInBounds(p, bounds, 0.5)) {
         inViewport.push(p);
       } else {
@@ -119,9 +128,35 @@ const processInChunks = (positions, devices, selectedDeviceId, selectedPositionI
     inViewport.push(...positions);
   }
 
-  // Prioritize viewport positions first, but process ALL positions eventually
+  // Prioritize viewport positions first, process ALL eventually
   const sortedPositions = [...inViewport, ...outViewport];
   const changed = getChangedPositions(sortedPositions, precision);
+
+  // Small dataset — skip chunking entirely, process synchronously
+  // Chunking adds latency overhead that isn't worth it under 500 positions
+  if (sortedPositions.length <= 500) {
+    const features = createFeatures(
+      sortedPositions,
+      devices,
+      selectedDeviceId,
+      selectedPositionId,
+      precision,
+      changed,
+    );
+    postMessage({
+      type: 'FEATURES_READY',
+      payload: {
+        features,
+        stats: {
+          total: positions.length,
+          visible: inViewport.length,
+          processed: sortedPositions.length,
+          cached: featureCache.size,
+        },
+      },
+    });
+    return;
+  }
 
   let processedCount = 0;
   const totalToProcess = sortedPositions.length;
@@ -130,7 +165,6 @@ const processInChunks = (positions, devices, selectedDeviceId, selectedPositionI
     const chunk = sortedPositions.slice(processedCount, processedCount + CHUNK_SIZE);
 
     if (chunk.length === 0) {
-      // Processing complete
       processingController = null;
       postMessage({
         type: 'PROCESSING_COMPLETE',
@@ -158,7 +192,6 @@ const processInChunks = (positions, devices, selectedDeviceId, selectedPositionI
     processedCount += chunk.length;
     const progress = Math.round((processedCount / totalToProcess) * 100);
 
-    // Send incremental update
     postMessage({
       type: 'FEATURES_CHUNK',
       payload: {
@@ -175,13 +208,11 @@ const processInChunks = (positions, devices, selectedDeviceId, selectedPositionI
       },
     });
 
-    // Schedule next chunk
     processingController = {
       timeoutId: setTimeout(processChunk, CHUNK_DELAY),
     };
   };
 
-  // Start processing
   processChunk();
 };
 
@@ -199,11 +230,9 @@ onmessage = (e) => {
       skipProgressiveLoad = false,
     } = payload;
 
-    // For subsequent updates, process all at once (fast path)
-    // DON'T filter by viewport - show all positions even when zoomed
     if (skipProgressiveLoad) {
+      // Fast path for live updates — process all at once, no chunking
       const changed = getChangedPositions(positions, precision);
-
       const features = createFeatures(
         positions,
         devices,
@@ -226,7 +255,7 @@ onmessage = (e) => {
         },
       });
     } else {
-      // Initial load - use progressive chunking with viewport priority
+      // Initial load — use progressive chunking with viewport priority
       processInChunks(positions, devices, selectedDeviceId, selectedPositionId, bounds, precision);
     }
   }
