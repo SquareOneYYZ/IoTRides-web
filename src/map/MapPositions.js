@@ -35,12 +35,20 @@ const MapPositions = ({
   const mapCluster = useAttributePreference('mapCluster', true);
   const directionType = useAttributePreference('mapDirection', 'selected');
 
-  const rafId = useRef(null);
-  const [mapBounds, setMapBounds] = useState(null);
+  // Track initial load state
   const hasInitiallyLoaded = useRef(false);
   const [showLoadingIndicator, setShowLoadingIndicator] = useState(false);
 
+  // Track latest positions ref so callbacks always use fresh data
+  // This prevents stale closure bug where callback captures old positions
+  const positionsRef = useRef(positions);
+  useEffect(() => {
+    positionsRef.current = positions;
+  }, [positions]);
+
   const { processPositions, isLoading, progress } = usePositionWorker();
+
+  const [mapBounds, setMapBounds] = useState(null);
 
   useEffect(() => {
     const updateBounds = () => {
@@ -52,11 +60,9 @@ const MapPositions = ({
         west: bounds.getWest(),
       });
     };
-
     updateBounds();
     map.on('moveend', updateBounds);
     map.on('zoomend', updateBounds);
-
     return () => {
       map.off('moveend', updateBounds);
       map.off('zoomend', updateBounds);
@@ -70,9 +76,14 @@ const MapPositions = ({
     return 4;
   }, []);
 
-  const createFeature = useCallback((position) => {
-    const device = devices[position.deviceId];
-    if (!device) return null;
+  // Build selected device feature on main thread using same
+  // logic as worker so coordinates always match
+  const createSelectedFeatures = useCallback((currentPositions) => {
+    if (!selectedDeviceId) return [];
+    const selectedPos = currentPositions.find((p) => p.deviceId === selectedDeviceId);
+    if (!selectedPos || !devices[selectedDeviceId]) return [];
+
+    const device = devices[selectedDeviceId];
 
     let showDirection;
     switch (directionType) {
@@ -80,90 +91,61 @@ const MapPositions = ({
         showDirection = false;
         break;
       case 'all':
-        showDirection = position.course > 0;
+        showDirection = selectedPos.course > 0;
         break;
       default:
-        showDirection = selectedPosition?.id === position.id && position.course > 0;
+        showDirection = selectedPosition?.id === selectedPos.id && selectedPos.course > 0;
         break;
     }
-
-    return {
-      id: position.id,
-      deviceId: position.deviceId,
-      name: device.name,
-      fixTime: formatTime(position.fixTime, 'seconds'),
-      category: mapIconKey(device.category),
-      color: showStatus
-        ? position.attributes?.color || getStatusColor(device.status)
-        : 'neutral',
-      rotation: position.course,
-      direction: showDirection,
-    };
-  }, [devices, directionType, selectedPosition, showStatus]);
-
-  const createSelectedFeatures = useCallback((positions) => {
-    if (!selectedDeviceId) return [];
-
-    const selectedPos = positions.find((p) => p.deviceId === selectedDeviceId);
-    if (!selectedPos || !devices[selectedDeviceId]) return [];
-
-    const props = createFeature(selectedPos);
-    if (!props) return [];
 
     return [{
       type: 'Feature',
       geometry: {
         type: 'Point',
+        // Always use position coords directly — no transformation
         coordinates: [selectedPos.longitude, selectedPos.latitude],
       },
-      properties: props,
+      properties: {
+        id: selectedPos.id,
+        deviceId: selectedPos.deviceId,
+        name: device.name || '',
+        fixTime: formatTime(selectedPos.fixTime, 'seconds'),
+        category: mapIconKey(device.category),
+        color: showStatus
+          ? selectedPos.attributes?.color || getStatusColor(device.status)
+          : 'neutral',
+        rotation: selectedPos.course,
+        direction: showDirection,
+      },
     }];
-  }, [selectedDeviceId, devices, createFeature]);
+  }, [selectedDeviceId, devices, directionType, selectedPosition, showStatus]);
 
-  const onMouseEnter = () => {
-    map.getCanvas().style.cursor = 'pointer';
-  };
+  const onMouseEnter = () => { map.getCanvas().style.cursor = 'pointer'; };
+  const onMouseLeave = () => { map.getCanvas().style.cursor = ''; };
 
-  const onMouseLeave = () => {
-    map.getCanvas().style.cursor = '';
-  };
+  const onMapClick = useCallback((event) => {
+    if (!event.defaultPrevented && onClick) {
+      onClick(event.lngLat.lat, event.lngLat.lng);
+    }
+  }, [onClick]);
 
-  const onMapClick = useCallback(
-    (event) => {
-      if (!event.defaultPrevented && onClick) {
-        onClick(event.lngLat.lat, event.lngLat.lng);
-      }
-    },
-    [onClick],
-  );
+  const onMarkerClick = useCallback((event) => {
+    event.preventDefault();
+    const feature = event.features[0];
+    if (onClick) {
+      onClick(feature.properties.id, feature.properties.deviceId);
+    }
+  }, [onClick]);
 
-  const onMarkerClick = useCallback(
-    (event) => {
-      event.preventDefault();
-      const feature = event.features[0];
-      if (onClick) {
-        onClick(feature.properties.id, feature.properties.deviceId);
-      }
-    },
-    [onClick],
-  );
+  const onClusterClick = useCatchCallback(async (event) => {
+    event.preventDefault();
+    const features = map.queryRenderedFeatures(event.point, { layers: [clusters] });
+    const clusterId = features[0].properties.cluster_id;
+    const zoom = await map.getSource(id).getClusterExpansionZoom(clusterId);
+    map.easeTo({ center: features[0].geometry.coordinates, zoom });
+  }, [clusters]);
 
-  const onClusterClick = useCatchCallback(
-    async (event) => {
-      event.preventDefault();
-      const features = map.queryRenderedFeatures(event.point, {
-        layers: [clusters],
-      });
-      const clusterId = features[0].properties.cluster_id;
-      const zoom = await map.getSource(id).getClusterExpansionZoom(clusterId);
-      map.easeTo({
-        center: features[0].geometry.coordinates,
-        zoom,
-      });
-    },
-    [clusters],
-  );
-
+  // Map source + layer setup
   useEffect(() => {
     map.addSource(id, {
       type: 'geojson',
@@ -240,86 +222,65 @@ const MapPositions = ({
     map.on('click', onMapClick);
 
     return () => {
-      if (rafId.current) {
-        cancelAnimationFrame(rafId.current);
-      }
-
       map.off('mouseenter', clusters, onMouseEnter);
       map.off('mouseleave', clusters, onMouseLeave);
       map.off('click', clusters, onClusterClick);
       map.off('click', onMapClick);
 
-      if (map.getLayer(clusters)) {
-        map.removeLayer(clusters);
-      }
+      if (map.getLayer(clusters)) map.removeLayer(clusters);
 
       [id, selected].forEach((source) => {
         map.off('mouseenter', source, onMouseEnter);
         map.off('mouseleave', source, onMouseLeave);
         map.off('click', source, onMarkerClick);
-
-        if (map.getLayer(source)) {
-          map.removeLayer(source);
-        }
-        if (map.getLayer(`direction-${source}`)) {
-          map.removeLayer(`direction-${source}`);
-        }
-        if (map.getSource(source)) {
-          map.removeSource(source);
-        }
+        if (map.getLayer(source)) map.removeLayer(source);
+        if (map.getLayer(`direction-${source}`)) map.removeLayer(`direction-${source}`);
+        if (map.getSource(source)) map.removeSource(source);
       });
     };
   }, [mapCluster, clusters, onMarkerClick, onClusterClick]);
 
+  // Core update effect — positions/devices/selected change
   useEffect(() => {
-    function cleanup() {
-      if (rafId.current) {
-        cancelAnimationFrame(rafId.current);
-      }
-    }
+    if (!positions?.length) return;
 
-    if (!positions?.length) {
-      return cleanup;
-    }
-
-    cleanup();
-
-    // Only show loading indicator on initial load (not on subsequent updates)
     const isInitialLoad = !hasInitiallyLoaded.current;
-    if (isInitialLoad) {
-      setShowLoadingIndicator(true);
-    }
+    if (isInitialLoad) setShowLoadingIndicator(true);
 
-    rafId.current = requestAnimationFrame(() => {
-      processPositions(
-        {
-          positions,
-          devices,
-          selectedDeviceId,
-          selectedPositionId: selectedPosition?.id,
-          bounds: mapBounds,
-          precision: getPrecision(),
-        },
-        (features) => {
-          map.getSource(id)?.setData({
+    processPositions(
+      {
+        positions,
+        devices,
+        selectedDeviceId,
+        selectedPositionId: selectedPosition?.id,
+        bounds: mapBounds,
+        precision: getPrecision(),
+      },
+      (features) => {
+        // Worker callback — use positionsRef.current so we always
+        // paint selected marker with the SAME positions the worker used
+        // This is the fix for incorrect coordinates on map
+        if (map.getSource(id)) {
+          map.getSource(id).setData({
             type: 'FeatureCollection',
             features,
           });
-        },
-        !isInitialLoad, // Skip progressive loading for updates after initial load
-      );
+        }
 
-      const selectedFeatures = createSelectedFeatures(positions);
-      map.getSource(selected)?.setData({
-        type: 'FeatureCollection',
-        features: selectedFeatures,
-      });
-    });
+        // Update selected marker INSIDE the callback, not outside
+        // This guarantees selected coords come from same positions batch
+        if (map.getSource(selected)) {
+          map.getSource(selected).setData({
+            type: 'FeatureCollection',
+            features: createSelectedFeatures(positionsRef.current),
+          });
+        }
+      },
+      !isInitialLoad, // skipProgressiveLoad = true for all updates after first
+    );
+  }, [positions, devices, selectedPosition, selectedDeviceId, mapBounds]);
 
-    return cleanup;
-  }, [positions, devices, selectedPosition, selectedDeviceId, mapBounds, processPositions, getPrecision, createSelectedFeatures, id, selected]);
-
-  // Track when loading completes
+  // Track when initial loading completes
   useEffect(() => {
     if (!isLoading && progress === 100 && showLoadingIndicator) {
       hasInitiallyLoaded.current = true;
@@ -327,7 +288,6 @@ const MapPositions = ({
     }
   }, [isLoading, progress, showLoadingIndicator]);
 
-  // Only render loading indicator during initial load
   if (showLoadingIndicator && isLoading && progress < 100) {
     return React.createElement(MapLoadingIndicator, {
       isLoading,
