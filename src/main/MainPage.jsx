@@ -1,6 +1,4 @@
-import React, {
-  useState, useCallback, useEffect,
-} from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Paper } from '@mui/material';
 import { makeStyles } from '@mui/styles';
 import { useTheme } from '@mui/material/styles';
@@ -9,7 +7,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import DeviceList from './DeviceList';
 import BottomMenu from '../common/components/BottomMenu';
 import StatusCard from '../common/components/StatusCard';
-import { devicesActions } from '../store';
+import EventsInfoCard from '../common/components/EventInfoCard';
+import { devicesActions, eventsActions } from '../store';
 import usePersistedState from '../common/util/usePersistedState';
 import EventsDrawer from './EventsDrawer';
 import useFilter from './useFilter';
@@ -68,13 +67,14 @@ const MainPage = () => {
   const theme = useTheme();
 
   const desktop = useMediaQuery(theme.breakpoints.up('md'));
-
+  const selectedEvent = useSelector((state) => state.events.selected);
   const mapOnSelect = useAttributePreference('mapOnSelect', true);
-
   const selectedDeviceId = useSelector((state) => state.devices.selectedId);
   const positions = useSelector((state) => state.session.positions);
   const [filteredPositions, setFilteredPositions] = useState([]);
-  const selectedPosition = filteredPositions.find((position) => selectedDeviceId && position.deviceId === selectedDeviceId);
+  const selectedPosition = filteredPositions.find(
+    (position) => selectedDeviceId && position.deviceId === selectedDeviceId
+  );
 
   const [filteredDevices, setFilteredDevices] = useState([]);
 
@@ -97,7 +97,15 @@ const MainPage = () => {
     }
   }, [desktop, mapOnSelect, selectedDeviceId]);
 
-  useFilter(keyword, filter, filterSort, filterMap, positions, setFilteredDevices, setFilteredPositions);
+  useFilter(
+    keyword,
+    filter,
+    filterSort,
+    filterMap,
+    positions,
+    setFilteredDevices,
+    setFilteredPositions
+  );
 
   return (
     <div className={classes.root}>
@@ -134,7 +142,11 @@ const MainPage = () => {
               />
             </div>
           )}
-          <Paper square className={classes.contentList} style={devicesOpen ? {} : { visibility: 'hidden' }}>
+          <Paper
+            square
+            className={classes.contentList}
+            style={devicesOpen ? {} : { visibility: 'hidden' }}
+          >
             <DeviceList devices={filteredDevices} />
           </Paper>
         </div>
@@ -151,6 +163,15 @@ const MainPage = () => {
           position={selectedPosition}
           onClose={() => dispatch(devicesActions.selectId(null))}
           desktopPadding={theme.dimensions.drawerWidthDesktop}
+        />
+      )}
+      {selectedEvent && (
+        <EventsInfoCard
+          onClose={() => dispatch(eventsActions.deselect())}
+          onShowAllEvents={(deviceId) => {
+            setSelectedDeviceId(deviceId);
+            setOpenEventDrawer(true);
+          }}
         />
       )}
     </div>
