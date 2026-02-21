@@ -34,19 +34,14 @@ const MapPositions = ({
 
   const mapCluster = useAttributePreference('mapCluster', true);
   const directionType = useAttributePreference('mapDirection', 'selected');
-
-  // Track initial load state
   const hasInitiallyLoaded = useRef(false);
   const [showLoadingIndicator, setShowLoadingIndicator] = useState(false);
-
-  // Track latest positions ref so callbacks always use fresh data
-  // This prevents stale closure bug where callback captures old positions
   const positionsRef = useRef(positions);
   useEffect(() => {
     positionsRef.current = positions;
   }, [positions]);
 
-  const { processPositions, isLoading, progress } = usePositionWorker();
+  const { processPositions, clearCache, isLoading, progress } = usePositionWorker();
 
   const [mapBounds, setMapBounds] = useState(null);
 
@@ -76,8 +71,6 @@ const MapPositions = ({
     return 4;
   }, []);
 
-  // Build selected device feature on main thread using same
-  // logic as worker so coordinates always match
   const createSelectedFeatures = useCallback((currentPositions) => {
     if (!selectedDeviceId) return [];
     const selectedPos = currentPositions.find((p) => p.deviceId === selectedDeviceId);
@@ -102,7 +95,6 @@ const MapPositions = ({
       type: 'Feature',
       geometry: {
         type: 'Point',
-        // Always use position coords directly — no transformation
         coordinates: [selectedPos.longitude, selectedPos.latitude],
       },
       properties: {
@@ -145,7 +137,6 @@ const MapPositions = ({
     map.easeTo({ center: features[0].geometry.coordinates, zoom });
   }, [clusters]);
 
-  // Map source + layer setup
   useEffect(() => {
     map.addSource(id, {
       type: 'geojson',
@@ -240,7 +231,17 @@ const MapPositions = ({
     };
   }, [mapCluster, clusters, onMarkerClick, onClusterClick]);
 
-  // Core update effect — positions/devices/selected change
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        hasInitiallyLoaded.current = false;
+        clearCache();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [clearCache]);
+
   useEffect(() => {
     if (!positions?.length) return;
 
@@ -257,18 +258,12 @@ const MapPositions = ({
         precision: getPrecision(),
       },
       (features) => {
-        // Worker callback — use positionsRef.current so we always
-        // paint selected marker with the SAME positions the worker used
-        // This is the fix for incorrect coordinates on map
         if (map.getSource(id)) {
           map.getSource(id).setData({
             type: 'FeatureCollection',
             features,
           });
         }
-
-        // Update selected marker INSIDE the callback, not outside
-        // This guarantees selected coords come from same positions batch
         if (map.getSource(selected)) {
           map.getSource(selected).setData({
             type: 'FeatureCollection',
@@ -276,11 +271,10 @@ const MapPositions = ({
           });
         }
       },
-      !isInitialLoad, // skipProgressiveLoad = true for all updates after first
+      !isInitialLoad,
     );
   }, [positions, devices, selectedPosition, selectedDeviceId, mapBounds]);
 
-  // Track when initial loading completes
   useEffect(() => {
     if (!isLoading && progress === 100 && showLoadingIndicator) {
       hasInitiallyLoaded.current = true;

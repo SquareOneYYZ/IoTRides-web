@@ -12,12 +12,7 @@ import useFeatures from './common/util/useFeatures';
 import { useAttributePreference } from './common/util/preferences';
 
 const logoutCode = 4000;
-
-// If server sends this many positions at once, it's the initial dump
-// Dispatch immediately instead of waiting for debounce timer
 const INITIAL_DUMP_THRESHOLD = 500;
-
-// Debounce time for small live updates (ms)
 const LIVE_UPDATE_DEBOUNCE = 300;
 
 const SocketController = () => {
@@ -63,14 +58,11 @@ const SocketController = () => {
 
     socket.onclose = async (event) => {
       dispatch(sessionActions.updateSocket(false));
-
-      // Clear the timer and discard stale buffered positions
-      // Do NOT dispatch them — they're outdated, fetch below gets fresh data
       if (batchTimeout.current) {
         clearTimeout(batchTimeout.current);
         batchTimeout.current = null;
       }
-      positionBuffer.current = []; // discard stale buffer, don't dispatch
+      positionBuffer.current = [];
 
       if (event.code !== logoutCode) {
         try {
@@ -80,7 +72,6 @@ const SocketController = () => {
           }
           const positionsResponse = await fetch('/api/positions');
           if (positionsResponse.ok) {
-            // This is the single source of truth on reconnect
             dispatch(sessionActions.updatePositions(await positionsResponse.json()));
           }
           if (devicesResponse.status === 401 || positionsResponse.status === 401) {
@@ -102,22 +93,14 @@ const SocketController = () => {
 
       if (data.positions) {
         positionBuffer.current.push(...data.positions);
-
-        // Cancel any pending debounce timer
         if (batchTimeout.current) {
           clearTimeout(batchTimeout.current);
           batchTimeout.current = null;
         }
-
-        // Large batch = initial server dump (all devices at once)
-        // Dispatch immediately — no point waiting, the data is already here
         if (positionBuffer.current.length >= INITIAL_DUMP_THRESHOLD) {
           flushPositionBuffer();
           return;
         }
-
-        // Small batch = live update from a few devices
-        // Debounce to group rapid consecutive updates together
         batchTimeout.current = setTimeout(() => {
           flushPositionBuffer();
         }, LIVE_UPDATE_DEBOUNCE);
