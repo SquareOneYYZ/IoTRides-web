@@ -13,6 +13,12 @@ import { useAttributePreference } from './common/util/preferences';
 
 const logoutCode = 4000;
 
+// Kitni positions ek saath aayi to initial bulk dump samjha jaye
+const INITIAL_DUMP_THRESHOLD = 100;
+
+// Live updates ko group karne ka debounce time
+const LIVE_UPDATE_DEBOUNCE = 500;
+
 const SocketController = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -23,9 +29,15 @@ const SocketController = () => {
   const includeLogs = useSelector((state) => state.session.includeLogs);
 
   const socketRef = useRef();
-
-  const positionBuffer = useRef([]);
   const batchTimeout = useRef(null);
+
+  // KEY CHANGE: Array ki jagah Map use karo
+  // Map mein same deviceId ka naya update purana overwrite karta hai
+  // Iska matlab: 1 second mein 10 updates aaye ek device ke → sirf 1 process hoga
+  const updateBuffer = useRef(new Map()); // deviceId → latest position
+
+  // Track karo ki initial bulk dump ho gaya ya nahi
+  const initialLoadDone = useRef(false);
 
   const [events, setEvents] = useState([]);
   const [notifications, setNotifications] = useState([]);
@@ -34,6 +46,17 @@ const SocketController = () => {
   const soundAlarms = useAttributePreference('soundAlarms', 'sos');
 
   const features = useFeatures();
+
+  const flushUpdateBuffer = () => {
+    if (updateBuffer.current.size === 0) return;
+    const positions = Array.from(updateBuffer.current.values());
+    updateBuffer.current.clear();
+    if (batchTimeout.current) {
+      clearTimeout(batchTimeout.current);
+      batchTimeout.current = null;
+    }
+    dispatch(sessionActions.updatePositions(positions));
+  };
 
   const connectSocket = () => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -46,15 +69,13 @@ const SocketController = () => {
 
     socket.onclose = async (event) => {
       dispatch(sessionActions.updateSocket(false));
+      initialLoadDone.current = false; // Reset — reconnect pe fresh load
 
       if (batchTimeout.current) {
         clearTimeout(batchTimeout.current);
         batchTimeout.current = null;
       }
-      if (positionBuffer.current.length > 0) {
-        dispatch(sessionActions.updatePositions(positionBuffer.current));
-        positionBuffer.current = [];
-      }
+      updateBuffer.current.clear(); // Stale data discard karo
 
       if (event.code !== logoutCode) {
         try {
@@ -64,13 +85,15 @@ const SocketController = () => {
           }
           const positionsResponse = await fetch('/api/positions');
           if (positionsResponse.ok) {
+            // Reconnect pe fresh full data — yahi single source of truth hai
             dispatch(sessionActions.updatePositions(await positionsResponse.json()));
+            initialLoadDone.current = true;
           }
           if (devicesResponse.status === 401 || positionsResponse.status === 401) {
             navigate('/login');
           }
         } catch (error) {
-          // ignore errors
+          // ignore
         }
         setTimeout(() => connectSocket(), 60000);
       }
@@ -84,17 +107,44 @@ const SocketController = () => {
       }
 
       if (data.positions) {
-        positionBuffer.current.push(...data.positions);
-        if (batchTimeout.current) {
-          clearTimeout(batchTimeout.current);
-        }
-        batchTimeout.current = setTimeout(() => {
-          if (positionBuffer.current.length > 0) {
-            dispatch(sessionActions.updatePositions(positionBuffer.current));
-            positionBuffer.current = [];
+        if (!initialLoadDone.current) {
+          // ── PATH 1: INITIAL BULK DUMP ──────────────────────────────────
+          // Server login ke baad saari positions ek saath bhejta hai
+          // Yeh poora array seedha dispatch karo — no batching, no waiting
+          // Kyunki data already complete hai
+          if (data.positions.length >= INITIAL_DUMP_THRESHOLD) {
+            // Ek baar mein saari positions dispatch
+            if (batchTimeout.current) {
+              clearTimeout(batchTimeout.current);
+              batchTimeout.current = null;
+            }
+            updateBuffer.current.clear();
+            dispatch(sessionActions.updatePositions(data.positions));
+            initialLoadDone.current = true;
+          } else {
+            // Chhote chhote pieces mein aa raha hai — collect karke dispatch
+            data.positions.forEach((p) => updateBuffer.current.set(p.deviceId, p));
+            if (batchTimeout.current) clearTimeout(batchTimeout.current);
+            batchTimeout.current = setTimeout(() => {
+              const positions = Array.from(updateBuffer.current.values());
+              updateBuffer.current.clear();
+              dispatch(sessionActions.updatePositions(positions));
+              initialLoadDone.current = true;
+              batchTimeout.current = null;
+            }, 300);
           }
-          batchTimeout.current = null;
-        }, 500);
+        } else {
+          // ── PATH 2: LIVE UPDATES ───────────────────────────────────────
+          // Yahan sirf woh devices aate hain jinki position change hui
+          // Map use karo: same deviceId ka naya update purana overwrite karega
+          // Example: Device A ne 500ms mein 5 updates bheje
+          //   Array: 5 entries → 5x processing (BURA)
+          //   Map:   1 entry (sirf latest) → 1x processing (ACCHA) ✅
+          data.positions.forEach((p) => updateBuffer.current.set(p.deviceId, p));
+
+          if (batchTimeout.current) clearTimeout(batchTimeout.current);
+          batchTimeout.current = setTimeout(flushUpdateBuffer, LIVE_UPDATE_DEBOUNCE);
+        }
       }
 
       if (data.events) {
@@ -125,12 +175,8 @@ const SocketController = () => {
       connectSocket();
       return () => {
         const socket = socketRef.current;
-        if (socket) {
-          socket.close(logoutCode);
-        }
-        if (batchTimeout.current) {
-          clearTimeout(batchTimeout.current);
-        }
+        if (socket) socket.close(logoutCode);
+        if (batchTimeout.current) clearTimeout(batchTimeout.current);
       };
     }
     return null;

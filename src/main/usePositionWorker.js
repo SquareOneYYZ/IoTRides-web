@@ -19,45 +19,54 @@ const usePositionWorker = () => {
     workerRef.current.onmessage = (e) => {
       const { type, payload } = e.data;
 
-      // Handle chunked progressive updates
+      // Progressive chunk — initial load ke time aata hai (bade datasets)
       if (type === 'FEATURES_CHUNK') {
-        const { features: chunkFeatures, progress: chunkProgress, stats: chunkStats, isFirstChunk } = payload;
+        const {
+          features: chunkFeatures,
+          progress: chunkProgress,
+          stats: chunkStats,
+          isFirstChunk,
+        } = payload;
 
-        // Reset accumulator on first chunk
         if (isFirstChunk) {
           accumulatedFeatures.current = [];
         }
 
-        // Accumulate features
         accumulatedFeatures.current.push(...chunkFeatures);
-
         setFeatures([...accumulatedFeatures.current]);
         setStats(chunkStats);
         setProgress(chunkProgress);
         setIsLoading(true);
 
-        // Call callback with accumulated features so far
         if (callbackRef.current) {
           callbackRef.current([...accumulatedFeatures.current]);
         }
       }
 
-      // Handle completion
+      // Initial chunked load complete
       if (type === 'PROCESSING_COMPLETE') {
         setStats(payload.stats);
         setProgress(100);
         setIsLoading(false);
       }
 
-      // Legacy support for non-chunked responses
+      // Single response — live updates ya chhota initial dataset
       if (type === 'FEATURES_READY') {
-        setFeatures(payload.features);
+        const { features: newFeatures, isInitialLoad } = payload;
+
+        setFeatures(newFeatures);
         setStats(payload.stats);
         setProgress(100);
-        setIsLoading(false);
+
+        // IMPORTANT: isLoading sirf initial load ke time true karo
+        // Live updates ke time isLoading touch mat karo
+        // Yahi fix hai loader baar baar dikhne ka
+        if (isInitialLoad) {
+          setIsLoading(false);
+        }
 
         if (callbackRef.current) {
-          callbackRef.current(payload.features);
+          callbackRef.current(newFeatures);
         }
       }
     };
@@ -67,13 +76,14 @@ const usePositionWorker = () => {
     };
   }, []);
 
-  const processPositions = useCallback((data, onComplete, skipProgressiveLoad = false) => {
+  const processPositions = useCallback((data, onComplete, isInitialLoad = false) => {
     if (!workerRef.current) return;
 
     callbackRef.current = onComplete;
 
-    // Only reset progress on initial load
-    if (!skipProgressiveLoad) {
+    // Sirf initial load pe progress reset karo
+    // Live updates silently background mein hote hain
+    if (isInitialLoad) {
       accumulatedFeatures.current = [];
       setProgress(0);
       setIsLoading(true);
@@ -81,7 +91,7 @@ const usePositionWorker = () => {
 
     workerRef.current.postMessage({
       type: 'PROCESS_POSITIONS',
-      payload: { ...data, skipProgressiveLoad },
+      payload: { ...data, isInitialLoad },
     });
   }, []);
 
