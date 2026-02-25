@@ -17,9 +17,12 @@ const ReportFilter = ({
   const classes = useReportStyles();
   const dispatch = useDispatch();
   const t = useTranslation();
+
   const readonly = useRestriction('readonly');
+
   const devices = useSelector((state) => state.devices.items);
   const groups = useSelector((state) => state.groups.items);
+
   const deviceId = useSelector((state) => state.devices.selectedId);
   const deviceIds = useSelector((state) => state.devices.selectedIds);
   const groupIds = useSelector((state) => state.reports.groupIds);
@@ -27,6 +30,7 @@ const ReportFilter = ({
   const from = useSelector((state) => state.reports.from);
   const to = useSelector((state) => state.reports.to);
   const [button, setButton] = useState('json');
+
   const [description, setDescription] = useState();
   const [calendarId, setCalendarId] = useState();
 
@@ -156,17 +160,7 @@ const ReportFilter = ({
           <div className={classes.filterItem}>
             <FormControl fullWidth>
               <InputLabel>{t('reportPeriod')}</InputLabel>
-              <Select
-                label={t('reportPeriod')}
-                value={period}
-                sx={{
-                  borderRadius: '13px',
-                  '& .MuiOutlinedInput-notchedOutline': {
-                    borderRadius: '13px',
-                  },
-                }}
-                onChange={(e) => dispatch(reportsActions.updatePeriod(e.target.value))}
-              >
+              <Select label={t('reportPeriod')} value={period} onChange={(e) => dispatch(reportsActions.updatePeriod(e.target.value))}>
                 <MenuItem value="today">{t('reportToday')}</MenuItem>
                 <MenuItem value="yesterday">{t('reportYesterday')}</MenuItem>
                 <MenuItem value="thisWeek">{t('reportThisWeek')}</MenuItem>
@@ -185,14 +179,6 @@ const ReportFilter = ({
                 value={from}
                 onChange={(e) => dispatch(reportsActions.updateFrom(e.target.value))}
                 fullWidth
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '13px',
-                    '& fieldset': {
-                      borderRadius: '13px',
-                    },
-                  },
-                }}
               />
             </div>
           )}
@@ -204,14 +190,6 @@ const ReportFilter = ({
                 value={to}
                 onChange={(e) => dispatch(reportsActions.updateTo(e.target.value))}
                 fullWidth
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '13px',
-                    '& fieldset': {
-                      borderRadius: '13px',
-                    },
-                  },
-                }}
               />
             </div>
           )}
@@ -224,14 +202,6 @@ const ReportFilter = ({
               onChange={(event) => setDescription(event.target.value)}
               label={t('sharedDescription')}
               fullWidth
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: '13px',
-                  '& fieldset': {
-                    borderRadius: '13px',
-                  },
-                },
-              }}
             />
           </div>
           <div className={classes.filterItem}>
@@ -254,9 +224,6 @@ const ReportFilter = ({
             color="secondary"
             disabled={disabled}
             onClick={() => handleClick('json')}
-            sx={{
-              borderRadius: '13px',
-            }}
           >
             <Typography variant="button" noWrap>{t(loading ? 'sharedLoading' : 'reportShow')}</Typography>
           </Button>

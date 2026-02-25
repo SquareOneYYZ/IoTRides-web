@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import {
-  TableBody, TableSortLabel, Box, Pagination, FormControl, Select, MenuItem, Typography,
+  Table, TableBody, TableCell, TableHead, TableRow, TableSortLabel, Box, Pagination, FormControl, Select, MenuItem, Typography,
 } from '@mui/material';
 import { visuallyHidden } from '@mui/utils';
 import ReportFilter from './components/ReportFilter';
@@ -20,7 +20,6 @@ import MapMarkers from '../map/MapMarkers';
 import MapRouteCoordinates from '../map/MapRouteCoordinates';
 import MapScale from '../map/MapScale';
 import useResizableMap from './common/useResizableMap';
-import { ReportTable, DarkTableRow, DarkTableCell } from './components/StyledTableComponents';
 
 const CombinedReportPage = () => {
   const classes = useReportStyles();
@@ -35,6 +34,7 @@ const CombinedReportPage = () => {
   const [rowsPerPage, setRowsPerPage] = useState(25);
 
   const { containerRef, mapHeight, handleMouseDown } = useResizableMap(60, 20, 80);
+
   const itemsCoordinates = useMemo(() => items.flatMap((item) => item.route), [items]);
   const createMarkers = () => items.flatMap((item) => item.events
     .map((event) => item.positions.find((p) => event.positionId === p.id))
@@ -135,57 +135,27 @@ const CombinedReportPage = () => {
     }
   });
 
-  // Create sortable headers with TableSortLabel
-  const headers = [
-    {
-      label: t('sharedDevice'),
-      sortKey: 'deviceName',
-    },
-    {
-      label: t('positionFixTime'),
-      sortKey: 'eventTime',
-    },
-    {
-      label: t('sharedType'),
-      sortKey: 'eventType',
-    },
-  ].map((header) => (
-    <TableSortLabel
-      key={header.sortKey}
-      active={orderBy === header.sortKey}
-      direction={orderBy === header.sortKey ? order : 'asc'}
-      onClick={() => handleRequestSort(header.sortKey)}
-    >
-      {header.label}
-      {orderBy === header.sortKey && (
-        <Box component="span" sx={visuallyHidden}>
-          {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
-        </Box>
-      )}
-    </TableSortLabel>
-  ));
-
   let tableBodyContent;
 
   if (loading) {
     tableBodyContent = <TableShimmer columns={3} />;
   } else if (sortedAndPaginatedData.length === 0) {
     tableBodyContent = (
-      <DarkTableRow>
-        <DarkTableCell colSpan={3} align="center">
+      <TableRow>
+        <TableCell colSpan={3} align="center">
           <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
             {t('sharedNoData') || 'No data available'}
           </Typography>
-        </DarkTableCell>
-      </DarkTableRow>
+        </TableCell>
+      </TableRow>
     );
   } else {
     tableBodyContent = sortedAndPaginatedData.map((row) => (
-      <DarkTableRow key={row.id}>
-        <DarkTableCell>{row.isFirstForDevice ? row.deviceName : ''}</DarkTableCell>
-        <DarkTableCell>{formatTime(row.eventTime, 'seconds')}</DarkTableCell>
-        <DarkTableCell>{t(prefixString('event', row.eventType))}</DarkTableCell>
-      </DarkTableRow>
+      <TableRow key={row.id} hover>
+        <TableCell>{row.isFirstForDevice ? row.deviceName : ''}</TableCell>
+        <TableCell>{formatTime(row.eventTime, 'seconds')}</TableCell>
+        <TableCell>{t(prefixString('event', row.eventType))}</TableCell>
+      </TableRow>
     ));
   }
 
@@ -273,14 +243,58 @@ const CombinedReportPage = () => {
               loading={loading}
             />
           </div>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>
+                  <TableSortLabel
+                    active={orderBy === 'deviceName'}
+                    direction={orderBy === 'deviceName' ? order : 'asc'}
+                    onClick={() => handleRequestSort('deviceName')}
+                  >
+                    {t('sharedDevice')}
+                    {orderBy === 'deviceName' && (
+                    <Box component="span" sx={visuallyHidden}>
+                      {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
+                    </Box>
+                    )}
+                  </TableSortLabel>
+                </TableCell>
 
-          <ReportTable
-            headers={headers}
-            loading={loading}
-            loadingComponent={<TableShimmer columns={3} />}
-          >
-            {tableBodyContent}
-          </ReportTable>
+                <TableCell>
+                  <TableSortLabel
+                    active={orderBy === 'eventTime'}
+                    direction={orderBy === 'eventTime' ? order : 'asc'}
+                    onClick={() => handleRequestSort('eventTime')}
+                  >
+                    {t('positionFixTime')}
+                    {orderBy === 'eventTime' && (
+                    <Box component="span" sx={visuallyHidden}>
+                      {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
+                    </Box>
+                    )}
+                  </TableSortLabel>
+                </TableCell>
+
+                <TableCell>
+                  <TableSortLabel
+                    active={orderBy === 'eventType'}
+                    direction={orderBy === 'eventType' ? order : 'asc'}
+                    onClick={() => handleRequestSort('eventType')}
+                  >
+                    {t('sharedType')}
+                    {orderBy === 'eventType' && (
+                    <Box component="span" sx={visuallyHidden}>
+                      {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
+                    </Box>
+                    )}
+                  </TableSortLabel>
+                </TableCell>
+              </TableRow>
+            </TableHead>
+
+            <TableBody>{tableBodyContent}</TableBody>
+          </Table>
 
           {!loading && sortedAndPaginatedData.length > 0 && (
             <Box
