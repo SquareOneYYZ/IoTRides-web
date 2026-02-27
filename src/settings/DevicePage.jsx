@@ -170,6 +170,7 @@ const DevicePage = () => {
                 label={t('deviceLicenseNumber')}
               />
 
+              {/* VIN Field — API fires only on search button click or Enter */}
               <SelectField
                 value={item.vin || ''}
                 onChange={(event) => {
@@ -184,6 +185,10 @@ const DevicePage = () => {
                 vinApiEndpoint="/api/devices/Vindecoder"
                 fullWidth
               />
+
+              {/* ── VIN decoded fields with "From VIN" badge design ─────────
+                  Matches screenshot: Value left, green badge right
+              ─────────────────────────────────────────────────────────────── */}
 
               {renderVinAutocomplete('make', 'deviceMake', vinDecodedData?.make)}
               {renderVinAutocomplete('manufacturer', 'deviceManufacturer', vinDecodedData?.manufacturer)}

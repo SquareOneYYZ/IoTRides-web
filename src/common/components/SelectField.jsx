@@ -80,6 +80,7 @@ const SelectField = ({
     }
   }, []);
 
+  // Fires only on button click or Enter — no debounce, no auto-trigger
   const fetchVinSuggestions = useRef(async (searchValue) => {
     if (!searchValue) return;
     setVinLoading(true);
@@ -107,6 +108,7 @@ const SelectField = ({
     if (reason === 'reset') return;
     const formatted = formatVINInput(newInputValue);
     setVinInputValue(formatted);
+    // Clear old suggestions when user edits input
     setVinSuggestions([]);
     setVinOpen(false);
   };
@@ -176,6 +178,13 @@ const SelectField = ({
               label={label}
               helperText={getVinHelperText()}
               onKeyDown={handleKeyDown}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '13px',
+                  '& fieldset': { borderRadius: '13px' },
+                },
+                ...sx,
+              }}
               InputProps={{
                 ...params.InputProps,
                 endAdornment: (
@@ -218,6 +227,11 @@ const SelectField = ({
               onChange={onChange}
               renderValue={renderValue}
               MenuProps={MenuProps}
+              sx={{
+                borderRadius: '13px',
+                '& .MuiOutlinedInput-notchedOutline': { borderRadius: '13px' },
+                ...sx,
+              }}
             >
               {items.map((item) => (
                 <MenuItem key={keyGetter(item)} value={keyGetter(item)}>
@@ -268,6 +282,13 @@ const SelectField = ({
                   <TextField
                     {...params}
                     label={label}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '13px',
+                        '& fieldset': { borderRadius: '13px' },
+                      },
+                      ...sx,
+                    }}
                   />
                 </Tooltip>
               );
