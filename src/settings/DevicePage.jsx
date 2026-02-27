@@ -7,6 +7,8 @@ import {
   FormControlLabel,
   Checkbox,
   TextField,
+  Autocomplete,
+  Chip,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { DropzoneArea } from 'react-mui-dropzone';
@@ -26,16 +28,14 @@ import useSettingsStyles from './common/useSettingsStyles';
 const DevicePage = () => {
   const classes = useSettingsStyles();
   const t = useTranslation();
-
   const admin = useAdministrator();
-
   const commonDeviceAttributes = useCommonDeviceAttributes(t);
   const deviceAttributes = useDeviceAttributes(t);
-
   const query = useQuery();
   const uniqueId = query.get('uniqueId');
 
   const [item, setItem] = useState(uniqueId ? { uniqueId } : null);
+  const [vinDecodedData, setVinDecodedData] = useState(null);
 
   const handleFiles = useCatch(async (files) => {
     if (files.length > 0) {
@@ -58,6 +58,64 @@ const DevicePage = () => {
   });
 
   const validate = () => item && item.name && item.uniqueId;
+
+  const renderVinAutocomplete = (field, labelKey, suggestedValue) => {
+    const options = suggestedValue ? [suggestedValue] : [];
+
+    return (
+      <Autocomplete
+        freeSolo
+        options={options}
+        value={item[field] || ''}
+        onChange={(event, newValue) => {
+          setItem((prev) => ({ ...prev, [field]: newValue || '' }));
+        }}
+        onInputChange={(event, newInputValue) => {
+          setItem((prev) => ({ ...prev, [field]: newInputValue }));
+        }}
+        renderOption={(props, option) => (
+          <li {...props}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              width: '100%',
+              padding: '8px 0',
+            }}
+            >
+              <span style={{
+                fontSize: '0.9rem',
+                color: '#fff',
+              }}
+              >
+                {option}
+              </span>
+              <Chip
+                label={t('vinSuggestion')}
+                size="small"
+                sx={{
+                  backgroundColor: 'transparent',
+                  border: '1px solid #4caf50',
+                  color: '#4caf50',
+                  fontSize: '0.75rem',
+                  height: '24px',
+                  '& .MuiChip-label': {
+                    padding: '0 8px',
+                  },
+                }}
+              />
+            </div>
+          </li>
+        )}
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            label={t(labelKey)}
+          />
+        )}
+      />
+    );
+  };
 
   return (
     <EditItemView
@@ -89,6 +147,7 @@ const DevicePage = () => {
               />
             </AccordionDetails>
           </Accordion>
+
           <Accordion>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="subtitle1">{t('sharedExtra')}</Typography>
@@ -110,16 +169,36 @@ const DevicePage = () => {
                 onChange={(event) => setItem({ ...item, license: event.target.value })}
                 label={t('deviceLicenseNumber')}
               />
-              <TextField
+
+              <SelectField
                 value={item.vin || ''}
-                onChange={(event) => setItem({ ...item, vin: event.target.value })}
+                onChange={(event) => {
+                  const { value: newVin, vinData } = event.target;
+                  if (vinData) {
+                    setVinDecodedData(vinData);
+                  }
+                  setItem((prev) => ({ ...prev, vin: newVin.replace(/\*/g, '') }));
+                }}
                 label={t('deviceVinNumber')}
+                isVinField
+                vinApiEndpoint="/api/devices/Vindecoder"
+                fullWidth
               />
-              <TextField
-                value={item.model || ''}
-                onChange={(event) => setItem({ ...item, model: event.target.value })}
-                label={t('deviceModel')}
-              />
+
+              {renderVinAutocomplete('make', 'deviceMake', vinDecodedData?.make)}
+              {renderVinAutocomplete('manufacturer', 'deviceManufacturer', vinDecodedData?.manufacturer)}
+              {renderVinAutocomplete('model', 'deviceModel', vinDecodedData?.model)}
+              {renderVinAutocomplete('modelYear', 'deviceModelYear', vinDecodedData?.modelYear)}
+              {renderVinAutocomplete('trim', 'deviceTrim', vinDecodedData?.trim)}
+              {renderVinAutocomplete('bodyClass', 'deviceBodyClass', vinDecodedData?.bodyClass)}
+              {renderVinAutocomplete('vehicleType', 'deviceVehicleType', vinDecodedData?.vehicleType)}
+              {renderVinAutocomplete('displacementL', 'deviceDisplacementL', vinDecodedData?.displacementL)}
+              {renderVinAutocomplete('engineCylinders', 'deviceEngineCylinders', vinDecodedData?.engineCylinders)}
+              {renderVinAutocomplete('engineHP', 'deviceEngineHP', vinDecodedData?.engineHP)}
+              {renderVinAutocomplete('driveType', 'deviceDriveType', vinDecodedData?.driveType)}
+              {renderVinAutocomplete('fuelTypePrimary', 'deviceFuelTypePrimary', vinDecodedData?.fuelTypePrimary)}
+              {renderVinAutocomplete('batteryType', 'deviceBatteryType', vinDecodedData?.batteryType)}
+
               <TextField
                 value={item.contact || ''}
                 onChange={(event) => setItem({ ...item, contact: event.target.value })}
@@ -131,9 +210,7 @@ const DevicePage = () => {
                 data={deviceCategories
                   .map((category) => ({
                     id: category,
-                    name: t(
-                      `category${category.replace(/^\w/, (c) => c.toUpperCase())}`,
-                    ),
+                    name: t(`category${category.replace(/^\w/, (c) => c.toUpperCase())}`),
                   }))
                   .sort((a, b) => a.name.localeCompare(b.name))}
                 label={t('deviceCategory')}
@@ -152,25 +229,15 @@ const DevicePage = () => {
                   label="Organization"
                 />
               )}
-
               {admin && (
                 <>
                   <TextField
                     label={t('userExpirationTime')}
                     type="date"
-                    value={
-                      item.expirationTime
-                        ? item.expirationTime.split('T')[0]
-                        : '2099-01-01'
-                    }
+                    value={item.expirationTime ? item.expirationTime.split('T')[0] : '2099-01-01'}
                     onChange={(e) => {
                       if (e.target.value) {
-                        setItem({
-                          ...item,
-                          expirationTime: new Date(
-                            e.target.value,
-                          ).toISOString(),
-                        });
+                        setItem({ ...item, expirationTime: new Date(e.target.value).toISOString() });
                       }
                     }}
                   />
@@ -187,12 +254,11 @@ const DevicePage = () => {
               )}
             </AccordionDetails>
           </Accordion>
+
           {item.id && (
             <Accordion>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography variant="subtitle1">
-                  {t('attributeDeviceImage')}
-                </Typography>
+                <Typography variant="subtitle1">{t('attributeDeviceImage')}</Typography>
               </AccordionSummary>
               <AccordionDetails className={classes.details}>
                 <DropzoneArea
@@ -206,6 +272,7 @@ const DevicePage = () => {
               </AccordionDetails>
             </Accordion>
           )}
+
           <EditAttributesAccordion
             attributes={item.attributes}
             setAttributes={(attributes) => setItem({ ...item, attributes })}
