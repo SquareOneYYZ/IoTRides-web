@@ -1,8 +1,5 @@
 import { createSelector } from 'reselect';
 
-// --------------------------------------
-// Base selectors (always safe)
-// --------------------------------------
 export const getPositions = (state) => state.session?.positions || {};
 export const getDevices = (state) => state.devices?.items || {};
 export const getGroups = (state) => state.groups?.items || {};
@@ -86,7 +83,6 @@ export const getFilteredDevices = createSelector(
         });
         break;
       default:
-        // no sorting
         break;
     }
 

@@ -1,30 +1,8 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// WORKER STATE
-// Yeh teen Maps worker ki internal state hain
-// Main thread se alag — yahan data persist rehta hai between messages
-// ─────────────────────────────────────────────────────────────────────────────
-
-// featureCache: already bane GeoJSON features store karta hai
-// Key: deviceId-lat-lng-course-selectedPositionId
-// Value: GeoJSON Feature object
-// Agar position same hai to cache se lo — zero computation
 const featureCache = new Map();
 
-// lastPositions: har device ki last known lat/lng/course
-// Isse pata chalta hai ki kaunsa device actually move kiya
-// Agar same position hai to featureCache invalidate karne ki zaroorat nahi
 const lastPositions = new Map();
 
-// allPositions: poori current state of all devices
-// KEY INSIGHT: Live updates mein sirf changed devices aate hain
-// Lekin map render ke liye SABKI positions chahiye
-// Isliye worker apni khud ki full state maintain karta hai yahan
-// SocketController sirf changes bhejta hai → worker yahan merge karta hai
-const allPositions = new Map(); // deviceId → position object
-
-// ─────────────────────────────────────────────────────────────────────────────
-// HELPER FUNCTIONS
-// ─────────────────────────────────────────────────────────────────────────────
+const allPositions = new Map();
 
 const isInBounds = (position, bounds, buffer) => {
   const latBuffer = (bounds.north - bounds.south) * buffer;
@@ -37,8 +15,6 @@ const isInBounds = (position, bounds, buffer) => {
   );
 };
 
-// Kaunsi positions actually change hui hain check karo
-// lastPositions update bhi karo
 const getChangedPositions = (positions, precision) => {
   const changed = [];
   positions.forEach((position) => {
@@ -64,7 +40,6 @@ const getChangedPositions = (positions, precision) => {
   return changed;
 };
 
-// Changed positions ke purane cache entries delete karo
 const invalidateCacheForChanged = (changedPositions) => {
   changedPositions.forEach((position) => {
     const prefix = `${position.deviceId}-`;
@@ -74,7 +49,6 @@ const invalidateCacheForChanged = (changedPositions) => {
   });
 };
 
-// Ek position ka GeoJSON feature banao
 const buildFeature = (position, device, selectedPositionId, precision) => ({
   type: 'Feature',
   geometry: {
@@ -92,8 +66,6 @@ const buildFeature = (position, device, selectedPositionId, precision) => ({
   },
 });
 
-// allPositions se saare features banao
-// Changed ones rebuild hoti hain, baaki cache se aati hain (instant)
 const buildAllFeatures = (devices, selectedDeviceId, selectedPositionId, precision) => {
   const features = [];
 
@@ -122,9 +94,6 @@ const buildAllFeatures = (devices, selectedDeviceId, selectedPositionId, precisi
   return features;
 };
 
-// Smart cache eviction — sirf stale entries hatao
-// Purani approach: blindly pehle 1200 delete karo → markers gayab
-// Nayi approach: sirf woh entries hatao jo active nahi hain
 const evictStaleCache = (devices, selectedDeviceId, selectedPositionId, precision) => {
   if (featureCache.size <= 3000) return;
 
@@ -145,29 +114,21 @@ const evictStaleCache = (devices, selectedDeviceId, selectedPositionId, precisio
     .forEach((key) => featureCache.delete(key));
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// INITIAL LOAD — PROGRESSIVE CHUNKS
-// ─────────────────────────────────────────────────────────────────────────────
-
-const CHUNK_SIZE = 500; // 500 positions per chunk
-const CHUNK_DELAY = 16; // 1 frame (~60fps) between chunks
+const CHUNK_SIZE = 500;
+const CHUNK_DELAY = 16;
 
 let processingController = null;
 
 const processInitialLoad = (positions, devices, selectedDeviceId, selectedPositionId, bounds, precision) => {
-  // Pehle se chal raha processing cancel karo
   if (processingController) {
     clearTimeout(processingController.timeoutId);
     processingController = null;
   }
 
-  // allPositions initialize karo initial data se
   positions.forEach((p) => allPositions.set(p.deviceId, p));
 
-  // lastPositions warm karo taaki pehla live update sahi se detect ho
   getChangedPositions(positions, precision);
 
-  // Viewport aur non-viewport alag karo — visible markers pehle load hon
   const inViewport = [];
   const outViewport = [];
 
@@ -180,10 +141,8 @@ const processInitialLoad = (positions, devices, selectedDeviceId, selectedPositi
     inViewport.push(...positions);
   }
 
-  // Visible pehle, baaki baad mein
   const sortedPositions = [...inViewport, ...outViewport];
 
-  // Chhota dataset — chunking ki zaroorat nahi, seedha process karo
   if (sortedPositions.length <= 500) {
     const features = buildAllFeatures(devices, selectedDeviceId, selectedPositionId, precision);
     postMessage({
@@ -197,7 +156,6 @@ const processInitialLoad = (positions, devices, selectedDeviceId, selectedPositi
     return;
   }
 
-  // Bada dataset — chunks mein process karo taaki UI block na ho
   let processedCount = 0;
 
   const processChunk = () => {
@@ -214,7 +172,6 @@ const processInitialLoad = (positions, devices, selectedDeviceId, selectedPositi
       return;
     }
 
-    // Is chunk ke features banao
     const chunkFeatures = chunk
       .filter((p) => devices[p.deviceId] && p.deviceId !== selectedDeviceId)
       .map((position) => {
@@ -263,29 +220,30 @@ const processInitialLoad = (positions, devices, selectedDeviceId, selectedPositi
   processChunk();
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// LIVE UPDATE — FAST PATH
-// ─────────────────────────────────────────────────────────────────────────────
+const processLiveUpdate = (incomingPositions, devices, selectedDeviceId, selectedPositionId, precision) => {
+  const incomingIds = new Set(incomingPositions.map((p) => p.deviceId));
 
-const processLiveUpdate = (changedPositions, devices, selectedDeviceId, selectedPositionId, precision) => {
-  // Step 1: allPositions map mein naye positions merge karo
-  changedPositions.forEach((p) => allPositions.set(p.deviceId, p));
+  Array.from(allPositions.keys()).forEach((deviceId) => {
+    if (!incomingIds.has(deviceId)) {
+      allPositions.delete(deviceId);
+      lastPositions.delete(deviceId);
+      const prefix = `${deviceId}-`;
+      Array.from(featureCache.keys())
+        .filter((key) => key.startsWith(prefix))
+        .forEach((key) => featureCache.delete(key));
+    }
+  });
 
-  // Step 2: Actually kya change hua check karo (precision ke saath)
-  const actuallyChanged = getChangedPositions(changedPositions, precision);
+  incomingPositions.forEach((p) => allPositions.set(p.deviceId, p));
 
-  // Kuch change hi nahi hua — koi kaam nahi
-  if (actuallyChanged.length === 0) return;
+  const actuallyChanged = getChangedPositions(incomingPositions, precision);
 
-  // Step 3: Sirf changed devices ke cache entries invalidate karo
-  invalidateCacheForChanged(actuallyChanged);
+  if (actuallyChanged.length > 0) {
+    invalidateCacheForChanged(actuallyChanged);
+  }
 
-  // Step 4: Poori current state se features banao
-  // Changed devices: rebuild (fast — simple object creation)
-  // Unchanged devices: cache se lo (instant — Map.get)
   const features = buildAllFeatures(devices, selectedDeviceId, selectedPositionId, precision);
 
-  // Step 5: Cache cleanup agar bahut bada ho gaya
   evictStaleCache(devices, selectedDeviceId, selectedPositionId, precision);
 
   postMessage({
@@ -302,10 +260,6 @@ const processLiveUpdate = (changedPositions, devices, selectedDeviceId, selected
   });
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MESSAGE HANDLER
-// ─────────────────────────────────────────────────────────────────────────────
-
 onmessage = (e) => {
   const { type, payload } = e.data;
 
@@ -321,10 +275,8 @@ onmessage = (e) => {
     } = payload;
 
     if (isInitialLoad) {
-      // Pehli baar — poori positions aati hain, progressive chunks use karo
       processInitialLoad(positions, devices, selectedDeviceId, selectedPositionId, bounds, precision);
     } else {
-      // Live update — sirf changed positions aati hain
       processLiveUpdate(positions, devices, selectedDeviceId, selectedPositionId, precision);
     }
   }

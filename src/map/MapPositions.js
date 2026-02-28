@@ -34,14 +34,11 @@ const MapPositions = ({
 
   const mapCluster = useAttributePreference('mapCluster', true);
   const directionType = useAttributePreference('mapDirection', 'selected');
+
   const hasInitiallyLoaded = useRef(false);
   const [showLoadingIndicator, setShowLoadingIndicator] = useState(false);
-
   const positionsRef = useRef(positions);
-  useEffect(() => {
-    positionsRef.current = positions;
-  }, [positions]);
-
+  useEffect(() => { positionsRef.current = positions; }, [positions]);
   const mapBoundsRef = useRef(null);
 
   const { processPositions, clearCache, isLoading, progress } = usePositionWorker();
@@ -80,15 +77,9 @@ const MapPositions = ({
     const device = devices[selectedDeviceId];
     let showDirection;
     switch (directionType) {
-      case 'none':
-        showDirection = false;
-        break;
-      case 'all':
-        showDirection = selectedPos.course > 0;
-        break;
-      default:
-        showDirection = selectedPosition?.id === selectedPos.id && selectedPos.course > 0;
-        break;
+      case 'none': showDirection = false; break;
+      case 'all': showDirection = selectedPos.course > 0; break;
+      default: showDirection = selectedPosition?.id === selectedPos.id && selectedPos.course > 0; break;
     }
 
     return [{
@@ -222,6 +213,7 @@ const MapPositions = ({
     };
   }, [mapCluster, clusters, onMarkerClick, onClusterClick]);
 
+  // Reset on tab visibility change
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
@@ -234,57 +226,43 @@ const MapPositions = ({
   }, [clearCache]);
 
   useEffect(() => {
-    if (!positions?.length) return;
+    if (!positions?.length) {
+      if (map.getSource(id)) {
+        map.getSource(id).setData({ type: 'FeatureCollection', features: [] });
+      }
+      if (map.getSource(selected)) {
+        map.getSource(selected).setData({ type: 'FeatureCollection', features: [] });
+      }
+      return;
+    }
 
     const isInitialLoad = !hasInitiallyLoaded.current;
+    if (isInitialLoad) setShowLoadingIndicator(true);
 
-    if (isInitialLoad) {
-      setShowLoadingIndicator(true);
-      processPositions(
-        {
-          positions,
-          devices,
-          selectedDeviceId,
-          selectedPositionId: selectedPosition?.id,
-          bounds: mapBoundsRef.current,
-          precision: getPrecision(),
-        },
-        (features) => {
-          if (map.getSource(id)) {
-            map.getSource(id).setData({ type: 'FeatureCollection', features });
-          }
-          if (map.getSource(selected)) {
-            map.getSource(selected).setData({
-              type: 'FeatureCollection',
-              features: createSelectedFeatures(positionsRef.current),
-            });
-          }
-        },
-        true,
-      );
-    } else {
-      processPositions(
-        {
-          positions,
-          devices,
-          selectedDeviceId,
-          selectedPositionId: selectedPosition?.id,
-          precision: getPrecision(),
-        },
-        (features) => {
-          if (map.getSource(id)) {
-            map.getSource(id).setData({ type: 'FeatureCollection', features });
-          }
-          if (map.getSource(selected)) {
-            map.getSource(selected).setData({
-              type: 'FeatureCollection',
-              features: createSelectedFeatures(positionsRef.current),
-            });
-          }
-        },
-        false,
-      );
-    }
+    const callback = (features) => {
+      if (map.getSource(id)) {
+        map.getSource(id).setData({ type: 'FeatureCollection', features });
+      }
+      if (map.getSource(selected)) {
+        map.getSource(selected).setData({
+          type: 'FeatureCollection',
+          features: createSelectedFeatures(positionsRef.current),
+        });
+      }
+    };
+
+    processPositions(
+      {
+        positions,
+        devices,
+        selectedDeviceId,
+        selectedPositionId: selectedPosition?.id,
+        bounds: isInitialLoad ? mapBoundsRef.current : undefined,
+        precision: getPrecision(),
+      },
+      callback,
+      isInitialLoad,
+    );
   }, [positions, devices, selectedPosition, selectedDeviceId]);
 
   useEffect(() => {
