@@ -80,8 +80,8 @@ const MapView = ({ children }) => {
   const [mapReady, setMapReady] = useState(false);
 
   const mapStyles = useMapStyles();
-  const activeMapStyles = useAttributePreference('activeMapStyles', 'locationIqStreets,locationIqDark,openFreeMap');
-  const [defaultMapStyle] = usePersistedState('selectedMapStyle', usePreference('map', 'locationIqStreets'));
+  const activeMapStyles = useAttributePreference('activeMapStyles', 'googleRoad,googleSatellite,locationIqStreets');
+  const [defaultMapStyle] = usePersistedState('selectedMapStyle', usePreference('map', 'googleRoad'));
   const mapboxAccessToken = useAttributePreference('mapboxAccessToken');
   const maxZoom = useAttributePreference('web.maxZoom');
 
