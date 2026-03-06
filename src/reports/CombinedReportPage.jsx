@@ -243,7 +243,7 @@ const CombinedReportPage = () => {
               loading={loading}
             />
           </div>
-          <Table>
+          <Table stickyHeader>
             <TableHead>
               <TableRow>
                 <TableCell>
