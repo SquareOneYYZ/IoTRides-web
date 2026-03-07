@@ -15,6 +15,7 @@ import EventsDrawer from './EventsDrawer';
 import useFilter from './useFilter';
 import MainToolbar from './MainToolbar';
 import MainMap from './MainMap';
+import ClusterPopup from './ClusterPopUp';
 import { useAttributePreference } from '../common/util/preferences';
 
 const useStyles = makeStyles((theme) => ({
@@ -153,6 +154,7 @@ const MainPage = () => {
           desktopPadding={theme.dimensions.drawerWidthDesktop}
         />
       )}
+      <ClusterPopup />
     </div>
   );
 };
