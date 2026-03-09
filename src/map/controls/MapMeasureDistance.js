@@ -9,7 +9,7 @@ const MEASURE_LINE_LAYER = 'measure-line';
 const calculateDistance = (coords) => {
   if (coords.length < 2) return 0;
   let total = 0;
-  for (let i = 1; i < coords.length; i++) {
+  for (let i = 1; i < coords.length; i += 1) {
     const [lng1, lat1] = coords[i - 1];
     const [lng2, lat2] = coords[i];
     const R = 6371e3;
@@ -35,33 +35,40 @@ class MeasureControl {
   }
 
   onAdd() {
+    // Main measure button
     this.button = document.createElement('button');
     this.button.className = 'maplibregl-ctrl-icon maplibre-ctrl-measure maplibre-ctrl-measure-off';
     this.button.type = 'button';
     this.button.title = 'Measure Distance';
     this.button.onclick = () => this.toggleMeasure();
 
-    this.label = document.createElement('div');
+    // Distance row — shown inside ctrl-group when active
+    this.distanceRow = document.createElement('div');
+    this.distanceRow.className = 'maplibre-ctrl-measure-row';
+    this.distanceRow.style.display = 'none';
+
+    this.label = document.createElement('span');
     this.label.className = 'maplibre-ctrl-measure-label';
-    this.label.style.display = 'none';
+    this.label.textContent = '—';
 
     this.closeBtn = document.createElement('button');
     this.closeBtn.className = 'maplibre-ctrl-measure-close';
     this.closeBtn.type = 'button';
-    this.closeBtn.title = 'Stop measuring (or press Esc / double-click)';
-    this.closeBtn.innerHTML = '&#x2715;'; // ✕
-    this.closeBtn.style.display = 'none';
+    this.closeBtn.title = 'Stop measuring (Esc or double-click)';
+    this.closeBtn.innerHTML = '&#x2715;';
     this.closeBtn.onclick = () => this.deactivate();
+
+    this.distanceRow.appendChild(this.label);
+    this.distanceRow.appendChild(this.closeBtn);
 
     this.container = document.createElement('div');
     this.container.className = 'maplibregl-ctrl-group maplibregl-ctrl';
     this.container.appendChild(this.button);
-    this.container.appendChild(this.label);
-    this.container.appendChild(this.closeBtn);
+    this.container.appendChild(this.distanceRow);
 
     this.onMapClick = (e) => this.handleMapClick(e);
     this.onMapDblClick = () => this.deactivate();
-    this.onMouseMove = (e) => this.handleMouseMove(e);
+    this.onMouseMove = () => { if (this.points.length > 0) this.updateLabel(); };
     this.onKeyDown = (e) => { if (e.key === 'Escape') this.deactivate(); };
 
     return this.container;
@@ -85,9 +92,8 @@ class MeasureControl {
     this.points = [];
     this.button.className = 'maplibregl-ctrl-icon maplibre-ctrl-measure maplibre-ctrl-measure-on';
     this.button.title = 'Measuring… (Esc or double-click to stop)';
-    this.closeBtn.style.display = 'block';
-    this.label.textContent = 'Click to add points';
-    this.label.style.display = 'block';
+    this.distanceRow.style.display = 'flex';
+    this.label.textContent = 'Click map';
     map.getCanvas().style.cursor = 'crosshair';
 
     if (!map.getSource(MEASURE_SOURCE)) {
@@ -95,20 +101,18 @@ class MeasureControl {
         type: 'geojson',
         data: this.getGeoJSON(),
       });
-
       map.addLayer({
         id: MEASURE_LINE_LAYER,
         type: 'line',
         source: MEASURE_SOURCE,
         layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: {
-          'line-color': '#678FCA',
+          'line-color': '#1976d2',
           'line-width': 2.5,
           'line-dasharray': [2, 1],
         },
         filter: ['==', '$type', 'LineString'],
       });
-
       map.addLayer({
         id: MEASURE_POINTS_LAYER,
         type: 'circle',
@@ -116,7 +120,7 @@ class MeasureControl {
         paint: {
           'circle-radius': 5,
           'circle-color': '#fff',
-          'circle-stroke-color': '#678FCA',
+          'circle-stroke-color': '#1976d2',
           'circle-stroke-width': 2,
         },
         filter: ['==', '$type', 'Point'],
@@ -134,8 +138,7 @@ class MeasureControl {
     this.points = [];
     this.button.className = 'maplibregl-ctrl-icon maplibre-ctrl-measure maplibre-ctrl-measure-off';
     this.button.title = 'Measure Distance';
-    this.closeBtn.style.display = 'none';
-    this.label.style.display = 'none';
+    this.distanceRow.style.display = 'none';
     map.getCanvas().style.cursor = '';
 
     map.off('click', this.onMapClick);
@@ -154,12 +157,6 @@ class MeasureControl {
     this.updateLabel();
   }
 
-  handleMouseMove() {
-    if (this.points.length > 0) {
-      this.updateLabel();
-    }
-  }
-
   updateSource() {
     const source = map.getSource(MEASURE_SOURCE);
     if (source) source.setData(this.getGeoJSON());
@@ -170,24 +167,18 @@ class MeasureControl {
       type: 'Feature',
       geometry: { type: 'Point', coordinates: coord },
     }));
-
     if (this.points.length > 1) {
       features.push({
         type: 'Feature',
         geometry: { type: 'LineString', coordinates: this.points },
       });
     }
-
     return { type: 'FeatureCollection', features };
   }
 
   updateLabel() {
     const dist = calculateDistance(this.points);
-    if (dist > 0) {
-      this.label.textContent = formatDistance(dist);
-    } else if (this.points.length === 1) {
-      this.label.textContent = 'Click next point';
-    }
+    this.label.textContent = dist > 0 ? formatDistance(dist) : 'Click next point';
   }
 }
 

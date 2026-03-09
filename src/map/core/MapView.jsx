@@ -12,6 +12,8 @@ import usePersistedState, { savePersistedState } from '../../common/util/usePers
 import { mapImages } from './preloadImages';
 import useMapStyles from './useMapStyles';
 
+import { FullScreenControl } from '../controls/MapFullScreen';
+
 const element = document.createElement('div');
 element.style.width = '100%';
 element.style.height = '100%';
@@ -51,9 +53,7 @@ const initMap = async () => {
     });
   }
 };
-
-// Default NavigationControl removed — zoom handled by MapZoomBar, compass omitted
-// map.addControl(new maplibregl.NavigationControl({ showZoom: false }));
+map.addControl(new FullScreenControl(), 'top-right');
 
 const switcher = new SwitcherControl(
   () => updateReadyValue(false),
@@ -73,7 +73,7 @@ const switcher = new SwitcherControl(
   },
 );
 
-map.addControl(switcher);
+map.addControl(switcher, 'top-right');
 
 const MapView = ({ children }) => {
   const containerEl = useRef(null);

@@ -1,8 +1,8 @@
-import { useEffect, useMemo } from 'react';
-import { map } from '../core/MapView'; // used for addControl/removeControl
+import { useEffect } from 'react';
+import { map } from '../core/MapView';
 import './mapControls.css';
 
-class FullScreenControl {
+export class FullScreenControl {
   onAdd(mapInstance) {
     this.map = mapInstance;
     this.isFullScreen = false;
@@ -10,7 +10,7 @@ class FullScreenControl {
     this.button = document.createElement('button');
     this.button.className = 'maplibregl-ctrl-icon maplibre-ctrl-fullscreen maplibre-ctrl-fullscreen-off';
     this.button.type = 'button';
-    this.button.title = 'Toggle Full Screen';
+    this.button.title = 'Full Screen';
     this.button.onclick = () => this.toggleFullScreen();
 
     this.container = document.createElement('div');
@@ -32,7 +32,6 @@ class FullScreenControl {
     const mapContainer = this.map.getContainer();
     if (!document.fullscreenElement) {
       mapContainer.requestFullscreen().catch((err) => {
-        console.error('Error enabling full screen:', err);
       });
     } else {
       document.exitFullscreen();
@@ -42,18 +41,13 @@ class FullScreenControl {
   onFullScreenChange() {
     this.isFullScreen = !!document.fullscreenElement;
     this.button.className = `maplibregl-ctrl-icon maplibre-ctrl-fullscreen maplibre-ctrl-fullscreen-${this.isFullScreen ? 'on' : 'off'}`;
-    this.button.title = this.isFullScreen ? 'Exit Full Screen' : 'Toggle Full Screen';
+    this.button.title = this.isFullScreen ? 'Exit Full Screen' : 'Full Screen';
   }
 }
 
+// React component — no-op since control is added at module level in MapView.jsx
 const MapFullScreen = () => {
-  const control = useMemo(() => new FullScreenControl(), []);
-
-  useEffect(() => {
-    map.addControl(control, 'top-right');
-    return () => map.removeControl(control);
-  }, [control]);
-
+  useEffect(() => () => {}, []);
   return null;
 };
 
