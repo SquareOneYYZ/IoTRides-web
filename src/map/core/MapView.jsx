@@ -52,7 +52,8 @@ const initMap = async () => {
   }
 };
 
-map.addControl(new maplibregl.NavigationControl());
+// Default NavigationControl removed — zoom handled by MapZoomBar, compass omitted
+// map.addControl(new maplibregl.NavigationControl({ showZoom: false }));
 
 const switcher = new SwitcherControl(
   () => updateReadyValue(false),
