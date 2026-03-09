@@ -41,12 +41,10 @@ class MeasureControl {
     this.button.title = 'Measure Distance';
     this.button.onclick = () => this.toggleMeasure();
 
-    // Distance label
     this.label = document.createElement('div');
     this.label.className = 'maplibre-ctrl-measure-label';
     this.label.style.display = 'none';
 
-    // Close button — visible only when measuring is active
     this.closeBtn = document.createElement('button');
     this.closeBtn.className = 'maplibre-ctrl-measure-close';
     this.closeBtn.type = 'button';
@@ -92,7 +90,6 @@ class MeasureControl {
     this.label.style.display = 'block';
     map.getCanvas().style.cursor = 'crosshair';
 
-    // Add source and layers
     if (!map.getSource(MEASURE_SOURCE)) {
       map.addSource(MEASURE_SOURCE, {
         type: 'geojson',
@@ -105,7 +102,7 @@ class MeasureControl {
         source: MEASURE_SOURCE,
         layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: {
-          'line-color': '#e74c3c',
+          'line-color': '#678FCA',
           'line-width': 2.5,
           'line-dasharray': [2, 1],
         },
@@ -119,7 +116,7 @@ class MeasureControl {
         paint: {
           'circle-radius': 5,
           'circle-color': '#fff',
-          'circle-stroke-color': '#e74c3c',
+          'circle-stroke-color': '#678FCA',
           'circle-stroke-width': 2,
         },
         filter: ['==', '$type', 'Point'],
