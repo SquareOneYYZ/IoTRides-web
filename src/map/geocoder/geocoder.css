@@ -11,7 +11,7 @@
   line-height: 20px;
   font-family: "Open Sans", "Helvetica Neue", Arial, Helvetica, sans-serif;
   position: relative;
-  background-color: #fff;
+  background-color: #121212;
   width: 100%;
   min-width: 240px;
   max-width: 360px;
@@ -27,8 +27,7 @@
   background-color: transparent;
   margin: 0;
   height: 29px;
-  color: #404040; /* fallback */
-  color: rgba(0, 0, 0, 0.75);
+  color: #ffffff;
   padding: 6px 30px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -36,14 +35,13 @@
 }
 
 .maplibregl-ctrl-geocoder--input:focus {
-  color: #404040; /* fallback */
-  color: rgba(0, 0, 0, 0.75);
+  color: #ffffff;
   outline: 0;
   box-shadow: none;
   outline: thin dotted;
 }
 
-.maplibregl-ctrl-geocoder .maplibregl-ctrl-geocoder--pin-right > * {
+.maplibregl-ctrl-geocoder .maplibregl-ctrl-geocoder--pin-right>* {
   z-index: 2;
   position: absolute;
   right: 5px;
@@ -65,15 +63,14 @@
 
 /* Suggestions */
 .maplibregl-ctrl-geocoder .suggestions {
-  background-color: #fff;
-  border-radius: 4px;
+  background-color: #1a1a1a;
   left: 0;
   list-style: none;
   margin: 0;
   padding: 0;
   position: absolute;
   width: 100%;
-  top: 110%; /* fallback */
+  top: 110%;
   top: calc(100% + 6px);
   z-index: 1000;
   overflow: hidden;
@@ -86,17 +83,17 @@
   bottom: 100%;
 }
 
-.maplibregl-ctrl-geocoder .suggestions > li > a {
+.maplibregl-ctrl-geocoder .suggestions>li>a {
   cursor: default;
   display: block;
   padding: 6px 12px;
-  color: #404040;
+  color: #ffffff;
 }
 
-.maplibregl-ctrl-geocoder .suggestions > .active > a,
-.maplibregl-ctrl-geocoder .suggestions > li > a:hover {
-  color: #404040;
-  background-color: #f3f3f3;
+.maplibregl-ctrl-geocoder .suggestions>.active>a,
+.maplibregl-ctrl-geocoder .suggestions>li>a:hover {
+  color: #ffffff;
+  background-color: #2a2a2a;
   text-decoration: none;
   cursor: pointer;
 }
@@ -160,6 +157,7 @@
 .maplibregl-ctrl-geocoder--icon {
   display: inline-block;
   vertical-align: middle;
+  filter: brightness(0) invert(1);
 }
 
 .maplibregl-ctrl-geocoder--icon-search {
@@ -175,7 +173,7 @@
   margin: 0;
   border: none;
   cursor: pointer;
-  background: #fff;
+  background: #121212;
   line-height: 1;
 }
 
@@ -187,36 +185,23 @@
 .maplibregl-ctrl-geocoder--icon-loading {
   width: 20px;
   height: 20px;
-  -moz-animation: rotate 0.8s infinite cubic-bezier(0.45, 0.05, 0.55, 0.95);
-  -webkit-animation: rotate 0.8s infinite cubic-bezier(0.45, 0.05, 0.55, 0.95);
+  filter: brightness(0) invert(1);
   animation: rotate 0.8s infinite cubic-bezier(0.45, 0.05, 0.55, 0.95);
 }
 
 /* Animation */
-@-webkit-keyframes rotate {
-  from {
-    -webkit-transform: rotate(0);
-    transform: rotate(0);
-  }
-  to {
-    -webkit-transform: rotate(360deg);
-    transform: rotate(360deg);
-  }
-}
-
 @keyframes rotate {
   from {
-    -webkit-transform: rotate(0);
     transform: rotate(0);
   }
+
   to {
-    -webkit-transform: rotate(360deg);
     transform: rotate(360deg);
   }
 }
 
 .maplibre-gl-geocoder--error {
-  color: #909090;
+  color: #bbbbbb;
   padding: 6px 12px;
   font-size: 16px;
   text-align: center;
