@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import {
-  FormControl, InputLabel, Select, MenuItem, Button, TextField, Typography, Tooltip,
+  FormControl, InputLabel, Select, MenuItem, Button, TextField, Typography, Tooltip, IconButton,
 } from '@mui/material';
+import MapIcon from '@mui/icons-material/Map';
 import { useDispatch, useSelector } from 'react-redux';
 import dayjs from 'dayjs';
 import { useTranslation } from '../../common/components/LocalizationProvider';
@@ -13,6 +14,7 @@ import { useRestriction } from '../../common/util/permissions';
 
 const ReportFilter = ({
   children, handleSubmit, handleSchedule, showOnly, ignoreDevice, multiDevice, includeGroups, loading,
+  onMapClick, mapButtonEnabled,
 }) => {
   const classes = useReportStyles();
   const dispatch = useDispatch();
@@ -217,37 +219,61 @@ const ReportFilter = ({
       )}
       {children}
       <div className={classes.filterItem}>
-        {showOnly ? (
-          <Button
-            fullWidth
-            variant="outlined"
-            color="secondary"
-            disabled={disabled}
-            onClick={() => handleClick('json')}
-          >
-            <Typography variant="button" noWrap>{t(loading ? 'sharedLoading' : 'reportShow')}</Typography>
-          </Button>
-        ) : (
-          <SplitButton
-            fullWidth
-            variant="outlined"
-            color="secondary"
-            disabled={disabled}
-            onClick={handleClick}
-            selected={button}
-            setSelected={(value) => setButton(value)}
-            options={readonly ? {
-              json: t('reportShow'),
-              export: t('reportExport'),
-              mail: t('reportEmail'),
-            } : {
-              json: t('reportShow'),
-              export: t('reportExport'),
-              mail: t('reportEmail'),
-              schedule: t('reportSchedule'),
-            }}
-          />
-        )}
+        {/* Show button + optional Map icon next to it */}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {showOnly ? (
+            <Button
+              fullWidth
+              variant="outlined"
+              color="secondary"
+              disabled={disabled}
+              onClick={() => handleClick('json')}
+            >
+              <Typography variant="button" noWrap>{t(loading ? 'sharedLoading' : 'reportShow')}</Typography>
+            </Button>
+          ) : (
+            <SplitButton
+              fullWidth
+              variant="outlined"
+              color="secondary"
+              disabled={disabled}
+              onClick={handleClick}
+              selected={button}
+              setSelected={(value) => setButton(value)}
+              options={readonly ? {
+                json: t('reportShow'),
+                export: t('reportExport'),
+                mail: t('reportEmail'),
+              } : {
+                json: t('reportShow'),
+                export: t('reportExport'),
+                mail: t('reportEmail'),
+                schedule: t('reportSchedule'),
+              }}
+            />
+          )}
+
+          {/* Map icon — only visible when onMapClick prop is passed (EventReportPage) */}
+          {onMapClick && (
+            <Tooltip title="View on Map">
+              <span>
+                <IconButton
+                  color="primary"
+                  onClick={onMapClick}
+                  disabled={!mapButtonEnabled}
+                  sx={{
+                    border: '1px solid',
+                    borderColor: mapButtonEnabled ? 'primary.main' : 'action.disabled',
+                    borderRadius: 1,
+                    padding: '7px',
+                  }}
+                >
+                  <MapIcon />
+                </IconButton>
+              </span>
+            </Tooltip>
+          )}
+        </div>
       </div>
     </div>
   );
