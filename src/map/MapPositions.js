@@ -9,7 +9,10 @@ import { useAttributePreference } from '../common/util/preferences';
 import { useCatchCallback } from '../reactHelper';
 import { findFonts } from './core/mapUtil';
 
-const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleField }) => {
+const MapPositions = ({
+  positions, onClick, showStatus, selectedPosition, titleField,
+  customCategory,
+}) => {
   const id = useId();
   const clusters = `${id}-clusters`;
   const selected = `${id}-selected`;
@@ -24,8 +27,30 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
   const mapCluster = useAttributePreference('mapCluster', true);
   const directionType = useAttributePreference('mapDirection', 'selected');
 
-  const createFeature = (devices, position, selectedPositionId) => {
-    const device = devices[position.deviceId];
+  const createFeature = (devicesMap, position, selectedPositionId) => {
+    const device = devicesMap[position.deviceId];
+
+    // If position has a preloaded iconKey (e.g. "event-deviceOverspeed"), use it directly
+    // Otherwise fall back to standard category-color pattern
+    if (position.iconKey) {
+      const [cat, ...rest] = position.iconKey.split('-');
+      return {
+        id: position.id,
+        deviceId: position.deviceId,
+        name: device?.name ?? '',
+        fixTime: formatTime(position.fixTime, 'seconds'),
+        category: cat,
+        color: rest.join('-'),
+        rotation: position.course,
+        direction: false,
+      };
+    }
+
+    const category = customCategory || mapIconKey(device?.category);
+    const color = showStatus
+      ? position.attributes?.color || getStatusColor(device?.status)
+      : 'neutral';
+
     let showDirection;
     switch (directionType) {
       case 'none':
@@ -38,20 +63,21 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
         showDirection = selectedPositionId === position.id && position.course > 0;
         break;
     }
+
     return {
       id: position.id,
       deviceId: position.deviceId,
-      name: device.name,
+      name: device?.name ?? '',
       fixTime: formatTime(position.fixTime, 'seconds'),
-      category: mapIconKey(device.category),
-      color: showStatus ? position.attributes.color || getStatusColor(device.status) : 'neutral',
+      category,
+      color,
       rotation: position.course,
       direction: showDirection,
     };
   };
 
-  const onMouseEnter = () => map.getCanvas().style.cursor = 'pointer';
-  const onMouseLeave = () => map.getCanvas().style.cursor = '';
+  const onMouseEnter = () => { map.getCanvas().style.cursor = 'pointer'; };
+  const onMouseLeave = () => { map.getCanvas().style.cursor = ''; };
 
   const onMapClick = useCallback((event) => {
     if (!event.defaultPrevented && onClick) {
@@ -83,21 +109,16 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
   useEffect(() => {
     map.addSource(id, {
       type: 'geojson',
-      data: {
-        type: 'FeatureCollection',
-        features: [],
-      },
+      data: { type: 'FeatureCollection', features: [] },
       cluster: mapCluster,
       clusterMaxZoom: 14,
       clusterRadius: 50,
     });
     map.addSource(selected, {
       type: 'geojson',
-      data: {
-        type: 'FeatureCollection',
-        features: [],
-      },
+      data: { type: 'FeatureCollection', features: [] },
     });
+
     [id, selected].forEach((source) => {
       map.addLayer({
         id: source,
@@ -124,11 +145,7 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
         id: `direction-${source}`,
         type: 'symbol',
         source,
-        filter: [
-          'all',
-          ['!has', 'point_count'],
-          ['==', 'direction', true],
-        ],
+        filter: ['all', ['!has', 'point_count'], ['==', 'direction', true]],
         layout: {
           'icon-image': 'direction',
           'icon-size': iconScale,
@@ -142,6 +159,7 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
       map.on('mouseleave', source, onMouseLeave);
       map.on('click', source, onMarkerClick);
     });
+
     map.addLayer({
       id: clusters,
       type: 'symbol',
@@ -167,24 +185,16 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
       map.off('click', clusters, onClusterClick);
       map.off('click', onMapClick);
 
-      if (map.getLayer(clusters)) {
-        map.removeLayer(clusters);
-      }
+      if (map.getLayer(clusters)) map.removeLayer(clusters);
 
       [id, selected].forEach((source) => {
         map.off('mouseenter', source, onMouseEnter);
         map.off('mouseleave', source, onMouseLeave);
         map.off('click', source, onMarkerClick);
 
-        if (map.getLayer(source)) {
-          map.removeLayer(source);
-        }
-        if (map.getLayer(`direction-${source}`)) {
-          map.removeLayer(`direction-${source}`);
-        }
-        if (map.getSource(source)) {
-          map.removeSource(source);
-        }
+        if (map.getLayer(source)) map.removeLayer(source);
+        if (map.getLayer(`direction-${source}`)) map.removeLayer(`direction-${source}`);
+        if (map.getSource(source)) map.removeSource(source);
       });
     };
   }, [mapCluster, clusters, onMarkerClick, onClusterClick]);
@@ -193,19 +203,22 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
     [id, selected].forEach((source) => {
       map.getSource(source)?.setData({
         type: 'FeatureCollection',
-        features: positions.filter((it) => devices.hasOwnProperty(it.deviceId))
-          .filter((it) => (source === id ? it.deviceId !== selectedDeviceId : it.deviceId === selectedDeviceId))
+        features: positions
+          .filter((it) => it.iconKey || Object.prototype.hasOwnProperty.call(devices, it.deviceId))
+          .filter((it) => (source === id
+            ? it.deviceId !== selectedDeviceId
+            : it.deviceId === selectedDeviceId))
           .map((position) => ({
             type: 'Feature',
             geometry: {
               type: 'Point',
               coordinates: [position.longitude, position.latitude],
             },
-            properties: createFeature(devices, position, selectedPosition && selectedPosition.id),
+            properties: createFeature(devices, position, selectedPosition?.id),
           })),
       });
     });
-  }, [mapCluster, clusters, onMarkerClick, onClusterClick, devices, positions, selectedPosition]);
+  }, [mapCluster, clusters, onMarkerClick, onClusterClick, devices, positions, selectedPosition, customCategory]);
 
   return null;
 };

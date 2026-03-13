@@ -181,16 +181,51 @@ const useStyles = makeStyles((theme) => ({
   },
   legendRow: {
     display: 'flex',
-    gap: theme.spacing(0.75),
-    flexWrap: 'wrap',
+    gap: theme.spacing(0.5),
     alignItems: 'center',
+    overflowX: 'auto',
+    flexWrap: 'nowrap',
+    paddingBottom: 2,
+    borderTop: '1px solid rgba(255,255,255,0.07)',
+    paddingTop: theme.spacing(0.5),
+    '&::-webkit-scrollbar': { height: 2 },
+    '&::-webkit-scrollbar-thumb': { background: 'rgba(255,255,255,0.15)', borderRadius: 1 },
+  },
+  legendItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+    flexShrink: 0,
+    padding: '2px 6px',
+    borderRadius: 10,
+    border: '1px solid rgba(255,255,255,0.08)',
+    background: 'rgba(255,255,255,0.04)',
+    transition: 'background 0.15s',
+    '&.active': {
+      background: 'rgba(255,255,255,0.12)',
+      border: '1px solid rgba(255,255,255,0.2)',
+    },
   },
   legendDot: {
     width: 8,
     height: 8,
     borderRadius: '50%',
-    display: 'inline-block',
-    marginRight: 3,
+    flexShrink: 0,
+  },
+  legendLabel: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: '0.6rem',
+    fontFamily: 'monospace',
+    whiteSpace: 'nowrap',
+  },
+  legendLabelActive: {
+    color: 'rgba(255,255,255,0.9)',
+    fontWeight: 600,
+  },
+  legendCount: {
+    color: 'rgba(255,255,255,0.35)',
+    fontSize: '0.58rem',
+    fontFamily: 'monospace',
   },
 }));
 
@@ -210,6 +245,18 @@ const EVENT_COLOR_MAP = {
 };
 
 const getEventColor = (type) => EVENT_COLOR_MAP[type] || EVENT_COLOR_MAP.default;
+
+// Full legend — all possible event types with display labels
+const ALL_EVENT_LEGEND = [
+  { type: 'deviceOverspeed', label: 'Overspeed' },
+  { type: 'alarm', label: 'Alarm' },
+  { type: 'geofenceEnter', label: 'Geo Enter' },
+  { type: 'geofenceExit', label: 'Geo Exit' },
+  { type: 'deviceMoving', label: 'Moving' },
+  { type: 'deviceStopped', label: 'Stopped' },
+  { type: 'ignitionOn', label: 'Ign. On' },
+  { type: 'ignitionOff', label: 'Ign. Off' },
+];
 
 const lerpAngle = (a, b, t) => {
   let diff = b - a;
@@ -427,10 +474,7 @@ const ViewOnMap = () => {
       }
     };
     fetchPositions();
-    return () => {
-      setPositionMap({});
-      setFetchLoading(false);
-    };
+    return () => { setPositionMap({}); };
   }, [validEvents]);
 
   useEffect(() => {
@@ -490,6 +534,7 @@ const ViewOnMap = () => {
           ...positionMap[ev.positionId],
           _eventType: ev.type,
           _eventColor: getEventColor(ev.type),
+          _iconKey: `event-${ev.type}`,
           _isCurrent: false,
         });
       }
@@ -505,6 +550,7 @@ const ViewOnMap = () => {
         ...smoothPosition,
         _eventType: sortedEvents[activeIndex]?.type,
         _eventColor: getEventColor(sortedEvents[activeIndex]?.type),
+        _iconKey: `event-${sortedEvents[activeIndex]?.type || 'default'}`,
         _isCurrent: true,
       },
     ];
@@ -579,7 +625,7 @@ const ViewOnMap = () => {
         <MapView>
           <MapGeofence />
           {allVisiblePositions.length > 0 && (
-            <MapPositions positions={allVisiblePositions} titleField="fixTime" />
+            <MapPositions positions={allVisiblePositions} titleField="fixTime" customCategory="event" />
           )}
         </MapView>
         <MapScale />
@@ -663,14 +709,27 @@ const ViewOnMap = () => {
         </div>
 
         <div className={classes.legendRow}>
-          {eventTypeSummary.slice(0, 6).map(([type, count]) => (
-            <Box key={type} sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
-              <span className={classes.legendDot} style={{ background: getEventColor(type) }} />
-              <Typography sx={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.62rem' }}>
-                {`${t(prefixString('event', type))} (${count})`}
-              </Typography>
-            </Box>
-          ))}
+          {ALL_EVENT_LEGEND.map(({ type, label }) => {
+            const count = eventTypeSummary.find(([k]) => k === type)?.[1] ?? 0;
+            const isActive = count > 0;
+            return (
+              <div
+                key={type}
+                className={`${classes.legendItem}${isActive ? ' active' : ''}`}
+              >
+                <span
+                  className={classes.legendDot}
+                  style={{ background: getEventColor(type), opacity: isActive ? 1 : 0.35 }}
+                />
+                <span className={`${classes.legendLabel}${isActive ? ` ${classes.legendLabelActive}` : ''}`}>
+                  {label}
+                </span>
+                {isActive && (
+                  <span className={classes.legendCount}>{count}</span>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
