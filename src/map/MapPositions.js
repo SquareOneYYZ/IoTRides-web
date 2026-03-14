@@ -32,6 +32,7 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
 
   const animationStateRef = useRef({});
   const animationFrameRef = useRef(null);
+  const isAnimatingRef = useRef(false);
   const devicesRef = useRef(devices);
   const selectedDeviceIdRef = useRef(selectedDeviceId);
   const selectedPositionRef = useRef(selectedPosition);
@@ -93,6 +94,7 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
 
     return result;
   };
+
   const calculateAnimationDuration = useCallback((deviceId, now) => {
     if (!useAdaptiveTiming) {
       return baseAnimationDuration;
@@ -107,8 +109,8 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
     return Math.max(1000, Math.min(adaptiveDuration, 5000));
   }, [baseAnimationDuration, useAdaptiveTiming]);
 
-  const updateMapData = useCallback(() => {
-    const state = animationStateRef.current;
+  const updateMapData = useCallback((stateVals) => {
+    const vals = stateVals ?? Object.values(animationStateRef.current);
     const currentDevices = devicesRef.current;
     const currentSelectedDeviceId = selectedDeviceIdRef.current;
     const currentSelectedPosition = selectedPositionRef.current;
@@ -117,7 +119,7 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
       const sourceObj = map.getSource(source);
       if (!sourceObj) return;
 
-      const features = Object.values(state)
+      const features = vals
         .filter((deviceState) => currentDevices.hasOwnProperty(deviceState.properties.deviceId))
         .filter((deviceState) => {
           const isSelected = deviceState.properties.deviceId === currentSelectedDeviceId;
@@ -150,12 +152,13 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
   const animate = useCallback(() => {
     const now = Date.now();
     const state = animationStateRef.current;
+    const stateVals = Object.values(state);
     let needsUpdate = false;
+    let hasActiveTargets = false;
 
-    Object.keys(state).forEach((deviceId) => {
-      const deviceState = state[deviceId];
-
+    stateVals.forEach((deviceState) => {
       if (deviceState.target) {
+        hasActiveTargets = true;
         const elapsed = now - deviceState.startTime;
         const duration = deviceState.duration || baseAnimationDuration;
         const progress = Math.min(elapsed / duration, 1);
@@ -192,15 +195,21 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
     });
 
     if (needsUpdate) {
-      updateMapData();
+      updateMapData(stateVals);
     }
 
-    animationFrameRef.current = requestAnimationFrame(animate);
+    if (hasActiveTargets) {
+      animationFrameRef.current = requestAnimationFrame(animate);
+    } else {
+      isAnimatingRef.current = false;
+      animationFrameRef.current = null;
+    }
   }, [baseAnimationDuration, updateMapData]);
 
   const updateAnimationState = useCallback((newPositions) => {
     const now = Date.now();
     const state = animationStateRef.current;
+    let newTargetAdded = false;
 
     newPositions.forEach((position) => {
       const { deviceId } = position;
@@ -236,6 +245,7 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
             duration,
             properties: position,
           };
+          newTargetAdded = true;
         } else if (!enableSmoothing) {
           state[deviceId] = {
             current: {
@@ -260,7 +270,12 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
         delete lastUpdateTimeRef.current[deviceId];
       }
     });
-  }, [enableSmoothing, calculateAnimationDuration]);
+
+    if (newTargetAdded && enableSmoothing && !isAnimatingRef.current) {
+      isAnimatingRef.current = true;
+      animationFrameRef.current = requestAnimationFrame(animate);
+    }
+  }, [enableSmoothing, calculateAnimationDuration, animate]);
 
   const onMouseEnter = () => map.getCanvas().style.cursor = 'pointer';
   const onMouseLeave = () => map.getCanvas().style.cursor = '';
@@ -404,18 +419,6 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
       });
     };
   }, [mapCluster, clusters, onMarkerClick, onClusterClick, iconScale, titleField, id, selected, onMapClick]);
-
-  useEffect(() => {
-    if (enableSmoothing) {
-      animationFrameRef.current = requestAnimationFrame(animate);
-    }
-
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [animate, enableSmoothing]);
 
   useEffect(() => {
     const filteredPositions = positions.filter((it) => devices.hasOwnProperty(it.deviceId));
