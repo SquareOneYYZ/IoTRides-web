@@ -43,6 +43,7 @@ const MapPositions = ({
         color: rest.join('-'),
         rotation: position.course,
         direction: false,
+        isCurrent: position.isCurrent ? 1 : 0,
       };
     }
 
@@ -127,7 +128,7 @@ const MapPositions = ({
         filter: ['!has', 'point_count'],
         layout: {
           'icon-image': '{category}-{color}',
-          'icon-size': iconScale,
+          'icon-size': ['case', ['==', ['get', 'isCurrent'], 1], iconScale * 1.45, iconScale * 0.8],
           'icon-allow-overlap': true,
           'text-field': `{${titleField || 'name'}}`,
           'text-allow-overlap': true,

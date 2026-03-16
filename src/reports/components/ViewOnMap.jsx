@@ -4,6 +4,7 @@ import React, {
 import {
   IconButton, Typography, Box, Chip,
   Popover, List, ListItem, ListItemText, Divider,
+  ToggleButtonGroup, ToggleButton, Tooltip,
 } from '@mui/material';
 import makeStyles from '@mui/styles/makeStyles';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -12,6 +13,8 @@ import PauseIcon from '@mui/icons-material/Pause';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
 import SkipPreviousIcon from '@mui/icons-material/SkipPrevious';
 import EventIcon from '@mui/icons-material/Event';
+import MapIcon from '@mui/icons-material/Map';
+import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import MapView from '../../map/core/MapView';
@@ -227,6 +230,20 @@ const useStyles = makeStyles((theme) => ({
     fontSize: '0.58rem',
     fontFamily: 'monospace',
   },
+  modeToggle: {
+    '& .MuiToggleButton-root': {
+      padding: '2px 8px',
+      fontSize: '0.65rem',
+      color: 'rgba(255,255,255,0.5)',
+      borderColor: 'rgba(255,255,255,0.15)',
+      textTransform: 'none',
+      lineHeight: 1.6,
+      '&.Mui-selected': {
+        color: '#fff',
+        background: 'rgba(255,255,255,0.12)',
+      },
+    },
+  },
 }));
 
 const SPEED_OPTIONS = [0.5, 0.75, 1, 2, 5, 10];
@@ -433,6 +450,7 @@ const ViewOnMap = () => {
   const [positionMap, setPositionMap] = useState({});
   const [fetchLoading, setFetchLoading] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [viewMode, setViewMode] = useState('overview'); // 'overview' | 'replay'
   const [currentTime, setCurrentTime] = useState(0);
   const [speed, setSpeed] = useState(1);
   const [smoothPosition, setSmoothPosition] = useState(null);
@@ -474,7 +492,9 @@ const ViewOnMap = () => {
       }
     };
     fetchPositions();
-    return () => { setPositionMap({}); };
+    return () => {
+      setPositionMap({});
+    };
   }, [validEvents]);
 
   useEffect(() => {
@@ -532,29 +552,46 @@ const ViewOnMap = () => {
       if (ev && positionMap[ev.positionId]) {
         positions.push({
           ...positionMap[ev.positionId],
-          _eventType: ev.type,
-          _eventColor: getEventColor(ev.type),
-          _iconKey: `event-${ev.type}`,
-          _isCurrent: false,
+          eventType: ev.type,
+          eventColor: getEventColor(ev.type),
+          iconKey: `event-${ev.type}`,
+          isCurrent: false,
         });
       }
     }
     return positions;
   }, [sortedEvents, activeIndex, positionMap]);
 
+  // All events as positions (for overview mode)
+  const allEventPositions = useMemo(() => sortedEvents.map((ev, i) => {
+    const pos = positionMap[ev.positionId];
+    if (!pos) return null;
+    return {
+      ...pos,
+      eventType: ev.type,
+      eventColor: getEventColor(ev.type),
+      iconKey: `event-${ev.type}`,
+      isCurrent: i === activeIndex,
+    };
+  }).filter(Boolean), [sortedEvents, positionMap, activeIndex]);
+
   const allVisiblePositions = useMemo(() => {
+    if (viewMode === 'overview') {
+      return allEventPositions;
+    }
+    // replay mode — progressive trail + smooth current
     if (!smoothPosition) return trailPositions;
     return [
       ...trailPositions,
       {
         ...smoothPosition,
-        _eventType: sortedEvents[activeIndex]?.type,
-        _eventColor: getEventColor(sortedEvents[activeIndex]?.type),
-        _iconKey: `event-${sortedEvents[activeIndex]?.type || 'default'}`,
-        _isCurrent: true,
+        eventType: sortedEvents[activeIndex]?.type,
+        eventColor: getEventColor(sortedEvents[activeIndex]?.type),
+        iconKey: `event-${sortedEvents[activeIndex]?.type || 'default'}`,
+        isCurrent: true,
       },
     ];
-  }, [trailPositions, smoothPosition, sortedEvents, activeIndex]);
+  }, [viewMode, allEventPositions, trailPositions, smoothPosition, sortedEvents, activeIndex]);
 
   const currentEvent = sortedEvents[activeIndex] || null;
 
@@ -619,6 +656,26 @@ const ViewOnMap = () => {
             </Typography>
           )}
         </div>
+        <ToggleButtonGroup
+          className={classes.modeToggle}
+          value={viewMode}
+          exclusive
+          size="small"
+          onChange={(_, v) => { if (v) setViewMode(v); }}
+        >
+          <Tooltip title="Show all markers at once">
+            <ToggleButton value="overview">
+              <MapIcon sx={{ fontSize: '0.85rem', mr: 0.5 }} />
+              Overview
+            </ToggleButton>
+          </Tooltip>
+          <Tooltip title="Progressive replay mode">
+            <ToggleButton value="replay">
+              <PlayCircleOutlineIcon sx={{ fontSize: '0.85rem', mr: 0.5 }} />
+              Replay
+            </ToggleButton>
+          </Tooltip>
+        </ToggleButtonGroup>
       </div>
 
       <div className={classes.mapContainer}>
