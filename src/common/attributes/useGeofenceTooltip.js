@@ -19,6 +19,7 @@ const useGeofenceTooltip = (map, layerId = 'geofences-fill') => {
 
   const cache = useRef({});
   const hoveredId = useRef(null);
+  const sourceId = useRef(null);
 
   const getTodayRange = () => {
     const now = new Date();
@@ -33,12 +34,7 @@ const useGeofenceTooltip = (map, layerId = 'geofences-fill') => {
     }
 
     const { from, to } = getTodayRange();
-
-    const params = new URLSearchParams({
-      from,
-      to,
-      geofenceId,
-    });
+    const params = new URLSearchParams({ from, to, geofenceId });
     params.append('type', 'geofenceEnter');
     params.append('type', 'geofenceExit');
 
@@ -49,10 +45,8 @@ const useGeofenceTooltip = (map, layerId = 'geofences-fill') => {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
     const events = await response.json();
-
     const entries = events.filter((e) => e.type === 'geofenceEnter').length;
     const exits = events.filter((e) => e.type === 'geofenceExit').length;
-
     const sorted = [...events].sort((a, b) => new Date(b.eventTime) - new Date(a.eventTime));
     const lastDeviceId = sorted[0]?.deviceId ?? null;
 
@@ -61,24 +55,60 @@ const useGeofenceTooltip = (map, layerId = 'geofences-fill') => {
     return result;
   }, []);
 
+  const clearHoveredFeature = useCallback(() => {
+    if (hoveredId.current !== null && sourceId.current) {
+      map.setFeatureState(
+        { source: sourceId.current, id: hoveredId.current },
+        { hovered: false },
+      );
+    }
+  }, [map]);
+
   useEffect(() => {
-    if (!map) return;
+    if (!map) return undefined;
 
     const handleMouseMove = async (e) => {
-      const feature = e.features?.[0];
-      if (!feature) return;
-
-      const { id: geofenceId, name: geofenceName } = feature.properties;
-
       const x = e.originalEvent.clientX;
       const y = e.originalEvent.clientY;
 
-      if (hoveredId.current === geofenceId) {
+      const feature = e.features?.[0];
+
+      if (!feature) {
+        if (hoveredId.current !== null) {
+          clearHoveredFeature();
+          hoveredId.current = null;
+          map.getCanvas().style.cursor = '';
+          setTooltip({
+            visible: false,
+            x: 0,
+            y: 0,
+            geofenceName: '',
+            entries: null,
+            exits: null,
+            lastVehicle: null,
+            loading: false,
+          });
+        }
+        return;
+      }
+
+      const featureId = feature.id;
+      const geofenceId = feature.properties.id;
+      const geofenceName = feature.properties.name;
+      sourceId.current = feature.layer.source;
+
+      if (hoveredId.current === featureId) {
         setTooltip((prev) => ({ ...prev, x, y }));
         return;
       }
 
-      hoveredId.current = geofenceId;
+      clearHoveredFeature();
+      map.setFeatureState(
+        { source: sourceId.current, id: featureId },
+        { hovered: true },
+      );
+
+      hoveredId.current = featureId;
       map.getCanvas().style.cursor = 'pointer';
 
       setTooltip({
@@ -95,36 +125,45 @@ const useGeofenceTooltip = (map, layerId = 'geofences-fill') => {
       try {
         const { entries, exits, lastDeviceId } = await fetchActivity(geofenceId);
 
-        if (hoveredId.current !== geofenceId) return;
+        if (hoveredId.current !== featureId) return;
 
         const lastVehicle = lastDeviceId
           ? (devices[lastDeviceId]?.name ?? `Device ${lastDeviceId}`)
           : null;
 
         setTooltip((prev) => ({
-          ...prev,
-          entries,
-          exits,
-          lastVehicle,
-          loading: false,
+          ...prev, entries, exits, lastVehicle, loading: false,
         }));
       } catch {
-        if (hoveredId.current !== geofenceId) return;
+        if (hoveredId.current !== featureId) return;
         setTooltip((prev) => ({ ...prev, loading: false, entries: 0, exits: 0 }));
       }
     };
 
     const handleMouseLeave = () => {
+      clearHoveredFeature();
       hoveredId.current = null;
       map.getCanvas().style.cursor = '';
       setTooltip({
-        visible: false, x: 0, y: 0, geofenceName: '', entries: null, exits: null, lastVehicle: null, loading: false,
+        visible: false,
+        x: 0,
+        y: 0,
+        geofenceName: '',
+        entries: null,
+        exits: null,
+        lastVehicle: null,
+        loading: false,
       });
     };
 
     map.on('mousemove', layerId, handleMouseMove);
     map.on('mouseleave', layerId, handleMouseLeave);
-  }, [map, layerId, fetchActivity, devices]);
+
+    return () => {
+      map.off('mousemove', layerId, handleMouseMove);
+      map.off('mouseleave', layerId, handleMouseLeave);
+    };
+  }, [map, layerId, fetchActivity, devices, clearHoveredFeature]);
 
   return tooltip;
 };

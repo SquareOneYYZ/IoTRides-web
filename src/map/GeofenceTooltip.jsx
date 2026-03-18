@@ -1,39 +1,65 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { makeStyles } from '@mui/styles';
 import { CircularProgress } from '@mui/material';
 
-const TOOLTIP_WIDTH = 200;
-const TOOLTIP_HEIGHT = 110;
+const TOOLTIP_WIDTH = 160;
+const TOOLTIP_HEIGHT = 100;
 const OFFSET = 14;
+const MAX_NAME_LENGTH = 20; // characters before truncating
 
 const useStyles = makeStyles((theme) => ({
   root: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
     position: 'fixed',
-    pointerEvents: 'none',
+    pointerEvents: 'none', // tooltip itself is non-interactive
     zIndex: 9999,
-    background: theme.palette.background.paper,
+    background: '#212121',
     border: `1px solid ${theme.palette.divider}`,
     borderRadius: theme.shape.borderRadius,
     padding: theme.spacing(1.25, 1.5),
-    minWidth: TOOLTIP_WIDTH,
+    width: TOOLTIP_WIDTH,
     boxShadow: theme.shadows[3],
   },
   name: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: 600,
     color: theme.palette.text.primary,
     marginBottom: theme.spacing(1),
     borderBottom: `1px solid ${theme.palette.divider}`,
     paddingBottom: theme.spacing(0.75),
+    width: '100%',
+    textAlign: 'center',
+    whiteSpace: 'nowrap', // single line
+    overflow: 'hidden',
+    textOverflow: 'ellipsis', // adds ...
+  },
+  nameExpanded: {
+    // applied when full name popover is shown
+    fontSize: 11,
+    fontWeight: 500,
+    color: theme.palette.text.primary,
+    marginTop: theme.spacing(0.5),
+    padding: theme.spacing(0.5, 0.75),
+    background: theme.palette.action.hover,
+    borderRadius: theme.shape.borderRadius,
+    width: '100%',
+    textAlign: 'center',
+    wordBreak: 'break-word',
+    whiteSpace: 'normal',
+    lineHeight: 1.4,
   },
   statsRow: {
     display: 'flex',
     gap: theme.spacing(2),
-    marginBottom: theme.spacing(0.75),
   },
   stat: {
     display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     flexDirection: 'column',
   },
   statLabel: {
@@ -43,7 +69,7 @@ const useStyles = makeStyles((theme) => ({
     letterSpacing: '0.05em',
   },
   statValue: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: 700,
     lineHeight: 1.2,
   },
@@ -52,6 +78,7 @@ const useStyles = makeStyles((theme) => ({
   lastVehicle: {
     fontSize: 11,
     color: theme.palette.text.secondary,
+    marginTop: theme.spacing(0.75),
     '& strong': { color: theme.palette.text.primary },
   },
   loader: {
@@ -77,14 +104,29 @@ const GeofenceTooltip = ({
   visible, x, y, geofenceName, entries, exits, lastVehicle, loading,
 }) => {
   const classes = useStyles();
+  const [showFullName, setShowFullName] = useState(false);
 
   if (!visible) return null;
 
   const { left, top } = getPosition(x, y);
+  const isTruncated = geofenceName?.length > MAX_NAME_LENGTH;
 
   return createPortal(
     <div className={classes.root} style={{ left, top }}>
-      <div className={classes.name}>{geofenceName}</div>
+      <div
+        className={classes.name}
+        // pointer-events only on the name span so hover works
+        style={{ pointerEvents: isTruncated ? 'auto' : 'none', cursor: isTruncated ? 'default' : 'inherit' }}
+        onMouseEnter={() => isTruncated && setShowFullName(true)}
+        onMouseLeave={() => setShowFullName(false)}
+      >
+        {geofenceName}
+      </div>
+
+      {/* Full name expands below when hovering the truncated name */}
+      {isTruncated && showFullName && (
+        <div className={classes.nameExpanded}>{geofenceName}</div>
+      )}
 
       {loading ? (
         <div className={classes.loader}>
