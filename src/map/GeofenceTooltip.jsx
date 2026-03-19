@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { createPortal } from 'react-dom';
 import { makeStyles } from '@mui/styles';
 import { CircularProgress } from '@mui/material';
@@ -6,7 +6,6 @@ import { CircularProgress } from '@mui/material';
 const TOOLTIP_WIDTH = 160;
 const TOOLTIP_HEIGHT = 100;
 const OFFSET = 14;
-const MAX_NAME_LENGTH = 20; // characters before truncating
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -15,7 +14,7 @@ const useStyles = makeStyles((theme) => ({
     alignItems: 'center',
     justifyContent: 'center',
     position: 'fixed',
-    pointerEvents: 'none', // tooltip itself is non-interactive
+    pointerEvents: 'none',
     zIndex: 9999,
     background: '#212121',
     border: `1px solid ${theme.palette.divider}`,
@@ -33,23 +32,8 @@ const useStyles = makeStyles((theme) => ({
     paddingBottom: theme.spacing(0.75),
     width: '100%',
     textAlign: 'center',
-    whiteSpace: 'nowrap', // single line
-    overflow: 'hidden',
-    textOverflow: 'ellipsis', // adds ...
-  },
-  nameExpanded: {
-    // applied when full name popover is shown
-    fontSize: 11,
-    fontWeight: 500,
-    color: theme.palette.text.primary,
-    marginTop: theme.spacing(0.5),
-    padding: theme.spacing(0.5, 0.75),
-    background: theme.palette.action.hover,
-    borderRadius: theme.shape.borderRadius,
-    width: '100%',
-    textAlign: 'center',
-    wordBreak: 'break-word',
-    whiteSpace: 'normal',
+    whiteSpace: 'normal', // ← allows wrapping
+    wordBreak: 'break-word', // ← breaks long single words
     lineHeight: 1.4,
   },
   statsRow: {
@@ -104,29 +88,14 @@ const GeofenceTooltip = ({
   visible, x, y, geofenceName, entries, exits, lastVehicle, loading,
 }) => {
   const classes = useStyles();
-  const [showFullName, setShowFullName] = useState(false);
 
   if (!visible) return null;
 
   const { left, top } = getPosition(x, y);
-  const isTruncated = geofenceName?.length > MAX_NAME_LENGTH;
 
   return createPortal(
     <div className={classes.root} style={{ left, top }}>
-      <div
-        className={classes.name}
-        // pointer-events only on the name span so hover works
-        style={{ pointerEvents: isTruncated ? 'auto' : 'none', cursor: isTruncated ? 'default' : 'inherit' }}
-        onMouseEnter={() => isTruncated && setShowFullName(true)}
-        onMouseLeave={() => setShowFullName(false)}
-      >
-        {geofenceName}
-      </div>
-
-      {/* Full name expands below when hovering the truncated name */}
-      {isTruncated && showFullName && (
-        <div className={classes.nameExpanded}>{geofenceName}</div>
-      )}
+      <div className={classes.name}>{geofenceName}</div>
 
       {loading ? (
         <div className={classes.loader}>
