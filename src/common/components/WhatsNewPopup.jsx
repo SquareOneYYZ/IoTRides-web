@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import {
   Dialog,
   DialogContent,
@@ -14,14 +15,19 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 const useStyles = makeStyles((theme) => ({
   paper: {
     overflow: 'hidden',
-    minWidth: 780,
-    minHeight: 520,
+    width: '100%',
+    maxWidth: 680,
+    margin: theme.spacing(2),
+    [theme.breakpoints.down('sm')]: {
+      margin: theme.spacing(1),
+      maxWidth: '100%',
+    },
   },
   header: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: theme.spacing(1, 1, 1, 2),
+    padding: theme.spacing(1.5, 2),
     borderBottom: `1px solid ${theme.palette.divider}`,
     backgroundColor: theme.palette.background.paper,
   },
@@ -32,52 +38,70 @@ const useStyles = makeStyles((theme) => ({
   },
   headerIcon: {
     color: theme.palette.primary.main,
-    fontSize: 22,
+    fontSize: 20,
+  },
+  headerTitle: {
+    fontWeight: 700,
+    fontSize: 15,
   },
   content: {
-    padding: 0,
-    backgroundColor: theme.palette.background.default,
-    maxHeight: 460,
+    padding: '0 !important',
     overflowY: 'auto',
+    '&::-webkit-scrollbar': { width: 4 },
+    '&::-webkit-scrollbar-thumb': {
+      backgroundColor: theme.palette.divider,
+      borderRadius: 4,
+    },
   },
   row: {
     display: 'flex',
+    flexDirection: 'column',
+    padding: theme.spacing(1.5, 2.5),
     borderBottom: `1px solid ${theme.palette.divider}`,
+    backgroundColor: theme.palette.background.paper,
     '&:last-child': {
       borderBottom: 'none',
     },
   },
-  leftPanel: {
-    width: 110,
-    flexShrink: 0,
+  featureRow: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: theme.spacing(2),
-    borderRight: `1px solid ${theme.palette.divider}`,
-    backgroundColor: theme.palette.background.paper,
+    gap: theme.spacing(1),
+    marginBottom: theme.spacing(0.4),
   },
-  versionText: {
-    fontWeight: 700,
-    fontSize: 14,
-    color: theme.palette.primary.main,
-  },
-  rightPanel: {
-    flex: 1,
-    padding: theme.spacing(2, 3),
-    display: 'flex',
-    flexDirection: 'column',
-    gap: theme.spacing(0.5),
+  bullet: {
+    width: 7,
+    height: 7,
+    borderRadius: '50%',
+    flexShrink: 0,
+    backgroundColor: theme.palette.primary.main,
   },
   featureTitle: {
     fontWeight: 700,
+    fontSize: 13,
+  },
+  versionText: {
+    fontSize: 11,
+    fontWeight: 600,
+    color: theme.palette.primary.main,
+    letterSpacing: 0.3,
+    display: 'inline-block',
+    border: `1.5px solid ${theme.palette.primary.main}`,
+    borderRadius: 20,
+    padding: theme.spacing(0.1, 0.8),
+    flexShrink: 0,
   },
   detailsText: {
-    lineHeight: 1.7,
+    fontSize: 12,
+    lineHeight: 1.6,
+    color: theme.palette.text.secondary,
+    paddingLeft: theme.spacing(2.2),
   },
   footer: {
     display: 'flex',
     justifyContent: 'flex-end',
+    alignItems: 'center',
+    gap: theme.spacing(1),
     padding: theme.spacing(1, 2),
     borderTop: `1px solid ${theme.palette.divider}`,
     backgroundColor: theme.palette.background.paper,
@@ -85,7 +109,7 @@ const useStyles = makeStyles((theme) => ({
   backdrop: {
     backdropFilter: 'blur(4px)',
     WebkitBackdropFilter: 'blur(4px)',
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
 }));
 
@@ -93,69 +117,86 @@ const WhatsNewPopup = () => {
   const classes = useStyles();
   const [open, setOpen] = useState(false);
   const [features, setFeatures] = useState([]);
+  const [latestFeature, setLatestFeature] = useState(null);
+
+  const userId = useSelector((state) => state.session.user?.id);
+  console.log(userId);
 
   useEffect(() => {
     fetch('/api/feature')
       .then((res) => res.json())
       .then((data) => {
         if (data && data.length > 0) {
+          const latest = data.reduce((max, item) => (item.versionNo > max.versionNo ? item : max), data[0]);
           setFeatures(data);
+          setLatestFeature(latest);
           setOpen(true);
         }
       })
       .catch((err) => console.error('[WhatsNewPopup]', err));
   }, []);
 
-  const handleClose = () => setOpen(false);
+  const handleGotIt = async () => {
+    try {
+      await fetch('/api/feature/permission', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, featureId: latestFeature.id }),
+      });
+    } catch (err) {
+      console.error('[WhatsNewPopup] permission post failed:', err);
+    } finally {
+      setOpen(false);
+    }
+  };
+
+  const handleDismiss = () => setOpen(false);
 
   return (
     <Dialog
       open={open}
-      onClose={handleClose}
+      onClose={handleDismiss}
       maxWidth="md"
+      fullWidth
       PaperProps={{ className: classes.paper }}
       BackdropProps={{ className: classes.backdrop }}
     >
-      {/* ── Header ── */}
       <div className={classes.header}>
         <div className={classes.headerLeft}>
           <AutoAwesomeIcon className={classes.headerIcon} />
-          <Typography variant="body1" fontWeight={700}>
+          <Typography className={classes.headerTitle}>
             Whats New
           </Typography>
         </div>
-        <IconButton size="small" onClick={handleClose}>
+        <IconButton size="small" onClick={handleDismiss}>
           <CloseIcon fontSize="small" />
         </IconButton>
       </div>
 
-      {/* ── One block per API object ── */}
       <DialogContent className={classes.content}>
         {features.map((item) => (
           <Box key={item.id} className={classes.row}>
-            {/* Left — versionNo */}
-            <div className={classes.leftPanel}>
+            <div className={classes.featureRow}>
+              <span className={classes.bullet} />
+              <Typography className={classes.featureTitle}>
+                {item.feature}
+              </Typography>
               <Typography className={classes.versionText}>
                 {`v${item.versionNo}`}
               </Typography>
             </div>
-
-            {/* Right — feature + details */}
-            <div className={classes.rightPanel}>
-              <Typography variant="body2" className={classes.featureTitle}>
-                {item.feature}
-              </Typography>
-              <Typography variant="body2" color="textSecondary" className={classes.detailsText}>
-                {item.details}
-              </Typography>
-            </div>
+            <Typography className={classes.detailsText}>
+              {item.details}
+            </Typography>
           </Box>
         ))}
       </DialogContent>
 
-      {/* ── Footer ── */}
       <div className={classes.footer}>
-        <Button size="small" variant="contained" onClick={handleClose} disableElevation>
+        <Button size="small" onClick={handleDismiss} color="inherit">
+          Dismiss
+        </Button>
+        <Button size="small" variant="contained" onClick={handleGotIt} disableElevation>
           Got it!
         </Button>
       </div>
