@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import Draggable from 'react-draggable';
@@ -18,6 +18,9 @@ import {
   TableFooter,
   Link,
   Tooltip,
+  Divider,
+  Box,
+  Skeleton,
 } from '@mui/material';
 import makeStyles from '@mui/styles/makeStyles';
 import CloseIcon from '@mui/icons-material/Close';
@@ -27,6 +30,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PendingIcon from '@mui/icons-material/Pending';
 import LinkIcon from '@mui/icons-material/Link';
+import NotificationsIcon from '@mui/icons-material/Notifications';
 
 import { useTranslation } from './LocalizationProvider';
 import RemoveDialog from './RemoveDialog';
@@ -36,11 +40,12 @@ import usePositionAttributes from '../attributes/usePositionAttributes';
 import { devicesActions } from '../../store';
 import { useCatch, useCatchCallback } from '../../reactHelper';
 import { useAttributePreference } from '../util/preferences';
+import { formatTime } from '../util/formatter';
 
 const useStyles = makeStyles((theme) => ({
   card: {
     pointerEvents: 'auto',
-    width: theme.dimensions.popupMaxWidth,
+    width: 480,
   },
   media: {
     height: theme.dimensions.popupImageHeight,
@@ -58,13 +63,10 @@ const useStyles = makeStyles((theme) => ({
     alignItems: 'center',
     padding: theme.spacing(1, 1, 0, 2),
     cursor: 'move',
-
   },
   content: {
     paddingTop: theme.spacing(1),
     paddingBottom: theme.spacing(1),
-    maxHeight: theme.dimensions.cardContentMaxHeight,
-    overflow: 'auto',
   },
   icon: {
     width: '25px',
@@ -101,11 +103,65 @@ const useStyles = makeStyles((theme) => ({
     },
     transform: 'translateX(-50%)',
   }),
+  eventsSection: {
+  },
+  eventsSectionHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing(0.5),
+    paddingBottom: theme.spacing(0.5),
+  },
+  eventsSectionTitle: {
+    fontSize: '0.75rem',
+    fontWeight: 600,
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+    color: theme.palette.text.secondary,
+  },
+  eventsIcon: {
+    fontSize: '0.85rem',
+    color: theme.palette.text.secondary,
+  },
+  eventRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: theme.spacing(0.4, 0),
+    borderBottom: `1px solid ${theme.palette.divider}`,
+    '&:last-child': {
+      borderBottom: 'none',
+    },
+  },
+  eventType: {
+    fontSize: '0.8rem',
+    color: theme.palette.text.primary,
+    flex: 1,
+    textTransform: 'capitalize',
+  },
+  eventTime: {
+    fontSize: '0.75rem',
+    color: theme.palette.text.secondary,
+    whiteSpace: 'nowrap',
+    marginLeft: theme.spacing(1),
+  },
+  noEventsText: {
+    fontSize: '0.78rem',
+    color: theme.palette.text.disabled,
+    fontStyle: 'italic',
+    padding: theme.spacing(0.5, 0),
+  },
+  skeletonRow: {
+    marginBottom: theme.spacing(0.5),
+  },
 }));
+
+const formatEventType = (type = '') => type
+  .replace(/([A-Z])/g, ' $1')
+  .replace(/^./, (c) => c.toUpperCase())
+  .trim();
 
 const StatusRow = ({ name, content }) => {
   const classes = useStyles();
-
   return (
     <TableRow>
       <TableCell className={classes.cell}>
@@ -118,6 +174,96 @@ const StatusRow = ({ name, content }) => {
   );
 };
 
+const RecentEventsSection = ({ deviceId }) => {
+  const classes = useStyles();
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchEvents = async () => {
+      setLoading(true);
+      try {
+        const to = new Date();
+        const from = new Date(to.getTime() - 24 * 60 * 60 * 1000); // 24 hrs ago
+
+        const ALL_EVENT_TYPES = [
+          'deviceOnline', 'deviceUnknown', 'deviceOffline',
+          'deviceInactive', 'deviceMoving', 'deviceStopped',
+          'deviceOverspeed', 'deviceFuelDrop', 'deviceFuelIncrease',
+          'commandResult', 'geofenceEnter', 'geofenceExit',
+          'alarm', 'ignitionOn', 'ignitionOff',
+          'maintenance', 'textMessage', 'driverChanged',
+        ];
+
+        const params = new URLSearchParams({
+          deviceId,
+          from: from.toISOString(),
+          to: to.toISOString(),
+        });
+        ALL_EVENT_TYPES.forEach((type) => params.append('type', type));
+
+        const response = await fetch(`/api/reports/events?${params.toString()}`, { headers: { Accept: 'application/json' } });
+        if (!response.ok) throw new Error(await response.text());
+
+        const data = await response.json();
+        if (!cancelled) {
+          const sorted = [...data].sort(
+            (a, b) => new Date(b.eventTime) - new Date(a.eventTime),
+          );
+          setEvents(sorted.slice(0, 3));
+        }
+      } catch (_) {
+        if (!cancelled) setEvents([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    if (deviceId) fetchEvents();
+
+    return () => { cancelled = true; };
+  }, [deviceId]);
+
+  const renderEventRows = () => {
+    if (loading) {
+      return [0, 1, 2].map((i) => (
+        <Skeleton key={i} variant="text" height={24} className={classes.skeletonRow} />
+      ));
+    }
+    if (events.length === 0) {
+      return (
+        <Typography className={classes.noEventsText}>
+          No alerts in the last 24 hours
+        </Typography>
+      );
+    }
+    return events.map((event) => (
+      <Box key={event.id} className={classes.eventRow}>
+        <Typography className={classes.eventType}>
+          {formatEventType(event.type)}
+        </Typography>
+        <Typography className={classes.eventTime}>
+          {formatTime(event.eventTime, 'minutes')}
+        </Typography>
+      </Box>
+    ));
+  };
+
+  return (
+    <Box className={classes.eventsSection}>
+      <Box className={classes.eventsSectionHeader}>
+        <NotificationsIcon className={classes.eventsIcon} />
+        <Typography className={classes.eventsSectionTitle}>
+          Recent Alerts (24h)
+        </Typography>
+      </Box>
+      {renderEventRows()}
+    </Box>
+  );
+};
+
 const StatusCard = ({ deviceId, position, onClose, disableActions, desktopPadding = 0 }) => {
   const classes = useStyles({ desktopPadding });
   const navigate = useNavigate();
@@ -125,7 +271,6 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, desktopPaddin
   const t = useTranslation();
 
   const admin = useAdministrator();
-
   const deviceReadonly = useDeviceReadonly();
 
   const shareDisabled = useSelector((state) => state.session.server.attributes.disableShare);
@@ -141,7 +286,6 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, desktopPaddin
   const navigationAppTitle = useAttributePreference('navigationAppTitle');
 
   const [anchorEl, setAnchorEl] = useState(null);
-
   const [removing, setRemoving] = useState(false);
 
   const handleRemove = useCatch(async (removed) => {
@@ -186,20 +330,14 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, desktopPaddin
     <>
       <div className={classes.root}>
         {device && (
-          <Draggable
-            handle={`.${classes.media}, .${classes.header}`}
-          >
+          <Draggable handle={`.${classes.media}, .${classes.header}`}>
             <Card elevation={3} className={classes.card}>
               {deviceImage ? (
                 <CardMedia
                   className={classes.media}
                   image={`/api/media/${device.uniqueId}/${deviceImage}`}
                 >
-                  <IconButton
-                    size="small"
-                    onClick={onClose}
-                    onTouchStart={onClose}
-                  >
+                  <IconButton size="small" onClick={onClose} onTouchStart={onClose}>
                     <CloseIcon fontSize="small" className={classes.mediaButton} />
                   </IconButton>
                 </CardMedia>
@@ -208,46 +346,64 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, desktopPaddin
                   <Typography variant="body2" color="textSecondary">
                     {device.name}
                   </Typography>
-                  <IconButton
-                    size="small"
-                    onClick={onClose}
-                    onTouchStart={onClose}
-                  >
+                  <IconButton size="small" onClick={onClose} onTouchStart={onClose}>
                     <CloseIcon fontSize="small" />
                   </IconButton>
                 </div>
               )}
+
               {position && (
                 <CardContent className={classes.content}>
-                  <Table size="small" classes={{ root: classes.table }}>
-                    <TableBody>
-                      {positionItems.split(',').filter((key) => position.hasOwnProperty(key) || position.attributes.hasOwnProperty(key)).map((key) => (
-                        <StatusRow
-                          key={key}
-                          name={positionAttributes[key]?.name || key}
-                          content={(
-                            <PositionValue
-                              position={position}
-                              property={position.hasOwnProperty(key) ? key : null}
-                              attribute={position.hasOwnProperty(key) ? null : key}
-                            />
-                          )}
-                        />
-                      ))}
+                  <Box display="flex" gap={2} alignItems="flex-start">
+                    {/* ── Left: Position attributes ── */}
+                    <Box flex={1} minWidth={0}>
+                      <Table size="small" classes={{ root: classes.table }}>
+                        <TableBody>
+                          {positionItems
+                            .split(',')
+                            .filter(
+                              (key) => position.hasOwnProperty(key)
+                                || position.attributes.hasOwnProperty(key),
+                            )
+                            .map((key) => (
+                              <StatusRow
+                                key={key}
+                                name={positionAttributes[key]?.name || key}
+                                content={(
+                                  <PositionValue
+                                    position={position}
+                                    property={position.hasOwnProperty(key) ? key : null}
+                                    attribute={position.hasOwnProperty(key) ? null : key}
+                                  />
+                                )}
+                              />
+                            ))}
+                        </TableBody>
+                        <TableFooter>
+                          <TableRow>
+                            <TableCell colSpan={2} className={classes.cell}>
+                              <Typography variant="body2">
+                                <Link component={RouterLink} to={`/position/${position.id}`}>
+                                  {t('sharedShowDetails')}
+                                </Link>
+                              </Typography>
+                            </TableCell>
+                          </TableRow>
+                        </TableFooter>
+                      </Table>
+                    </Box>
 
-                    </TableBody>
-                    <TableFooter>
-                      <TableRow>
-                        <TableCell colSpan={2} className={classes.cell}>
-                          <Typography variant="body2">
-                            <Link component={RouterLink} to={`/position/${position.id}`}>{t('sharedShowDetails')}</Link>
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
-                    </TableFooter>
-                  </Table>
+                    {/* ── Vertical divider ── */}
+                    <Divider orientation="vertical" flexItem />
+
+                    {/* ── Right: Recent events ── */}
+                    <Box flex={1} minWidth={0}>
+                      <RecentEventsSection deviceId={deviceId} />
+                    </Box>
+                  </Box>
                 </CardContent>
               )}
+
               <CardActions classes={{ root: classes.actions }} disableSpacing>
                 <Tooltip title={t('sharedConnections')}>
                   <IconButton
@@ -291,33 +447,65 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, desktopPaddin
                   </IconButton>
                 </Tooltip>
                 {admin && (
-                <Tooltip title={t('sharedRemove')}>
-                  <IconButton
-                    color="error"
-                    onClick={() => setRemoving(true)}
-                    disabled={disableActions || deviceReadonly}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </Tooltip>
+                  <Tooltip title={t('sharedRemove')}>
+                    <IconButton
+                      color="error"
+                      onClick={() => setRemoving(true)}
+                      disabled={disableActions || deviceReadonly}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Tooltip>
                 )}
               </CardActions>
             </Card>
           </Draggable>
         )}
       </div>
+
       {position && (
         <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
           <MenuItem onClick={handleGeofence}>{t('sharedCreateGeofence')}</MenuItem>
-          <MenuItem component="a" target="_blank" href={`https://www.google.com/maps/search/?api=1&query=${position.latitude}%2C${position.longitude}`}>{t('linkGoogleMaps')}</MenuItem>
-          <MenuItem component="a" target="_blank" href={`http://maps.apple.com/?ll=${position.latitude},${position.longitude}`}>{t('linkAppleMaps')}</MenuItem>
-          <MenuItem component="a" target="_blank" href={`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${position.latitude}%2C${position.longitude}&heading=${position.course}`}>{t('linkStreetView')}</MenuItem>
-          {navigationAppTitle && <MenuItem component="a" target="_blank" href={navigationAppLink.replace('{latitude}', position.latitude).replace('{longitude}', position.longitude)}>{navigationAppTitle}</MenuItem>}
+          <MenuItem
+            component="a"
+            target="_blank"
+            href={`https://www.google.com/maps/search/?api=1&query=${position.latitude}%2C${position.longitude}`}
+          >
+            {t('linkGoogleMaps')}
+          </MenuItem>
+          <MenuItem
+            component="a"
+            target="_blank"
+            href={`http://maps.apple.com/?ll=${position.latitude},${position.longitude}`}
+          >
+            {t('linkAppleMaps')}
+          </MenuItem>
+          <MenuItem
+            component="a"
+            target="_blank"
+            href={`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${position.latitude}%2C${position.longitude}&heading=${position.course}`}
+          >
+            {t('linkStreetView')}
+          </MenuItem>
+          {navigationAppTitle && (
+            <MenuItem
+              component="a"
+              target="_blank"
+              href={navigationAppLink
+                .replace('{latitude}', position.latitude)
+                .replace('{longitude}', position.longitude)}
+            >
+              {navigationAppTitle}
+            </MenuItem>
+          )}
           {!shareDisabled && !user.temporary && (
-            <MenuItem onClick={() => navigate(`/settings/device/${deviceId}/share`)}><Typography color="secondary">{t('deviceShare')}</Typography></MenuItem>
+            <MenuItem onClick={() => navigate(`/settings/device/${deviceId}/share`)}>
+              <Typography color="secondary">{t('deviceShare')}</Typography>
+            </MenuItem>
           )}
         </Menu>
       )}
+
       <RemoveDialog
         open={removing}
         endpoint="devices"
