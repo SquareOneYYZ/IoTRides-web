@@ -5,7 +5,6 @@ import Draggable from 'react-draggable';
 import {
   Card,
   CardContent,
-  Typography,
   CardActions,
   IconButton,
   Table,
@@ -18,9 +17,11 @@ import {
   TableFooter,
   Link,
   Tooltip,
-  Divider,
   Box,
   Skeleton,
+  Divider,
+  Typography,
+  Badge,
 } from '@mui/material';
 import makeStyles from '@mui/styles/makeStyles';
 import CloseIcon from '@mui/icons-material/Close';
@@ -31,7 +32,8 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import PendingIcon from '@mui/icons-material/Pending';
 import LinkIcon from '@mui/icons-material/Link';
 import NotificationsIcon from '@mui/icons-material/Notifications';
-
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import { useTranslation } from './LocalizationProvider';
 import RemoveDialog from './RemoveDialog';
 import PositionValue from './PositionValue';
@@ -42,10 +44,12 @@ import { useCatch, useCatchCallback } from '../../reactHelper';
 import { useAttributePreference } from '../util/preferences';
 import { formatTime } from '../util/formatter';
 
+const DRAWER_WIDTH = 240;
+
 const useStyles = makeStyles((theme) => ({
   card: {
     pointerEvents: 'auto',
-    width: 480,
+    position: 'relative',
   },
   media: {
     height: theme.dimensions.popupImageHeight,
@@ -67,11 +71,6 @@ const useStyles = makeStyles((theme) => ({
   content: {
     paddingTop: theme.spacing(1),
     paddingBottom: theme.spacing(1),
-  },
-  icon: {
-    width: '25px',
-    height: '25px',
-    filter: 'brightness(0) invert(1)',
   },
   table: {
     '& .MuiTableCell-sizeSmall': {
@@ -103,25 +102,71 @@ const useStyles = makeStyles((theme) => ({
     },
     transform: 'translateX(-50%)',
   }),
-  eventsSection: {
+
+  cardRow: {
+    display: 'flex',
+    alignItems: 'stretch',
+    pointerEvents: 'auto',
   },
-  eventsSectionHeader: {
+
+  chevronTab: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 20,
+    cursor: 'pointer',
+    backgroundColor: theme.palette.background.paper,
+    borderLeft: `1px solid ${theme.palette.divider}`,
+    borderRadius: `0 ${theme.shape.borderRadius}px ${theme.shape.borderRadius}px 0`,
+    boxShadow: theme.shadows[3],
+  },
+
+  eventsPanel: {
+    width: DRAWER_WIDTH,
+    overflow: 'hidden',
+    transition: theme.transitions.create('max-width', {
+      easing: theme.transitions.easing.easeInOut,
+      duration: theme.transitions.duration.standard,
+    }),
+    backgroundColor: theme.palette.background.paper,
+    boxShadow: theme.shadows[3],
+    borderRadius: theme.shape.borderRadius,
+    marginLeft: theme.spacing(0.5),
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  eventsPanelOpen: {
+    maxWidth: DRAWER_WIDTH,
+  },
+  eventsPanelClosed: {
+    maxWidth: 0,
+  },
+
+  eventsPanelHeader: {
     display: 'flex',
     alignItems: 'center',
     gap: theme.spacing(0.5),
-    paddingBottom: theme.spacing(0.5),
+    padding: theme.spacing(1, 1.5, 0.5),
   },
-  eventsSectionTitle: {
-    fontSize: '0.75rem',
+  eventsPanelTitle: {
+    fontSize: '0.72rem',
     fontWeight: 600,
     textTransform: 'uppercase',
     letterSpacing: '0.05em',
     color: theme.palette.text.secondary,
+    whiteSpace: 'nowrap',
   },
-  eventsIcon: {
+  eventsPanelIcon: {
     fontSize: '0.85rem',
     color: theme.palette.text.secondary,
   },
+  eventsPanelContent: {
+    padding: theme.spacing(0.5, 1.5, 1.5),
+    flex: 1,
+    overflowY: 'auto',
+    minWidth: DRAWER_WIDTH - theme.spacing(3),
+  },
+  eventsSection: {},
   eventRow: {
     display: 'flex',
     justifyContent: 'space-between',
@@ -133,19 +178,19 @@ const useStyles = makeStyles((theme) => ({
     },
   },
   eventType: {
-    fontSize: '0.8rem',
+    fontSize: '0.78rem',
     color: theme.palette.text.primary,
     flex: 1,
     textTransform: 'capitalize',
   },
   eventTime: {
-    fontSize: '0.75rem',
+    fontSize: '0.72rem',
     color: theme.palette.text.secondary,
     whiteSpace: 'nowrap',
     marginLeft: theme.spacing(1),
   },
   noEventsText: {
-    fontSize: '0.78rem',
+    fontSize: '0.75rem',
     color: theme.palette.text.disabled,
     fontStyle: 'italic',
     padding: theme.spacing(0.5, 0),
@@ -174,20 +219,18 @@ const StatusRow = ({ name, content }) => {
   );
 };
 
-const RecentEventsSection = ({ deviceId }) => {
+export const RecentEventsSection = ({ deviceId, onCountChange }) => {
   const classes = useStyles();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
-
     const fetchEvents = async () => {
       setLoading(true);
       try {
         const to = new Date();
-        const from = new Date(to.getTime() - 24 * 60 * 60 * 1000); // 24 hrs ago
-
+        const from = new Date(to.getTime() - 24 * 60 * 60 * 1000);
         const ALL_EVENT_TYPES = [
           'deviceOnline', 'deviceUnknown', 'deviceOffline',
           'deviceInactive', 'deviceMoving', 'deviceStopped',
@@ -204,7 +247,9 @@ const RecentEventsSection = ({ deviceId }) => {
         });
         ALL_EVENT_TYPES.forEach((type) => params.append('type', type));
 
-        const response = await fetch(`/api/reports/events?${params.toString()}`, { headers: { Accept: 'application/json' } });
+        const response = await fetch(`/api/reports/events?${params.toString()}`, {
+          headers: { Accept: 'application/json' },
+        });
         if (!response.ok) throw new Error(await response.text());
 
         const data = await response.json();
@@ -212,10 +257,15 @@ const RecentEventsSection = ({ deviceId }) => {
           const sorted = [...data].sort(
             (a, b) => new Date(b.eventTime) - new Date(a.eventTime),
           );
-          setEvents(sorted.slice(0, 3));
+          const top3 = sorted.slice(0, 3);
+          setEvents(top3);
+          if (onCountChange) onCountChange(top3.length);
         }
       } catch (_) {
-        if (!cancelled) setEvents([]);
+        if (!cancelled) {
+          setEvents([]);
+          if (onCountChange) onCountChange(0);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -226,67 +276,122 @@ const RecentEventsSection = ({ deviceId }) => {
     return () => { cancelled = true; };
   }, [deviceId]);
 
-  const renderEventRows = () => {
-    if (loading) {
-      return [0, 1, 2].map((i) => (
-        <Skeleton key={i} variant="text" height={24} className={classes.skeletonRow} />
-      ));
-    }
-    if (events.length === 0) {
-      return (
+  if (loading) {
+    return (
+      <Box className={classes.eventsSection}>
+        {[0, 1, 2].map((i) => (
+          <Skeleton key={i} variant="text" height={24} className={classes.skeletonRow} />
+        ))}
+      </Box>
+    );
+  }
+
+  if (events.length === 0) {
+    return (
+      <Box className={classes.eventsSection}>
         <Typography className={classes.noEventsText}>
           No alerts in the last 24 hours
         </Typography>
-      );
-    }
-    return events.map((event) => (
-      <Box key={event.id} className={classes.eventRow}>
-        <Typography className={classes.eventType}>
-          {formatEventType(event.type)}
-        </Typography>
-        <Typography className={classes.eventTime}>
-          {formatTime(event.eventTime, 'minutes')}
-        </Typography>
       </Box>
-    ));
-  };
+    );
+  }
 
   return (
     <Box className={classes.eventsSection}>
-      <Box className={classes.eventsSectionHeader}>
-        <NotificationsIcon className={classes.eventsIcon} />
-        <Typography className={classes.eventsSectionTitle}>
-          Recent Alerts (24h)
-        </Typography>
-      </Box>
-      {renderEventRows()}
+      {events.map((event) => (
+        <Box key={event.id} className={classes.eventRow}>
+          <Typography className={classes.eventType}>
+            {formatEventType(event.type)}
+          </Typography>
+          <Typography className={classes.eventTime}>
+            {formatTime(event.eventTime, 'minutes')}
+          </Typography>
+        </Box>
+      ))}
     </Box>
   );
 };
 
-const StatusCard = ({ deviceId, position, onClose, disableActions, desktopPadding = 0 }) => {
+const StatusCard = ({
+  deviceId, position, onClose, disableActions, desktopPadding = 0,
+}) => {
   const classes = useStyles({ desktopPadding });
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const t = useTranslation();
+  const [eventCount, setEventCount] = useState(0);
+  const [drawerOpen, setDrawerOpen] = useState(null);
 
+  const t = useTranslation();
   const admin = useAdministrator();
   const deviceReadonly = useDeviceReadonly();
-
   const shareDisabled = useSelector((state) => state.session.server.attributes.disableShare);
   const user = useSelector((state) => state.session.user);
   const device = useSelector((state) => state.devices.items[deviceId]);
-
   const deviceImage = device?.attributes?.deviceImage;
-
   const positionAttributes = usePositionAttributes(t);
   const positionItems = useAttributePreference('positionItems', 'fixTime,address,speed,totalDistance');
-
   const navigationAppLink = useAttributePreference('navigationAppLink');
   const navigationAppTitle = useAttributePreference('navigationAppTitle');
-
   const [anchorEl, setAnchorEl] = useState(null);
   const [removing, setRemoving] = useState(false);
+
+  useEffect(() => {
+    setDrawerOpen(null);
+    if (device) {
+      const dismissed = Object.prototype.hasOwnProperty.call(
+        device.attributes ?? {},
+        'PanelAlert',
+      );
+      setDrawerOpen(!dismissed);
+    }
+  }, [deviceId]);
+
+  const handleCloseDrawer = async () => {
+    setDrawerOpen(false);
+    try {
+      await fetch(`/api/devices/${deviceId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...device,
+          attributes: {
+            ...device.attributes,
+            PanelAlert: true,
+          },
+        }),
+      });
+      const refreshed = await fetch('/api/devices');
+      if (refreshed.ok) {
+        dispatch(devicesActions.refresh(await refreshed.json()));
+      }
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error('Failed to persist PanelAlert:', e);
+    }
+  };
+
+  const handleOpenDrawer = async () => {
+    setDrawerOpen(true);
+    try {
+      const updatedAttributes = { ...device.attributes };
+      delete updatedAttributes.PanelAlert;
+      await fetch(`/api/devices/${deviceId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...device,
+          attributes: updatedAttributes,
+        }),
+      });
+      const refreshed = await fetch('/api/devices');
+      if (refreshed.ok) {
+        dispatch(devicesActions.refresh(await refreshed.json()));
+      }
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error('Failed to remove PanelAlert:', e);
+    }
+  };
 
   const handleRemove = useCatch(async (removed) => {
     if (removed) {
@@ -326,139 +431,167 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, desktopPaddin
     }
   }, [navigate, position]);
 
+  if (drawerOpen === null) return null;
+
   return (
     <>
       <div className={classes.root}>
         {device && (
           <Draggable handle={`.${classes.media}, .${classes.header}`}>
-            <Card elevation={3} className={classes.card}>
-              {deviceImage ? (
-                <CardMedia
-                  className={classes.media}
-                  image={`/api/media/${device.uniqueId}/${deviceImage}`}
-                >
-                  <IconButton size="small" onClick={onClose} onTouchStart={onClose}>
-                    <CloseIcon fontSize="small" className={classes.mediaButton} />
-                  </IconButton>
-                </CardMedia>
-              ) : (
-                <div className={classes.header}>
-                  <Typography variant="body2" color="textSecondary">
-                    {device.name}
-                  </Typography>
-                  <IconButton size="small" onClick={onClose} onTouchStart={onClose}>
-                    <CloseIcon fontSize="small" />
-                  </IconButton>
-                </div>
-              )}
+            <Box className={classes.cardRow}>
+              <Card elevation={3} className={classes.card}>
+                {deviceImage ? (
+                  <CardMedia
+                    className={classes.media}
+                    image={`/api/media/${device.uniqueId}/${deviceImage}`}
+                  >
+                    <IconButton size="small" onClick={onClose} onTouchStart={onClose}>
+                      <CloseIcon fontSize="small" className={classes.mediaButton} />
+                    </IconButton>
+                  </CardMedia>
+                ) : (
+                  <div className={classes.header}>
+                    <Typography variant="body2" color="textSecondary">
+                      {device.name}
+                    </Typography>
+                    <IconButton size="small" onClick={onClose} onTouchStart={onClose}>
+                      <CloseIcon fontSize="small" />
+                    </IconButton>
+                  </div>
+                )}
 
-              {position && (
-                <CardContent className={classes.content}>
-                  <Box display="flex" gap={2} alignItems="flex-start">
-                    {/* ── Left: Position attributes ── */}
-                    <Box flex={1} minWidth={0}>
-                      <Table size="small" classes={{ root: classes.table }}>
-                        <TableBody>
-                          {positionItems
-                            .split(',')
-                            .filter(
-                              (key) => position.hasOwnProperty(key)
-                                || position.attributes.hasOwnProperty(key),
-                            )
-                            .map((key) => (
-                              <StatusRow
-                                key={key}
-                                name={positionAttributes[key]?.name || key}
-                                content={(
-                                  <PositionValue
-                                    position={position}
-                                    property={position.hasOwnProperty(key) ? key : null}
-                                    attribute={position.hasOwnProperty(key) ? null : key}
-                                  />
-                                )}
-                              />
-                            ))}
-                        </TableBody>
-                        <TableFooter>
-                          <TableRow>
-                            <TableCell colSpan={2} className={classes.cell}>
-                              <Typography variant="body2">
-                                <Link component={RouterLink} to={`/position/${position.id}`}>
-                                  {t('sharedShowDetails')}
-                                </Link>
-                              </Typography>
-                            </TableCell>
-                          </TableRow>
-                        </TableFooter>
-                      </Table>
-                    </Box>
+                {position && (
+                  <CardContent className={classes.content}>
+                    <Table size="small" classes={{ root: classes.table }}>
+                      <TableBody>
+                        {positionItems
+                          .split(',')
+                          .filter(
+                            (key) => position.hasOwnProperty(key)
+                              || position.attributes.hasOwnProperty(key),
+                          )
+                          .map((key) => (
+                            <StatusRow
+                              key={key}
+                              name={positionAttributes[key]?.name || key}
+                              content={(
+                                <PositionValue
+                                  position={position}
+                                  property={position.hasOwnProperty(key) ? key : null}
+                                  attribute={position.hasOwnProperty(key) ? null : key}
+                                />
+                              )}
+                            />
+                          ))}
+                      </TableBody>
+                      <TableFooter>
+                        <TableRow>
+                          <TableCell colSpan={2} className={classes.cell}>
+                            <Typography variant="body2">
+                              <Link component={RouterLink} to={`/position/${position.id}`}>
+                                {t('sharedShowDetails')}
+                              </Link>
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      </TableFooter>
+                    </Table>
+                  </CardContent>
+                )}
 
-                    {/* ── Vertical divider ── */}
-                    <Divider orientation="vertical" flexItem />
-
-                    {/* ── Right: Recent events ── */}
-                    <Box flex={1} minWidth={0}>
-                      <RecentEventsSection deviceId={deviceId} />
-                    </Box>
-                  </Box>
-                </CardContent>
-              )}
-
-              <CardActions classes={{ root: classes.actions }} disableSpacing>
-                <Tooltip title={t('sharedConnections')}>
-                  <IconButton
-                    onClick={() => navigate(`/settings/device/${deviceId}/connections`)}
-                    disabled={disableActions}
-                  >
-                    <LinkIcon />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title={t('sharedExtra')}>
-                  <IconButton
-                    color="secondary"
-                    onClick={(e) => setAnchorEl(e.currentTarget)}
-                    disabled={!position}
-                  >
-                    <PendingIcon />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title={t('reportReplay')}>
-                  <IconButton
-                    onClick={() => navigate('/replay')}
-                    disabled={disableActions || !position}
-                  >
-                    <ReplayIcon />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title={t('commandTitle')}>
-                  <IconButton
-                    onClick={() => navigate(`/settings/device/${deviceId}/command`)}
-                    disabled={disableActions}
-                  >
-                    <PublishIcon />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title={t('sharedEdit')}>
-                  <IconButton
-                    onClick={() => navigate(`/settings/device/${deviceId}`)}
-                    disabled={disableActions || deviceReadonly}
-                  >
-                    <EditIcon />
-                  </IconButton>
-                </Tooltip>
-                {admin && (
-                  <Tooltip title={t('sharedRemove')}>
+                <CardActions classes={{ root: classes.actions }} disableSpacing>
+                  <Tooltip title={t('sharedConnections')}>
                     <IconButton
-                      color="error"
-                      onClick={() => setRemoving(true)}
-                      disabled={disableActions || deviceReadonly}
+                      onClick={() => navigate(`/settings/device/${deviceId}/connections`)}
+                      disabled={disableActions}
                     >
-                      <DeleteIcon />
+                      <LinkIcon />
                     </IconButton>
                   </Tooltip>
-                )}
-              </CardActions>
-            </Card>
+                  <Tooltip title={t('sharedExtra')}>
+                    <IconButton
+                      color="secondary"
+                      onClick={(e) => setAnchorEl(e.currentTarget)}
+                      disabled={!position}
+                    >
+                      <PendingIcon />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title={t('reportReplay')}>
+                    <IconButton
+                      onClick={() => navigate('/replay')}
+                      disabled={disableActions || !position}
+                    >
+                      <ReplayIcon />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title={t('commandTitle')}>
+                    <IconButton
+                      onClick={() => navigate(`/settings/device/${deviceId}/command`)}
+                      disabled={disableActions}
+                    >
+                      <PublishIcon />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title={t('sharedEdit')}>
+                    <IconButton
+                      onClick={() => navigate(`/settings/device/${deviceId}`)}
+                      disabled={disableActions || deviceReadonly}
+                    >
+                      <EditIcon />
+                    </IconButton>
+                  </Tooltip>
+                  {admin && (
+                    <Tooltip title={t('sharedRemove')}>
+                      <IconButton
+                        color="error"
+                        onClick={() => setRemoving(true)}
+                        disabled={disableActions || deviceReadonly}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                </CardActions>
+              </Card>
+
+              <Tooltip title={drawerOpen ? 'Hide alerts' : 'Show alerts'}>
+                <Box
+                  className={classes.chevronTab}
+                  onClick={drawerOpen ? handleCloseDrawer : handleOpenDrawer}
+                >
+                  <Badge
+                    badgeContent={!drawerOpen ? eventCount : 0}
+                    color="error"
+                    overlap="circular"
+                    anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                  >
+                    {drawerOpen
+                      ? <ChevronRightIcon fontSize="small" />
+                      : <ChevronLeftIcon fontSize="small" />}
+                  </Badge>
+                </Box>
+              </Tooltip>
+
+              <Box
+                className={`${classes.eventsPanel} ${drawerOpen ? classes.eventsPanelOpen : classes.eventsPanelClosed}`}
+              >
+                <Box className={classes.eventsPanelHeader}>
+                  <NotificationsIcon className={classes.eventsPanelIcon} />
+                  <Typography className={classes.eventsPanelTitle}>
+                    Recent Alerts (24h)
+                  </Typography>
+                </Box>
+                <Divider />
+                <Box className={classes.eventsPanelContent}>
+                  <RecentEventsSection
+                    deviceId={deviceId}
+                    onCountChange={setEventCount}
+                  />
+                </Box>
+              </Box>
+
+            </Box>
           </Draggable>
         )}
       </div>
