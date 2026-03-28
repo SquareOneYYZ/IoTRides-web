@@ -18,7 +18,6 @@ import {
   Link,
   Tooltip,
   Box,
-  Skeleton,
   Divider,
   Typography,
   Badge,
@@ -34,6 +33,8 @@ import LinkIcon from '@mui/icons-material/Link';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { useTranslation } from './LocalizationProvider';
 import RemoveDialog from './RemoveDialog';
 import PositionValue from './PositionValue';
@@ -42,7 +43,7 @@ import usePositionAttributes from '../attributes/usePositionAttributes';
 import { devicesActions } from '../../store';
 import { useCatch, useCatchCallback } from '../../reactHelper';
 import { useAttributePreference } from '../util/preferences';
-import { formatTime } from '../util/formatter';
+import RecentEventsSection from './RecentEventsSection';
 
 const DRAWER_WIDTH = 240;
 
@@ -71,6 +72,8 @@ const useStyles = makeStyles((theme) => ({
   content: {
     paddingTop: theme.spacing(1),
     paddingBottom: theme.spacing(1),
+    overflowY: 'auto',
+    maxHeight: `calc(100vh - ${theme.spacing(24)})`,
   },
   table: {
     '& .MuiTableCell-sizeSmall': {
@@ -102,13 +105,20 @@ const useStyles = makeStyles((theme) => ({
     },
     transform: 'translateX(-50%)',
   }),
-
   cardRow: {
     display: 'flex',
-    alignItems: 'stretch',
     pointerEvents: 'auto',
+    [theme.breakpoints.up('md')]: {
+      flexDirection: 'row',
+      alignItems: 'stretch',
+      maxHeight: `calc(100vh - ${theme.spacing(12)})`,
+    },
+    [theme.breakpoints.down('md')]: {
+      flexDirection: 'column',
+      alignItems: 'stretch',
+      maxHeight: `calc(100vh - ${theme.spacing(16)})`,
+    },
   },
-
   chevronTab: {
     display: 'flex',
     alignItems: 'center',
@@ -119,34 +129,77 @@ const useStyles = makeStyles((theme) => ({
     borderLeft: `1px solid ${theme.palette.divider}`,
     borderRadius: `0 ${theme.shape.borderRadius}px ${theme.shape.borderRadius}px 0`,
     boxShadow: theme.shadows[3],
+    [theme.breakpoints.up('md')]: {
+      display: 'flex',
+    },
+    [theme.breakpoints.down('md')]: {
+      display: 'none',
+    },
   },
-
+  chevronTabMobile: {
+    display: 'none',
+    [theme.breakpoints.down('md')]: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: '100%',
+      height: 24,
+      cursor: 'pointer',
+      backgroundColor: theme.palette.background.paper,
+      borderTop: `1px solid ${theme.palette.divider}`,
+    },
+  },
   eventsPanel: {
-    width: DRAWER_WIDTH,
     overflow: 'hidden',
-    transition: theme.transitions.create('max-width', {
-      easing: theme.transitions.easing.easeInOut,
-      duration: theme.transitions.duration.standard,
-    }),
     backgroundColor: theme.palette.background.paper,
     boxShadow: theme.shadows[3],
     borderRadius: theme.shape.borderRadius,
-    marginLeft: theme.spacing(0.5),
     display: 'flex',
     flexDirection: 'column',
+    [theme.breakpoints.up('md')]: {
+      width: DRAWER_WIDTH,
+      marginLeft: theme.spacing(0.5),
+      alignSelf: 'stretch',
+      maxHeight: `calc(100vh - ${theme.spacing(12)})`,
+      transition: theme.transitions.create('max-width', {
+        easing: theme.transitions.easing.easeInOut,
+        duration: theme.transitions.duration.standard,
+      }),
+    },
+    [theme.breakpoints.down('md')]: {
+      width: '100%',
+      marginTop: theme.spacing(0.5),
+      transition: theme.transitions.create('max-height', {
+        easing: theme.transitions.easing.easeInOut,
+        duration: theme.transitions.duration.standard,
+      }),
+    },
   },
   eventsPanelOpen: {
-    maxWidth: DRAWER_WIDTH,
+    [theme.breakpoints.up('md')]: {
+      maxWidth: DRAWER_WIDTH,
+    },
+    [theme.breakpoints.down('md')]: {
+      maxHeight: 300,
+    },
   },
   eventsPanelClosed: {
-    maxWidth: 0,
+    [theme.breakpoints.up('md')]: {
+      maxWidth: 0,
+    },
+    [theme.breakpoints.down('md')]: {
+      maxHeight: 0,
+    },
   },
-
   eventsPanelHeader: {
+    flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
     gap: theme.spacing(0.5),
     padding: theme.spacing(1, 1.5, 0.5),
+  },
+  eventsPanelDivider: {
+    flexShrink: 0,
   },
   eventsPanelTitle: {
     fontSize: '0.72rem',
@@ -166,44 +219,7 @@ const useStyles = makeStyles((theme) => ({
     overflowY: 'auto',
     minWidth: DRAWER_WIDTH - theme.spacing(3),
   },
-  eventsSection: {},
-  eventRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: theme.spacing(0.4, 0),
-    borderBottom: `1px solid ${theme.palette.divider}`,
-    '&:last-child': {
-      borderBottom: 'none',
-    },
-  },
-  eventType: {
-    fontSize: '0.78rem',
-    color: theme.palette.text.primary,
-    flex: 1,
-    textTransform: 'capitalize',
-  },
-  eventTime: {
-    fontSize: '0.72rem',
-    color: theme.palette.text.secondary,
-    whiteSpace: 'nowrap',
-    marginLeft: theme.spacing(1),
-  },
-  noEventsText: {
-    fontSize: '0.75rem',
-    color: theme.palette.text.disabled,
-    fontStyle: 'italic',
-    padding: theme.spacing(0.5, 0),
-  },
-  skeletonRow: {
-    marginBottom: theme.spacing(0.5),
-  },
 }));
-
-const formatEventType = (type = '') => type
-  .replace(/([A-Z])/g, ' $1')
-  .replace(/^./, (c) => c.toUpperCase())
-  .trim();
 
 const StatusRow = ({ name, content }) => {
   const classes = useStyles();
@@ -219,105 +235,13 @@ const StatusRow = ({ name, content }) => {
   );
 };
 
-export const RecentEventsSection = ({ deviceId, onCountChange }) => {
-  const classes = useStyles();
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    const fetchEvents = async () => {
-      setLoading(true);
-      try {
-        const to = new Date();
-        const from = new Date(to.getTime() - 24 * 60 * 60 * 1000);
-        const ALL_EVENT_TYPES = [
-          'deviceOnline', 'deviceUnknown', 'deviceOffline',
-          'deviceInactive', 'deviceMoving', 'deviceStopped',
-          'deviceOverspeed', 'deviceFuelDrop', 'deviceFuelIncrease',
-          'commandResult', 'geofenceEnter', 'geofenceExit',
-          'alarm', 'ignitionOn', 'ignitionOff',
-          'maintenance', 'textMessage', 'driverChanged',
-        ];
-
-        const params = new URLSearchParams({
-          deviceId,
-          from: from.toISOString(),
-          to: to.toISOString(),
-        });
-        ALL_EVENT_TYPES.forEach((type) => params.append('type', type));
-
-        const response = await fetch(`/api/reports/events?${params.toString()}`, {
-          headers: { Accept: 'application/json' },
-        });
-        if (!response.ok) throw new Error(await response.text());
-
-        const data = await response.json();
-        if (!cancelled) {
-          const sorted = [...data].sort(
-            (a, b) => new Date(b.eventTime) - new Date(a.eventTime),
-          );
-          const top3 = sorted.slice(0, 3);
-          setEvents(top3);
-          if (onCountChange) onCountChange(top3.length);
-        }
-      } catch (_) {
-        if (!cancelled) {
-          setEvents([]);
-          if (onCountChange) onCountChange(0);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    if (deviceId) fetchEvents();
-
-    return () => { cancelled = true; };
-  }, [deviceId]);
-
-  if (loading) {
-    return (
-      <Box className={classes.eventsSection}>
-        {[0, 1, 2].map((i) => (
-          <Skeleton key={i} variant="text" height={24} className={classes.skeletonRow} />
-        ))}
-      </Box>
-    );
-  }
-
-  if (events.length === 0) {
-    return (
-      <Box className={classes.eventsSection}>
-        <Typography className={classes.noEventsText}>
-          No alerts in the last 24 hours
-        </Typography>
-      </Box>
-    );
-  }
-
-  return (
-    <Box className={classes.eventsSection}>
-      {events.map((event) => (
-        <Box key={event.id} className={classes.eventRow}>
-          <Typography className={classes.eventType}>
-            {formatEventType(event.type)}
-          </Typography>
-          <Typography className={classes.eventTime}>
-            {formatTime(event.eventTime, 'minutes')}
-          </Typography>
-        </Box>
-      ))}
-    </Box>
-  );
-};
-
 const StatusCard = ({
   deviceId, position, onClose, disableActions, desktopPadding = 0,
 }) => {
   const classes = useStyles({ desktopPadding });
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
   const [eventCount, setEventCount] = useState(0);
   const [drawerOpen, setDrawerOpen] = useState(null);
 
@@ -354,18 +278,12 @@ const StatusCard = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...device,
-          attributes: {
-            ...device.attributes,
-            PanelAlert: true,
-          },
+          attributes: { ...device.attributes, PanelAlert: true },
         }),
       });
       const refreshed = await fetch('/api/devices');
-      if (refreshed.ok) {
-        dispatch(devicesActions.refresh(await refreshed.json()));
-      }
+      if (refreshed.ok) dispatch(devicesActions.refresh(await refreshed.json()));
     } catch (e) {
-      // eslint-disable-next-line no-console
       console.error('Failed to persist PanelAlert:', e);
     }
   };
@@ -378,17 +296,11 @@ const StatusCard = ({
       await fetch(`/api/devices/${deviceId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...device,
-          attributes: updatedAttributes,
-        }),
+        body: JSON.stringify({ ...device, attributes: updatedAttributes }),
       });
       const refreshed = await fetch('/api/devices');
-      if (refreshed.ok) {
-        dispatch(devicesActions.refresh(await refreshed.json()));
-      }
+      if (refreshed.ok) dispatch(devicesActions.refresh(await refreshed.json()));
     } catch (e) {
-      // eslint-disable-next-line no-console
       console.error('Failed to remove PanelAlert:', e);
     }
   };
@@ -422,9 +334,7 @@ const StatusCard = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ deviceId: position.deviceId, geofenceId: item.id }),
       });
-      if (!permissionResponse.ok) {
-        throw Error(await permissionResponse.text());
-      }
+      if (!permissionResponse.ok) throw Error(await permissionResponse.text());
       navigate(`/settings/geofence/${item.id}`);
     } else {
       throw Error(await response.text());
@@ -553,6 +463,24 @@ const StatusCard = ({
                     </Tooltip>
                   )}
                 </CardActions>
+
+                <Tooltip title={drawerOpen ? 'Hide alerts' : 'Show alerts'}>
+                  <Box
+                    className={classes.chevronTabMobile}
+                    onClick={drawerOpen ? handleCloseDrawer : handleOpenDrawer}
+                  >
+                    <Badge
+                      badgeContent={!drawerOpen ? eventCount : 0}
+                      color="error"
+                      overlap="circular"
+                      anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                    >
+                      {drawerOpen
+                        ? <KeyboardArrowUpIcon fontSize="small" />
+                        : <KeyboardArrowDownIcon fontSize="small" />}
+                    </Badge>
+                  </Box>
+                </Tooltip>
               </Card>
 
               <Tooltip title={drawerOpen ? 'Hide alerts' : 'Show alerts'}>
@@ -573,16 +501,14 @@ const StatusCard = ({
                 </Box>
               </Tooltip>
 
-              <Box
-                className={`${classes.eventsPanel} ${drawerOpen ? classes.eventsPanelOpen : classes.eventsPanelClosed}`}
-              >
+              <Box className={`${classes.eventsPanel} ${drawerOpen ? classes.eventsPanelOpen : classes.eventsPanelClosed}`}>
                 <Box className={classes.eventsPanelHeader}>
                   <NotificationsIcon className={classes.eventsPanelIcon} />
                   <Typography className={classes.eventsPanelTitle}>
                     Recent Alerts (24h)
                   </Typography>
                 </Box>
-                <Divider />
+                <Divider className={classes.eventsPanelDivider} />
                 <Box className={classes.eventsPanelContent}>
                   <RecentEventsSection
                     deviceId={deviceId}
@@ -590,7 +516,6 @@ const StatusCard = ({
                   />
                 </Box>
               </Box>
-
             </Box>
           </Draggable>
         )}
@@ -599,35 +524,17 @@ const StatusCard = ({
       {position && (
         <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
           <MenuItem onClick={handleGeofence}>{t('sharedCreateGeofence')}</MenuItem>
-          <MenuItem
-            component="a"
-            target="_blank"
-            href={`https://www.google.com/maps/search/?api=1&query=${position.latitude}%2C${position.longitude}`}
-          >
+          <MenuItem component="a" target="_blank" href={`https://www.google.com/maps/search/?api=1&query=${position.latitude}%2C${position.longitude}`}>
             {t('linkGoogleMaps')}
           </MenuItem>
-          <MenuItem
-            component="a"
-            target="_blank"
-            href={`http://maps.apple.com/?ll=${position.latitude},${position.longitude}`}
-          >
+          <MenuItem component="a" target="_blank" href={`http://maps.apple.com/?ll=${position.latitude},${position.longitude}`}>
             {t('linkAppleMaps')}
           </MenuItem>
-          <MenuItem
-            component="a"
-            target="_blank"
-            href={`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${position.latitude}%2C${position.longitude}&heading=${position.course}`}
-          >
+          <MenuItem component="a" target="_blank" href={`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${position.latitude}%2C${position.longitude}&heading=${position.course}`}>
             {t('linkStreetView')}
           </MenuItem>
           {navigationAppTitle && (
-            <MenuItem
-              component="a"
-              target="_blank"
-              href={navigationAppLink
-                .replace('{latitude}', position.latitude)
-                .replace('{longitude}', position.longitude)}
-            >
+            <MenuItem component="a" target="_blank" href={navigationAppLink.replace('{latitude}', position.latitude).replace('{longitude}', position.longitude)}>
               {navigationAppTitle}
             </MenuItem>
           )}
