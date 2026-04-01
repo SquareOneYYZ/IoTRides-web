@@ -1,5 +1,5 @@
-export const CHAT_URL = 'http://165.22.228.97:8085/api/v1/chat';
-export const PROMPTS_URL = 'http://165.22.228.97:8085/api/v1/chat/prompts';
+export const CHAT_URL = '/chatapi/v1/chat';
+export const PROMPTS_URL = '/chatapi/v1/chat/prompts';
 
 export const PANEL_WIDTH = 400;
 export const PANEL_HEIGHT = 520;
