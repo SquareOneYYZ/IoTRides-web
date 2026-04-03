@@ -11,6 +11,9 @@ import { useAttributePreference } from '../common/util/preferences';
 import { useCatchCallback } from '../reactHelper';
 import { findFonts } from './core/mapUtil';
 
+const TELEPORT_THRESHOLD_DEG = 0.0045; // ~500 m
+const TELEPORT_THRESHOLD_SQ = TELEPORT_THRESHOLD_DEG * TELEPORT_THRESHOLD_DEG;
+
 const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleField }) => {
   const id = useId();
   const clusters = `${id}-clusters`;
@@ -43,6 +46,13 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
     selectedDeviceIdRef.current = selectedDeviceId;
     selectedPositionRef.current = selectedPosition;
   }, [devices, selectedDeviceId, selectedPosition]);
+
+  useEffect(() => {
+    selectedDeviceIdRef.current = selectedDeviceId;
+    if (map.getSource(id)) {
+      updateMapData(); // eslint-disable-line no-use-before-define
+    }
+  }, [selectedDeviceId]);
 
   const createFeature = useCallback((devices, position, selectedPositionId) => {
     const device = devices[position.deviceId];
@@ -206,6 +216,12 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
     }
   }, [baseAnimationDuration, updateMapData]);
 
+  const isTeleport = (curLng, curLat, newLng, newLat) => {
+    const dLng = newLng - curLng;
+    const dLat = newLat - curLat;
+    return (dLng * dLng + dLat * dLat) > TELEPORT_THRESHOLD_SQ;
+  };
+
   const updateAnimationState = useCallback((newPositions) => {
     const now = Date.now();
     const state = animationStateRef.current;
@@ -228,10 +244,29 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
           properties: position,
         };
       } else {
-        const hasChanged = Math.abs(currentState.current.longitude - position.longitude) > 0.000001
-          || Math.abs(currentState.current.latitude - position.latitude) > 0.000001;
+        const dLng = Math.abs(currentState.current.longitude - position.longitude);
+        const dLat = Math.abs(currentState.current.latitude - position.latitude);
+        const hasChanged = dLng > 0.000001 || dLat > 0.000001;
 
-        if (hasChanged && enableSmoothing) {
+        const teleport = hasChanged && isTeleport(
+          currentState.current.longitude,
+          currentState.current.latitude,
+          position.longitude,
+          position.latitude,
+        );
+
+        if (teleport) {
+          state[deviceId] = {
+            current: {
+              longitude: position.longitude,
+              latitude: position.latitude,
+              rotation: position.course || 0,
+            },
+            target: null,
+            startTime: now,
+            properties: position,
+          };
+        } else if (hasChanged && enableSmoothing) {
           const duration = calculateAnimationDuration(deviceId, now);
           state[deviceId] = {
             ...currentState,
