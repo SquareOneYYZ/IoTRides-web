@@ -15,6 +15,46 @@ import DirectionsCarRoundedIcon from '@mui/icons-material/DirectionsCarRounded';
 
 import { fmtTime, fmtDateTime, statusColor } from './chatConfig';
 
+const renderMarkdown = (text) => {
+  if (!text) return null;
+
+  return text.split('\n').map((line, lineIndex) => {
+    const isBullet = /^[-•]\s/.test(line);
+    const content = line.replace(/^[-•]\s/, '');
+
+    const lineKey = `line-${content}-${lineIndex}`;
+
+    const parts = content.split(/\*\*(.+?)\*\*/g).map((part, partIndex) => {
+      const partKey = `${lineKey}-part-${part}-${partIndex}`;
+
+      if (partIndex % 2 === 1) {
+        return <strong key={partKey}>{part}</strong>;
+      }
+
+      return <span key={partKey}>{part}</span>;
+    });
+
+    return (
+      <Box
+        key={lineKey}
+        component="span"
+        sx={{
+          display: 'block',
+          pl: isBullet ? 1.5 : 0,
+          position: 'relative',
+        }}
+      >
+        {isBullet && (
+          <Box component="span" sx={{ position: 'absolute', left: 0 }}>
+            •
+          </Box>
+        )}
+        {parts}
+      </Box>
+    );
+  });
+};
+
 export const DeviceCard = ({ device, onLocate }) => {
   const theme = useTheme();
   const hasLoc = device.latitude != null && device.longitude != null;
@@ -30,16 +70,16 @@ export const DeviceCard = ({ device, onLocate }) => {
             {device.status && <Chip label={device.status} size="small" color={statusColor(device.status)} sx={{ fontSize: '0.67rem', height: 18 }} />}
           </Stack>
           {device.imei && (
-          <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.66rem', display: 'block' }}>
-            IMEI:
-            {device.imei}
-          </Typography>
+            <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.66rem', display: 'block' }}>
+              IMEI:
+              {device.imei}
+            </Typography>
           )}
           {device.group && (
-          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.66rem', display: 'block' }}>
-            Group:
-            {device.group}
-          </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.66rem', display: 'block' }}>
+              Group:
+              {device.group}
+            </Typography>
           )}
         </Box>
         {hasLoc && (
@@ -100,20 +140,13 @@ export const EventList = ({ events }) => {
         <TableBody>
           {events.map((ev, index) => {
             const isEven = index % 2 === 0;
-
             let bgColor;
             if (isEven) {
-              if (theme.palette.mode === 'dark') {
-                bgColor = 'grey.900';
-              } else {
-                bgColor = 'grey.50';
-              }
+              bgColor = theme.palette.mode === 'dark' ? 'grey.900' : 'grey.50';
             } else {
               bgColor = 'transparent';
             }
-
             const rowKey = ev.id || `${ev.serverTime || ev.time}-${ev.deviceName}`;
-
             return (
               <TableRow key={rowKey} sx={{ bgcolor: bgColor }}>
                 <TableCell>{ev.type || ev.eventType || '—'}</TableCell>
@@ -128,6 +161,13 @@ export const EventList = ({ events }) => {
   );
 };
 
+const FLEET_STATS = [
+  { label: 'Total', key: 'total', color: 'text.primary' },
+  { label: 'Online', key: 'online', color: 'success.main' },
+  { label: 'Offline', key: 'offline', color: 'text.secondary' },
+  { label: 'Idle', key: 'idle', color: 'warning.main' },
+];
+
 const FleetSummaryCard = ({ data }) => (
   <Paper variant="outlined" sx={{ p: 1.25, borderRadius: 2, mt: 0.75 }}>
     {data.companyName && (
@@ -136,17 +176,12 @@ const FleetSummaryCard = ({ data }) => (
       </Typography>
     )}
     <Stack direction="row" flexWrap="wrap" gap={1}>
-      {[
-        { label: 'Total', value: data.total, color: 'text.primary' },
-        { label: 'Online', value: data.online, color: 'success.main' },
-        { label: 'Offline', value: data.offline, color: 'text.secondary' },
-        { label: 'Idle', value: data.idle, color: 'warning.main' },
-      ].filter((s) => s.value != null).map((s) => (
+      {FLEET_STATS.filter((s) => data[s.key] != null).map((s) => (
         <Box key={s.label} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 70 }}>
           <DirectionsCarRoundedIcon sx={{ fontSize: 13, color: s.color }} />
           <Box>
             <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', display: 'block', lineHeight: 1 }}>{s.label}</Typography>
-            <Typography variant="subtitle2" fontWeight={700} color={s.color} lineHeight={1.2}>{s.value}</Typography>
+            <Typography variant="subtitle2" fontWeight={700} color={s.color} lineHeight={1.2}>{data[s.key]}</Typography>
           </Box>
         </Box>
       ))}
@@ -164,7 +199,9 @@ export const StructuredPayload = ({ data, onLocate }) => {
 
   return (
     <Box sx={{ mt: 0.75 }}>
-      {devices?.length > 0 && devices.map((d, i) => <DeviceCard key={d.id ?? i} device={d} onLocate={onLocate} />)}
+      {devices?.length > 0 && devices.map((d) => (
+        <DeviceCard key={d.id} device={d} onLocate={onLocate} />
+      ))}
       {events?.length > 0 && <EventList events={events} />}
       {group && (
         <Paper variant="outlined" sx={{ p: 1.25, borderRadius: 2, display: 'flex', gap: 1, alignItems: 'center' }}>
@@ -183,18 +220,18 @@ export const StructuredPayload = ({ data, onLocate }) => {
           </Box>
         </Paper>
       )}
-      {groups?.length > 0 && groups.map((g, i) => (
-        <Paper key={g.id ?? i} variant="outlined" sx={{ p: 1, borderRadius: 2, display: 'flex', gap: 1, alignItems: 'center', mb: 0.75 }}>
+      {groups?.length > 0 && groups.map((g) => (
+        <Paper key={g.id} variant="outlined" sx={{ p: 1, borderRadius: 2, display: 'flex', gap: 1, alignItems: 'center', mb: 0.75 }}>
           <GroupRoundedIcon color="primary" sx={{ fontSize: 18 }} />
           <Box>
             <Typography variant="subtitle2" fontWeight={600} sx={{ fontSize: '0.8rem' }}>{g.name}</Typography>
             {g.deviceCount != null && (
-            <Typography variant="caption" color="text.secondary">
-              {g.deviceCount}
-              {' '}
-              device
-              {g.deviceCount !== 1 ? 's' : ''}
-            </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {g.deviceCount}
+                {' '}
+                device
+                {g.deviceCount !== 1 ? 's' : ''}
+              </Typography>
             )}
           </Box>
         </Paper>
@@ -215,13 +252,10 @@ export const MessageBubble = ({ msg, onLocate }) => {
   const isUser = msg.role === 'user';
   const backgroundColor = (() => {
     if (isUser) return 'primary.main';
-
-    if (theme.palette.mode === 'dark') {
-      return 'grey.800';
-    }
-
+    if (theme.palette.mode === 'dark') return 'grey.800';
     return 'grey.100';
   })();
+
   return (
     <Fade in timeout={260}>
       <Box sx={{ display: 'flex', flexDirection: isUser ? 'row-reverse' : 'row', alignItems: 'flex-start', gap: 1, mb: 1.5 }}>
@@ -239,8 +273,12 @@ export const MessageBubble = ({ msg, onLocate }) => {
               boxShadow: 1,
             }}
           >
-            <Typography variant="body2" sx={{ lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontSize: '0.82rem' }}>
-              {msg.content}
+            <Typography
+              variant="body2"
+              component="div"
+              sx={{ lineHeight: 1.7, wordBreak: 'break-word', fontSize: '0.82rem', '& strong': { fontWeight: 700 } }}
+            >
+              {isUser ? msg.content : renderMarkdown(msg.content)}
             </Typography>
           </Box>
           {!isUser && msg.data && (
@@ -268,9 +306,9 @@ export const TypingBubble = () => {
         px: 1.4, py: 1.1, borderRadius: '16px 16px 16px 4px', bgcolor: theme.palette.mode === 'dark' ? 'grey.800' : 'grey.100', display: 'flex', gap: '5px', alignItems: 'center', boxShadow: 1,
       }}
       >
-        {[0, 1, 2].map((i) => (
+        {['dot-1', 'dot-2', 'dot-3'].map((dotKey, i) => (
           <Box
-            key={i}
+            key={dotKey}
             sx={{
               width: 6,
               height: 6,
@@ -304,8 +342,8 @@ export const WelcomeState = ({ prompts }) => (
     </Typography>
     {prompts.length > 0 && (
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.6, width: '100%', mt: 0.25 }}>
-        {prompts.map((p, i) => (
-          <Box sx={{ px: 1.25, py: 0.7, borderRadius: 2, bgcolor: 'action.hover', border: '1px solid', borderColor: 'divider', textAlign: 'left' }}>
+        {prompts.map((p) => (
+          <Box key={p.text || p.prompt || p} sx={{ px: 1.25, py: 0.7, borderRadius: 2, bgcolor: 'action.hover', border: '1px solid', borderColor: 'divider', textAlign: 'left' }}>
             <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.74rem', fontStyle: 'italic' }}>
               {p.text || p.prompt || p}
             </Typography>

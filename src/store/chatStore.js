@@ -2,18 +2,16 @@ import { createSlice } from '@reduxjs/toolkit';
 
 const STORAGE_KEY = 'fleet_chat_messages';
 
-const loadMessages = () => {
+const load = () => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    return JSON.parse(raw).map((m) => ({ ...m, ts: new Date(m.ts) }));
+    return raw ? JSON.parse(raw) : [];
   } catch {
-    console.warn('Failed to load chat messages from localStorage');
     return [];
   }
 };
 
-const saveMessages = (messages) => {
+const save = (messages) => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
   } catch {
@@ -21,15 +19,15 @@ const saveMessages = (messages) => {
   }
 };
 
-const { actions, reducer } = createSlice({
-  name: 'chat',
+const { reducer, actions } = createSlice({
+  name: 'chats',
   initialState: {
-    messages: loadMessages(),
+    messages: load(),
   },
   reducers: {
-    addMessage(state, { payload }) {
-      state.messages.push(payload);
-      saveMessages(state.messages);
+    addMessage(state, action) {
+      state.messages.push(action.payload);
+      save(state.messages);
     },
     clearMessages(state) {
       state.messages = [];
@@ -38,5 +36,5 @@ const { actions, reducer } = createSlice({
   },
 });
 
-export const chatActions = actions;
-export default reducer;
+export { actions as chatActions };
+export { reducer as chatReducer };
