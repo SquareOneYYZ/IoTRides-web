@@ -20,6 +20,10 @@
   transition: width 0.25s, min-width 0.25s;
 }
 
+[data-theme="light"] .maplibregl-ctrl-geocoder {
+  background-color: #ffffff;
+}
+
 .maplibregl-ctrl-geocoder--input {
   font: inherit;
   width: 100%;
@@ -34,11 +38,19 @@
   overflow: hidden;
 }
 
+[data-theme="light"] .maplibregl-ctrl-geocoder--input {
+  color: #000000;
+}
+
 .maplibregl-ctrl-geocoder--input:focus {
   color: #ffffff;
   outline: 0;
   box-shadow: none;
   outline: thin dotted;
+}
+
+[data-theme="light"] .maplibregl-ctrl-geocoder--input:focus {
+  color: #000000;
 }
 
 .maplibregl-ctrl-geocoder .maplibregl-ctrl-geocoder--pin-right>* {
@@ -77,6 +89,11 @@
   font-size: 13px;
 }
 
+[data-theme="light"] .maplibregl-ctrl-geocoder .suggestions {
+  background-color: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
 .maplibregl-ctrl-bottom-left .suggestions,
 .maplibregl-ctrl-bottom-right .suggestions {
   top: auto;
@@ -90,12 +107,22 @@
   color: #ffffff;
 }
 
+[data-theme="light"] .maplibregl-ctrl-geocoder .suggestions>li>a {
+  color: #000000;
+}
+
 .maplibregl-ctrl-geocoder .suggestions>.active>a,
 .maplibregl-ctrl-geocoder .suggestions>li>a:hover {
   color: #ffffff;
   background-color: #2a2a2a;
   text-decoration: none;
   cursor: pointer;
+}
+
+[data-theme="light"] .maplibregl-ctrl-geocoder .suggestions>.active>a,
+[data-theme="light"] .maplibregl-ctrl-geocoder .suggestions>li>a:hover {
+  color: #000000;
+  background-color: #f0f0f0;
 }
 
 .maplibregl-ctrl-geocoder--suggestion {
@@ -153,11 +180,15 @@
   white-space: nowrap;
 }
 
-/* Icons */
+/* Icons — dark: white via invert, light: black (no filter) */
 .maplibregl-ctrl-geocoder--icon {
   display: inline-block;
   vertical-align: middle;
   filter: brightness(0) invert(1);
+}
+
+[data-theme="light"] .maplibregl-ctrl-geocoder--icon {
+  filter: none;
 }
 
 .maplibregl-ctrl-geocoder--icon-search {
@@ -177,6 +208,10 @@
   line-height: 1;
 }
 
+[data-theme="light"] .maplibregl-ctrl-geocoder--button {
+  background: #ffffff;
+}
+
 .maplibregl-ctrl-geocoder--icon-close {
   width: 20px;
   height: 20px;
@@ -189,7 +224,10 @@
   animation: rotate 0.8s infinite cubic-bezier(0.45, 0.05, 0.55, 0.95);
 }
 
-/* Animation */
+[data-theme="light"] .maplibregl-ctrl-geocoder--icon-loading {
+  filter: none;
+}
+
 @keyframes rotate {
   from {
     transform: rotate(0);
@@ -205,4 +243,8 @@
   padding: 6px 12px;
   font-size: 16px;
   text-align: center;
+}
+
+[data-theme="light"] .maplibre-gl-geocoder--error {
+  color: #666666;
 }

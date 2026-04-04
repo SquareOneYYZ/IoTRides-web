@@ -11,7 +11,6 @@ import { useAttributePreference, usePreference } from '../../common/util/prefere
 import usePersistedState, { savePersistedState } from '../../common/util/usePersistedState';
 import { mapImages } from './preloadImages';
 import useMapStyles from './useMapStyles';
-
 import { FullScreenControl } from '../controls/MapFullScreen';
 
 const element = document.createElement('div');
