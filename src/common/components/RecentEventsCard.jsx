@@ -9,7 +9,7 @@ import {
   Box,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { RecentEventsSection } from './StatusCard';
+import RecentEventsSection from './RecentEventsSection';
 
 const RecentEventsCard = ({ deviceId, open, onClose, onCountChange }) => {
   if (!open) return null;
