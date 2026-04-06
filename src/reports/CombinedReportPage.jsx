@@ -1,9 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import {
-  Table, TableBody, TableCell, TableHead, TableRow, TableSortLabel, Box, Pagination, FormControl, Select, MenuItem, Typography,
+  Box,
+  Pagination,
+  Typography,
+  FormControl,
+  Select,
+  MenuItem,
 } from '@mui/material';
-import { visuallyHidden } from '@mui/utils';
 import ReportFilter from './components/ReportFilter';
 import { useTranslation } from '../common/components/LocalizationProvider';
 import PageLayout from '../common/components/PageLayout';
@@ -20,6 +24,7 @@ import MapMarkers from '../map/MapMarkers';
 import MapRouteCoordinates from '../map/MapRouteCoordinates';
 import MapScale from '../map/MapScale';
 import useResizableMap from './common/useResizableMap';
+import { ReportTable, DarkTableRow, DarkTableCell } from './components/StyledTableComponents';
 
 const CombinedReportPage = () => {
   const classes = useReportStyles();
@@ -27,13 +32,12 @@ const CombinedReportPage = () => {
   const devices = useSelector((state) => state.devices.items);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
+  const { containerRef, mapHeight, handleMouseDown } = useResizableMap(60, 20, 80);
 
-  const [order, setOrder] = useState('asc');
+  const [order, setOrder] = useState('desc');
   const [orderBy, setOrderBy] = useState('eventTime');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
-
-  const { containerRef, mapHeight, handleMouseDown } = useResizableMap(60, 20, 80);
 
   const itemsCoordinates = useMemo(() => items.flatMap((item) => item.route), [items]);
   const createMarkers = () => items.flatMap((item) => item.events
@@ -43,6 +47,24 @@ const CombinedReportPage = () => {
       latitude: position.latitude,
       longitude: position.longitude,
     })));
+
+  const handleSubmit = useCatch(async ({ deviceIds, groupIds, from, to }) => {
+    const query = new URLSearchParams({ from, to });
+    deviceIds.forEach((deviceId) => query.append('deviceId', deviceId));
+    groupIds.forEach((groupId) => query.append('groupId', groupId));
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/reports/combined?${query.toString()}`);
+      if (response.ok) {
+        setItems(await response.json());
+        setPage(0);
+      } else {
+        throw Error(await response.text());
+      }
+    } finally {
+      setLoading(false);
+    }
+  });
 
   const handleRequestSort = (property) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -60,18 +82,14 @@ const CombinedReportPage = () => {
     setPage(0);
   };
 
-  // FIX: Removed isFirstForDevice — it was based on pre-sort order causing
-  // device name to disappear when sorting changed row positions
-  const flattenedData = useMemo(() => items.flatMap((item) => item.events.map((event) => ({
-    id: event.id,
+  const preparedData = useMemo(() => items.flatMap((item) => item.events.map((event) => ({
+    ...event,
     deviceId: item.deviceId,
     deviceName: devices[item.deviceId]?.name || '',
-    eventTime: event.eventTime,
-    eventType: event.type,
   }))), [items, devices]);
 
   const sortedAndPaginatedData = useMemo(() => {
-    if (!flattenedData || flattenedData.length === 0) return [];
+    if (!preparedData || preparedData.length === 0) return [];
 
     const comparator = (a, b) => {
       let aVal = a[orderBy];
@@ -101,61 +119,31 @@ const CombinedReportPage = () => {
       return 0;
     };
 
-    const sorted = [...flattenedData].sort(comparator);
+    const sorted = [...preparedData].sort(comparator);
     return sorted.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
-  }, [flattenedData, order, orderBy, page, rowsPerPage]);
+  }, [preparedData, order, orderBy, page, rowsPerPage]);
 
-  const totalCount = flattenedData.length;
+  const totalCount = preparedData.length;
   const totalPages = Math.ceil(totalCount / rowsPerPage);
   const startRow = totalCount === 0 ? 0 : page * rowsPerPage + 1;
   const endRow = Math.min((page + 1) * rowsPerPage, totalCount);
 
-  const handleSubmit = useCatch(async ({ deviceIds, groupIds, from, to }) => {
-    const query = new URLSearchParams({ from, to });
-    deviceIds.forEach((deviceId) => query.append('deviceId', deviceId));
-    groupIds.forEach((groupId) => query.append('groupId', groupId));
-    setLoading(true);
-    try {
-      const response = await fetch(`/api/reports/combined?${query.toString()}`);
-      if (response.ok) {
-        setItems(await response.json());
-        setPage(0);
-      } else {
-        throw Error(await response.text());
-      }
-    } finally {
-      setLoading(false);
-    }
-  });
+  const sortableColumns = ['deviceName', 'eventTime', 'type'];
 
-  let tableBodyContent;
-
-  if (loading) {
-    tableBodyContent = <TableShimmer columns={3} />;
-  } else if (sortedAndPaginatedData.length === 0) {
-    tableBodyContent = (
-      <TableRow>
-        <TableCell colSpan={3} align="center">
-          <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
-            {t('sharedNoData') || 'No data available'}
-          </Typography>
-        </TableCell>
-      </TableRow>
-    );
-  } else {
-    // FIX: Device name visibility computed after sorting based on adjacent rows,
-    // not a pre-sort flag. Shows name whenever device changes in current sorted order.
-    tableBodyContent = sortedAndPaginatedData.map((row, index, arr) => {
-      const showDeviceName = index === 0 || arr[index - 1].deviceId !== row.deviceId;
-      return (
-        <TableRow key={row.id} hover>
-          <TableCell>{showDeviceName ? row.deviceName : ''}</TableCell>
-          <TableCell>{formatTime(row.eventTime, 'seconds')}</TableCell>
-          <TableCell>{t(prefixString('event', row.eventType))}</TableCell>
-        </TableRow>
-      );
-    });
-  }
+  const headers = [
+    {
+      label: t('sharedDevice'),
+      sortKey: 'deviceName',
+    },
+    {
+      label: t('positionFixTime'),
+      sortKey: 'eventTime',
+    },
+    {
+      label: t('sharedType'),
+      sortKey: 'type',
+    },
+  ];
 
   return (
     <PageLayout menu={<ReportsMenu />} breadcrumbs={['reportTitle', 'reportCombined']}>
@@ -198,7 +186,7 @@ const CombinedReportPage = () => {
 
             <button
               type="button"
-              aria-label="button"
+              aria-label="Resize map"
               onMouseDown={handleMouseDown}
               style={{
                 height: '8px',
@@ -210,7 +198,10 @@ const CombinedReportPage = () => {
                 flexShrink: 0,
                 borderTop: '1px solid #ccc',
                 borderBottom: '1px solid #ccc',
+                transition: 'background-color 0.2s',
               }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#d0d0d0')}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#e0e0e0')}
             >
               <div
                 style={{
@@ -241,59 +232,22 @@ const CombinedReportPage = () => {
               loading={loading}
             />
           </div>
-
-          <Table stickyHeader>
-            <TableHead>
-              <TableRow>
-                <TableCell>
-                  <TableSortLabel
-                    active={orderBy === 'deviceName'}
-                    direction={orderBy === 'deviceName' ? order : 'asc'}
-                    onClick={() => handleRequestSort('deviceName')}
-                  >
-                    {t('sharedDevice')}
-                    {orderBy === 'deviceName' && (
-                    <Box component="span" sx={visuallyHidden}>
-                      {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
-                    </Box>
-                    )}
-                  </TableSortLabel>
-                </TableCell>
-
-                <TableCell>
-                  <TableSortLabel
-                    active={orderBy === 'eventTime'}
-                    direction={orderBy === 'eventTime' ? order : 'asc'}
-                    onClick={() => handleRequestSort('eventTime')}
-                  >
-                    {t('positionFixTime')}
-                    {orderBy === 'eventTime' && (
-                    <Box component="span" sx={visuallyHidden}>
-                      {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
-                    </Box>
-                    )}
-                  </TableSortLabel>
-                </TableCell>
-
-                <TableCell>
-                  <TableSortLabel
-                    active={orderBy === 'eventType'}
-                    direction={orderBy === 'eventType' ? order : 'asc'}
-                    onClick={() => handleRequestSort('eventType')}
-                  >
-                    {t('sharedType')}
-                    {orderBy === 'eventType' && (
-                    <Box component="span" sx={visuallyHidden}>
-                      {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
-                    </Box>
-                    )}
-                  </TableSortLabel>
-                </TableCell>
-              </TableRow>
-            </TableHead>
-
-            <TableBody>{tableBodyContent}</TableBody>
-          </Table>
+          <ReportTable
+            headers={headers}
+            loading={loading}
+            loadingComponent={<TableShimmer columns={3} />}
+            sortable
+            sortConfig={{ order, orderBy }}
+            onSort={handleRequestSort}
+          >
+            {sortedAndPaginatedData.map((event) => (
+              <DarkTableRow key={event.id}>
+                <DarkTableCell>{event.deviceName}</DarkTableCell>
+                <DarkTableCell>{formatTime(event.eventTime, 'seconds')}</DarkTableCell>
+                <DarkTableCell>{t(prefixString('event', event.type))}</DarkTableCell>
+              </DarkTableRow>
+            ))}
+          </ReportTable>
 
           {!loading && sortedAndPaginatedData.length > 0 && (
             <Box

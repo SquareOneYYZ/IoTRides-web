@@ -6,17 +6,10 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Table,
-  TableHead,
-  TableRow,
-  TableBody,
-  TableCell,
-  TableSortLabel,
   Box,
   Pagination,
   Typography,
 } from '@mui/material';
-import { visuallyHidden } from '@mui/utils';
 import {
   formatDistance, formatSpeed, formatVolume, formatTime, formatNumericHours,
 } from '../common/util/formatter';
@@ -31,6 +24,7 @@ import { useCatch } from '../reactHelper';
 import useReportStyles from './common/useReportStyles';
 import TableShimmer from '../common/components/TableShimmer';
 import scheduleReport from './common/scheduleReport';
+import { ReportTable, DarkTableRow, DarkTableCell } from './components/StyledTableComponents';
 
 const columnsArray = [
   ['startTime', 'reportStartDate'],
@@ -50,22 +44,59 @@ const SummaryReportPage = () => {
   const navigate = useNavigate();
   const classes = useReportStyles();
   const t = useTranslation();
-
   const devices = useSelector((state) => state.devices.items);
-
   const distanceUnit = useAttributePreference('distanceUnit');
   const speedUnit = useAttributePreference('speedUnit');
   const volumeUnit = useAttributePreference('volumeUnit');
-
   const [columns, setColumns] = usePersistedState('summaryColumns', ['startTime', 'distance', 'averageSpeed']);
   const [daily, setDaily] = useState(false);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const [order, setOrder] = useState('asc');
-  const [orderBy, setOrderBy] = useState('deviceName');
+  const [order, setOrder] = useState('desc');
+  const [orderBy, setOrderBy] = useState('startTime');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
+
+  const handleSubmit = useCatch(async ({ deviceIds, groupIds, from, to, type }) => {
+    const query = new URLSearchParams({ from, to, daily });
+    deviceIds.forEach((deviceId) => query.append('deviceId', deviceId));
+    groupIds.forEach((groupId) => query.append('groupId', groupId));
+    if (type === 'export') {
+      window.location.assign(`/api/reports/summary/xlsx?${query.toString()}`);
+    } else if (type === 'mail') {
+      const response = await fetch(`/api/reports/summary/mail?${query.toString()}`);
+      if (!response.ok) {
+        throw Error(await response.text());
+      }
+    } else {
+      setLoading(true);
+      try {
+        const response = await fetch(`/api/reports/summary?${query.toString()}`, {
+          headers: { Accept: 'application/json' },
+        });
+        if (response.ok) {
+          setItems(await response.json());
+          setPage(0);
+        } else {
+          throw Error(await response.text());
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+  });
+
+  const handleSchedule = useCatch(async (deviceIds, groupIds, report) => {
+    report.type = 'summary';
+    report.attributes.daily = daily;
+    const error = await scheduleReport(deviceIds, groupIds, report);
+    if (error) {
+      throw Error(error);
+    } else {
+      navigate('/reports/scheduled');
+    }
+  });
 
   const handleRequestSort = (property) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -109,21 +140,13 @@ const SummaryReportPage = () => {
       }
 
       if (order === 'asc') {
-        if (aVal < bVal) {
-          return -1;
-        }
-        if (aVal > bVal) {
-          return 1;
-        }
+        if (aVal < bVal) return -1;
+        if (aVal > bVal) return 1;
         return 0;
       }
 
-      if (aVal > bVal) {
-        return -1;
-      }
-      if (aVal < bVal) {
-        return 1;
-      }
+      if (aVal > bVal) return -1;
+      if (aVal < bVal) return 1;
       return 0;
     };
 
@@ -136,51 +159,11 @@ const SummaryReportPage = () => {
   const startRow = totalCount === 0 ? 0 : page * rowsPerPage + 1;
   const endRow = Math.min((page + 1) * rowsPerPage, totalCount);
 
-  const handleSubmit = useCatch(async ({ deviceIds, groupIds, from, to, type }) => {
-    const query = new URLSearchParams({ from, to, daily });
-    deviceIds.forEach((deviceId) => query.append('deviceId', deviceId));
-    groupIds.forEach((groupId) => query.append('groupId', groupId));
-    if (type === 'export') {
-      window.location.assign(`/api/reports/summary/xlsx?${query.toString()}`);
-    } else if (type === 'mail') {
-      const response = await fetch(`/api/reports/summary/mail?${query.toString()}`);
-      if (!response.ok) {
-        throw Error(await response.text());
-      }
-    } else {
-      setLoading(true);
-      try {
-        const response = await fetch(`/api/reports/summary?${query.toString()}`, {
-          headers: { Accept: 'application/json' },
-        });
-        if (response.ok) {
-          setItems(await response.json());
-          setPage(0);
-        } else {
-          throw Error(await response.text());
-        }
-      } finally {
-        setLoading(false);
-      }
-    }
-  });
-
-  const handleSchedule = useCatch(async (deviceIds, groupIds, report) => {
-    report.type = 'summary';
-    report.attributes.daily = daily;
-    const error = await scheduleReport(deviceIds, groupIds, report);
-    if (error) {
-      throw Error(error);
-    } else {
-      navigate('/reports/scheduled');
-    }
-  });
-
   const formatValue = (item, key) => {
     const value = item[key];
     switch (key) {
       case 'deviceId':
-        return devices[value].name;
+        return devices[value]?.name || value;
       case 'startTime':
         return formatTime(value, 'date');
       case 'startOdometer':
@@ -201,32 +184,35 @@ const SummaryReportPage = () => {
     }
   };
 
-  let tableBodyContent;
+  const sortableColumns = [
+    'deviceName',
+    'startTime',
+    'distance',
+    'averageSpeed',
+    'maxSpeed',
+    'engineHours',
+    'spentFuel',
+    'startOdometer',
+    'endOdometer',
+    'startHours',
+    'endHours',
+  ];
 
-  if (loading) {
-    tableBodyContent = <TableShimmer columns={columns.length + 1} />;
-  } else if (sortedAndPaginatedData.length === 0) {
-    tableBodyContent = (
-      <TableRow>
-        <TableCell colSpan={columns.length + 1} align="center">
-          <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
-            {t('sharedNoData') || 'No data available'}
-          </Typography>
-        </TableCell>
-      </TableRow>
-    );
-  } else {
-    tableBodyContent = sortedAndPaginatedData.map((item) => (
-      <TableRow key={`${item.deviceId}_${Date.parse(item.startTime)}`} hover>
-        <TableCell>{devices[item.deviceId].name}</TableCell>
-        {columns.map((key) => (
-          <TableCell key={key}>
-            {formatValue(item, key)}
-          </TableCell>
-        ))}
-      </TableRow>
-    ));
-  }
+  const headers = [
+    {
+      label: t('sharedDevice'),
+      sortKey: 'deviceName',
+    },
+    ...columns.map((key) => {
+      if (sortableColumns.includes(key)) {
+        return {
+          label: t(columnsMap.get(key)),
+          sortKey: key,
+        };
+      }
+      return t(columnsMap.get(key));
+    }),
+  ];
 
   return (
     <PageLayout menu={<ReportsMenu />} breadcrumbs={['reportTitle', 'reportSummary']}>
@@ -244,51 +230,26 @@ const SummaryReportPage = () => {
           <ColumnSelect columns={columns} setColumns={setColumns} columnsArray={columnsArray} />
         </ReportFilter>
       </div>
-      <Table stickyHeader>
-        <TableHead>
-          <TableRow>
-            <TableCell>
-              <TableSortLabel
-                active={orderBy === 'deviceName'}
-                direction={orderBy === 'deviceName' ? order : 'asc'}
-                onClick={() => handleRequestSort('deviceName')}
-              >
-                {t('sharedDevice')}
-                {orderBy === 'deviceName' ? (
-                  <Box component="span" sx={visuallyHidden}>
-                    {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
-                  </Box>
-                ) : null}
-              </TableSortLabel>
-            </TableCell>
-            {columns.map((key) => {
-              const isSortable = key === 'startTime' || key === 'distance' || key === 'averageSpeed' || key === 'maxSpeed' || key === 'engineHours';
-              if (isSortable) {
-                return (
-                  <TableCell key={key}>
-                    <TableSortLabel
-                      active={orderBy === key}
-                      direction={orderBy === key ? order : 'asc'}
-                      onClick={() => handleRequestSort(key)}
-                    >
-                      {t(columnsMap.get(key))}
-                      {orderBy === key ? (
-                        <Box component="span" sx={visuallyHidden}>
-                          {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
-                        </Box>
-                      ) : null}
-                    </TableSortLabel>
-                  </TableCell>
-                );
-              }
-              return (
-                <TableCell key={key}>{t(columnsMap.get(key))}</TableCell>
-              );
-            })}
-          </TableRow>
-        </TableHead>
-        <TableBody>{tableBodyContent}</TableBody>
-      </Table>
+      <ReportTable
+        headers={headers}
+        loading={loading}
+        loadingComponent={<TableShimmer columns={columns.length + 1} />}
+        sortable
+        sortConfig={{ order, orderBy }}
+        onSort={handleRequestSort}
+      >
+        {sortedAndPaginatedData.map((item) => (
+          <DarkTableRow key={`${item.deviceId}_${Date.parse(item.startTime)}`}>
+            <DarkTableCell>{item.deviceName}</DarkTableCell>
+            {columns.map((key) => (
+              <DarkTableCell key={key}>
+                {formatValue(item, key)}
+              </DarkTableCell>
+            ))}
+          </DarkTableRow>
+        ))}
+      </ReportTable>
+
       {!loading && sortedAndPaginatedData.length > 0 && (
         <Box
           sx={{

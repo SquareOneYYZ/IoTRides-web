@@ -1,26 +1,16 @@
-import React, {
-  useState,
-  useMemo,
-} from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
-  Link,
   IconButton,
-  TableSortLabel,
+  Link,
   Box,
   Pagination,
   Typography,
 } from '@mui/material';
-import { visuallyHidden } from '@mui/utils';
 import GpsFixedIcon from '@mui/icons-material/GpsFixed';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
 import ReplayIcon from '@mui/icons-material/Replay';
@@ -52,6 +42,8 @@ import scheduleReport from './common/scheduleReport';
 import MapScale from '../map/MapScale';
 import SelectField from '../common/components/SelectField';
 import ReplayControl from './components/ReplayControl';
+import { ReportTable, DarkTableRow, DarkTableCell } from './components/StyledTableComponents';
+import useResizableMap from './common/useResizableMap';
 
 const columnsArray = [
   ['eventTime', 'positionFixTime'],
@@ -73,16 +65,15 @@ const EventReportPage = () => {
   const navigate = useNavigate();
   const classes = useReportStyles();
   const t = useTranslation();
-
   const devices = useSelector((state) => state.devices.items);
   const geofences = useSelector((state) => state.geofences.items);
-
   const speedUnit = useAttributePreference('speedUnit');
   const distanceUnit = useAttributePreference('distanceUnit');
-
   const [allEventTypes, setAllEventTypes] = useState([
     ['allEvents', 'eventAll'],
   ]);
+
+  const { containerRef, mapHeight, handleMouseDown } = useResizableMap(60, 20, 80);
 
   const alarms = useTranslationKeys((it) => it.startsWith('alarm')).map(
     (it) => ({
@@ -162,75 +153,6 @@ const EventReportPage = () => {
       throw Error(await response.text());
     }
   }, []);
-
-  const handleRequestSort = (property) => {
-    const isAsc = orderBy === property && order === 'asc';
-    setOrder(isAsc ? 'desc' : 'asc');
-    setOrderBy(property);
-    setPage(0);
-  };
-
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage - 1);
-  };
-
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
-  const preparedData = useMemo(() => items.map((item) => ({
-    ...item,
-    deviceName: devices[item.deviceId]?.name || '',
-  })), [items, devices]);
-
-  const sortedAndPaginatedData = useMemo(() => {
-    if (!preparedData || preparedData.length === 0) return [];
-
-    const comparator = (a, b) => {
-      let aVal = a[orderBy];
-      let bVal = b[orderBy];
-
-      if (aVal == null) return 1;
-      if (bVal == null) return -1;
-
-      if (orderBy.toLowerCase().includes('time') || orderBy.toLowerCase().includes('date')) {
-        aVal = new Date(aVal).getTime();
-        bVal = new Date(bVal).getTime();
-      } else if (typeof aVal === 'number' && typeof bVal === 'number') {
-        return order === 'asc' ? aVal - bVal : bVal - aVal;
-      } else if (typeof aVal === 'string') {
-        aVal = aVal.toLowerCase();
-        bVal = String(bVal).toLowerCase();
-      }
-
-      if (order === 'asc') {
-        if (aVal < bVal) {
-          return -1;
-        }
-        if (aVal > bVal) {
-          return 1;
-        }
-        return 0;
-      }
-
-      if (aVal > bVal) {
-        return -1;
-      }
-      if (aVal < bVal) {
-        return 1;
-      }
-      return 0;
-    };
-
-    const sorted = [...preparedData].sort(comparator);
-    return sorted.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
-  }, [preparedData, order, orderBy, page, rowsPerPage]);
-
-  const totalCount = preparedData.length;
-  const totalPages = Math.ceil(totalCount / rowsPerPage);
-  const startRow = totalCount === 0 ? 0 : page * rowsPerPage + 1;
-  const endRow = Math.min((page + 1) * rowsPerPage, totalCount);
 
   const handleSubmit = useCatch(async ({ deviceId, from, to, type }) => {
     const query = new URLSearchParams({ deviceId, from, to });
@@ -343,6 +265,68 @@ const EventReportPage = () => {
     setSelectedItem(null);
   };
 
+  const handleRequestSort = (property) => {
+    const isAsc = orderBy === property && order === 'asc';
+    setOrder(isAsc ? 'desc' : 'asc');
+    setOrderBy(property);
+    setPage(0);
+  };
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage - 1);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const preparedData = useMemo(() => items.map((item) => ({
+    ...item,
+    typeLabel: t(prefixString('event', item.type)),
+    geofenceName: item.geofenceId > 0 ? geofences[item.geofenceId]?.name || '' : '',
+  })), [items, geofences, t]);
+
+  const sortedAndPaginatedData = useMemo(() => {
+    if (!preparedData || preparedData.length === 0) return [];
+
+    const comparator = (a, b) => {
+      let aVal = a[orderBy];
+      let bVal = b[orderBy];
+
+      if (aVal == null) return 1;
+      if (bVal == null) return -1;
+
+      if (orderBy.toLowerCase().includes('time') || orderBy.toLowerCase().includes('date')) {
+        aVal = new Date(aVal).getTime();
+        bVal = new Date(bVal).getTime();
+      } else if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return order === 'asc' ? aVal - bVal : bVal - aVal;
+      } else if (typeof aVal === 'string') {
+        aVal = aVal.toLowerCase();
+        bVal = String(bVal).toLowerCase();
+      }
+
+      if (order === 'asc') {
+        if (aVal < bVal) return -1;
+        if (aVal > bVal) return 1;
+        return 0;
+      }
+
+      if (aVal > bVal) return -1;
+      if (aVal < bVal) return 1;
+      return 0;
+    };
+
+    const sorted = [...preparedData].sort(comparator);
+    return sorted.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  }, [preparedData, order, orderBy, page, rowsPerPage]);
+
+  const totalCount = preparedData.length;
+  const totalPages = Math.ceil(totalCount / rowsPerPage);
+  const startRow = totalCount === 0 ? 0 : page * rowsPerPage + 1;
+  const endRow = Math.min((page + 1) * rowsPerPage, totalCount);
+
   const formatValue = (item, key) => {
     const value = item[key];
     switch (key) {
@@ -352,78 +336,106 @@ const EventReportPage = () => {
       case 'type':
         return t(prefixString('event', value));
 
-      case 'geofenceId': {
+      case 'geofenceId':
         if (value > 0) {
           const geofence = geofences[value];
           return geofence && geofence.name;
         }
         return null;
-      }
 
       case 'maintenanceId':
         return value > 0 ? value : null;
 
-      case 'speedLimit': {
+      case 'speedLimit':
         if (item.type === 'deviceOverspeed' && item.attributes?.speedLimit) {
           return formatSpeed(item.attributes.speedLimit, speedUnit, t);
         }
         return null;
-      }
 
-      case 'attributes': {
-        if (item.type === 'alarm') {
-          return t(prefixString('alarm', item.attributes.alarm));
-        }
-        if (item.type === 'deviceOverspeed') {
-          return formatSpeed(item.attributes.speed, speedUnit, t);
-        }
-        if (item.type === 'driverChanged') {
-          return item.attributes.driverUniqueId;
-        }
-        if (item.type === 'media') {
-          return (
-            <Link
-              href={`/api/media/${devices[item.deviceId]?.uniqueId}/${item.attributes.file}`}
-              target="_blank"
-            >
-              {item.attributes.file}
-            </Link>
-          );
-        }
-        if (item.type === 'commandResult') {
-          return item.attributes.result;
-        }
-        if (item.type === 'deviceTollRouteExit') {
-          let tollDetails = '';
-          if ('tollName' in item.attributes) {
-            tollDetails += `Toll name: ${item.attributes.tollName} | `;
+      case 'attributes':
+        switch (item.type) {
+          case 'alarm':
+            return t(prefixString('alarm', item.attributes.alarm));
+
+          case 'deviceOverspeed':
+            return formatSpeed(item.attributes.speed, speedUnit, t);
+
+          case 'driverChanged':
+            return item.attributes.driverUniqueId;
+
+          case 'media':
+            return (
+              <Link
+                href={`/api/media/${devices[item.deviceId]?.uniqueId}/${
+                  item.attributes.file
+                }`}
+                target="_blank"
+              >
+                {item.attributes.file}
+              </Link>
+            );
+
+          case 'commandResult':
+            return item.attributes.result;
+
+          case 'deviceTollRouteExit': {
+            let tollDetails = '';
+            if ('tollName' in item.attributes) {
+              tollDetails += `Toll name: ${item.attributes.tollName} | `;
+            }
+            if ('tollDistance' in item.attributes) {
+              tollDetails += `Toll Distance: ${formatDistance(
+                item.attributes.tollDistance,
+                distanceUnit,
+                t,
+              )}`;
+            }
+            return tollDetails;
           }
-          if ('tollDistance' in item.attributes) {
-            tollDetails += `Toll Distance: ${formatDistance(
-              item.attributes.tollDistance,
-              distanceUnit,
-              t,
-            )}`;
+
+          case 'deviceTollRouteEnter': {
+            let tollDetails = '';
+            if ('tollName' in item.attributes) {
+              tollDetails += `Toll name: ${item.attributes.trollName} | `;
+            }
+            if ('tollRef' in item.attributes) {
+              tollDetails += `Toll Reference: ${item.attributes.tollRef} | `;
+            }
+            return tollDetails;
           }
-          return tollDetails;
+
+          default:
+            return '';
         }
-        if (item.type === 'deviceTollRouteEnter') {
-          let tollDetails = '';
-          if ('tollName' in item.attributes) {
-            tollDetails += `Toll name: ${item.attributes.trollName} | `;
-          }
-          if ('tollRef' in item.attributes) {
-            tollDetails += `Toll Reference: ${item.attributes.tollRef} | `;
-          }
-          return tollDetails;
-        }
-        return '';
-      }
 
       default:
         return value;
     }
   };
+
+  const sortableColumns = [
+    'eventTime',
+    'typeLabel',
+    'geofenceName',
+    'maintenanceId',
+  ];
+  const headers = [
+    '',
+    '',
+    ...columns.map((key) => {
+      let sortKey = key;
+      if (key === 'type') sortKey = 'typeLabel';
+      if (key === 'geofenceId') sortKey = 'geofenceName';
+
+      if (sortableColumns.includes(sortKey)) {
+        return {
+          label: t(columnsMap.get(key)),
+          sortKey,
+        };
+      }
+      return t(columnsMap.get(key));
+    }),
+  ];
 
   if (replayMode) {
     return (
@@ -439,91 +451,86 @@ const EventReportPage = () => {
     );
   }
 
-  const showAlarmSelect = eventTypes[0] !== 'allEvents' && eventTypes.includes('alarm');
-
-  let tableBodyContent;
-
-  if (loading) {
-    tableBodyContent = <TableShimmer columns={columns.length + 2} />;
-  } else if (sortedAndPaginatedData.length === 0) {
-    tableBodyContent = (
-      <TableRow>
-        <TableCell colSpan={columns.length + 2} align="center">
-          <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
-            {t('sharedNoData') || 'No data available'}
-          </Typography>
-        </TableCell>
-      </TableRow>
-    );
-  } else {
-    tableBodyContent = sortedAndPaginatedData.map((item) => {
-      const isSelectedItem = selectedItem === item;
-      const hasPositionId = Boolean(item.positionId);
-
-      let locationAction = null;
-
-      if (hasPositionId) {
-        locationAction = isSelectedItem ? (
-          <IconButton size="small" onClick={() => setSelectedItem(null)}>
-            <GpsFixedIcon fontSize="small" />
-          </IconButton>
-        ) : (
-          <IconButton size="small" onClick={() => setSelectedItem(item)}>
-            <LocationSearchingIcon fontSize="small" />
-          </IconButton>
-        );
-      }
-
-      return (
-        <TableRow key={item.id} hover>
-          <TableCell className={classes.columnAction} padding="none">
-            {locationAction}
-          </TableCell>
-
-          <TableCell className={classes.columnAction} padding="none">
-            {hasPositionId && (
-            <IconButton
-              size="small"
-              onClick={() => handleReplayStart(item)}
-              disabled={replayLoading}
-            >
-              <ReplayIcon fontSize="small" />
-            </IconButton>
-            )}
-          </TableCell>
-
-          {columns.map((key) => (
-            <TableCell key={key}>{formatValue(item, key)}</TableCell>
-          ))}
-        </TableRow>
-      );
-    });
-  }
-
   return (
     <PageLayout
       menu={<ReportsMenu />}
       breadcrumbs={['reportTitle', 'reportEvents']}
     >
-      <div className={classes.container}>
+      <div
+        ref={containerRef}
+        className={classes.container}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: 'calc(100vh - 64px)',
+          overflow: 'hidden',
+        }}
+      >
         {selectedItem && (
-          <div className={classes.containerMap}>
-            <MapView>
-              <MapGeofence />
+          <>
+            <div
+              className={classes.containerMap}
+              style={{
+                height: `${mapHeight}%`,
+                minHeight: '150px',
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+            >
+              <MapView>
+                <MapGeofence />
+                {position && (
+                  <MapPositions positions={[position]} titleField="fixTime" />
+                )}
+              </MapView>
+              <MapScale />
               {position && (
-                <MapPositions positions={[position]} titleField="fixTime" />
+                <MapCamera
+                  latitude={position.latitude}
+                  longitude={position.longitude}
+                />
               )}
-            </MapView>
-            <MapScale />
-            {position && (
-              <MapCamera
-                latitude={position.latitude}
-                longitude={position.longitude}
+            </div>
+
+            <button
+              type="button"
+              aria-label="Resize map"
+              onMouseDown={handleMouseDown}
+              style={{
+                height: '8px',
+                backgroundColor: '#e0e0e0',
+                cursor: 'row-resize',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                borderTop: '1px solid #ccc',
+                borderBottom: '1px solid #ccc',
+                transition: 'background-color 0.2s',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#d0d0d0')}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#e0e0e0')}
+            >
+              <div
+                style={{
+                  width: '40px',
+                  height: '4px',
+                  backgroundColor: '#999',
+                  borderRadius: '2px',
+                }}
               />
-            )}
-          </div>
+            </button>
+          </>
         )}
-        <div className={classes.containerMain}>
+
+        <div
+          className={classes.containerMain}
+          style={{
+            flex: 1,
+            overflow: 'auto',
+            minHeight: '150px',
+          }}
+        >
           <div className={classes.header}>
             <ReportFilter
               handleSubmit={handleSubmit}
@@ -545,6 +552,12 @@ const EventReportPage = () => {
                       setEventTypes(values);
                     }}
                     multiple
+                    sx={{
+                      borderRadius: '13px',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderRadius: '13px',
+                      },
+                    }}
                   >
                     {allEventTypes.map(([key, string]) => (
                       <MenuItem key={key} value={key}>
@@ -554,7 +567,7 @@ const EventReportPage = () => {
                   </Select>
                 </FormControl>
               </div>
-              {showAlarmSelect && (
+              {eventTypes[0] !== 'allEvents' && eventTypes.includes('alarm') && (
                 <div className={classes.filterItem}>
                   <SelectField
                     multiple
@@ -574,39 +587,54 @@ const EventReportPage = () => {
               />
             </ReportFilter>
           </div>
-          <Table stickyHeader>
-            <TableHead>
-              <TableRow>
-                <TableCell className={classes.columnAction} />
-                <TableCell className={classes.columnAction} />
-                {columns.map((key) => {
-                  const isSortable = key === 'eventTime' || key === 'type';
-                  if (isSortable) {
-                    return (
-                      <TableCell key={key}>
-                        <TableSortLabel
-                          active={orderBy === key}
-                          direction={orderBy === key ? order : 'asc'}
-                          onClick={() => handleRequestSort(key)}
-                        >
-                          {t(columnsMap.get(key))}
-                          {orderBy === key ? (
-                            <Box component="span" sx={visuallyHidden}>
-                              {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
-                            </Box>
-                          ) : null}
-                        </TableSortLabel>
-                      </TableCell>
-                    );
-                  }
-                  return (
-                    <TableCell key={key}>{t(columnsMap.get(key))}</TableCell>
-                  );
-                })}
-              </TableRow>
-            </TableHead>
-            <TableBody>{tableBodyContent}</TableBody>
-          </Table>
+
+          <ReportTable
+            headers={headers}
+            loading={loading}
+            loadingComponent={<TableShimmer columns={columns.length + 2} />}
+            sortable
+            sortConfig={{ order, orderBy }}
+            onSort={handleRequestSort}
+          >
+            {sortedAndPaginatedData.map((item) => (
+              <DarkTableRow key={item.id}>
+                <DarkTableCell className={classes.columnAction} padding="none">
+                  {item.positionId && (
+                    selectedItem === item ? (
+                      <IconButton
+                        size="small"
+                        onClick={() => setSelectedItem(null)}
+                      >
+                        <GpsFixedIcon fontSize="small" />
+                      </IconButton>
+                    ) : (
+                      <IconButton
+                        size="small"
+                        onClick={() => setSelectedItem(item)}
+                      >
+                        <LocationSearchingIcon fontSize="small" />
+                      </IconButton>
+                    )
+                  )}
+                </DarkTableCell>
+                <DarkTableCell className={classes.columnAction} padding="none">
+                  {item.positionId && (
+                    <IconButton
+                      size="small"
+                      onClick={() => handleReplayStart(item)}
+                      disabled={replayLoading}
+                    >
+                      <ReplayIcon fontSize="small" />
+                    </IconButton>
+                  )}
+                </DarkTableCell>
+                {columns.map((key) => (
+                  <DarkTableCell key={key}>{formatValue(item, key)}</DarkTableCell>
+                ))}
+              </DarkTableRow>
+            ))}
+          </ReportTable>
+
           {!loading && sortedAndPaginatedData.length > 0 && (
             <Box
               sx={{
