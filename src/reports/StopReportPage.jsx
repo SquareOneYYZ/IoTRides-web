@@ -279,6 +279,9 @@ const StopReportPage = () => {
             flex: 1,
             overflow: 'auto',
             minHeight: '150px',
+            scrollBehavior: 'smooth',
+            WebkitOverflowScrolling: 'touch',
+            willChange: 'scroll-position',
           }}
         >
           <div className={classes.header}>

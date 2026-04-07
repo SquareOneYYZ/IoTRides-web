@@ -7,7 +7,7 @@ import { visuallyHidden } from '@mui/utils';
 
 export const TableWrapper = styled('div')(({ theme }) => ({
   borderRadius: '20px',
-  overflow: 'hidden',
+  overflow: 'auto',
   border: `1px solid ${theme.palette.divider}`,
   backgroundColor: theme.palette.background.paper,
 }));
@@ -38,7 +38,8 @@ export const DarkTableCell = styled(TableCell)(({ theme }) => ({
 }));
 
 export const DarkTableRow = styled(TableRow)(({ theme }) => ({
-  transition: 'background-color 0.2s',
+  transition: 'background-color 0.2s ease',
+  willChange: 'background-color',
   backgroundColor: theme.palette.background.paper,
   '&:hover': {
     backgroundColor: theme.palette.mode === 'dark'
@@ -71,6 +72,9 @@ export const LastHeaderCell = styled(DarkTableCell)(({ theme }) => ({
 export const TableContainer = styled('div')(({ theme }) => ({
   padding: '20px',
   backgroundColor: theme.palette.background.default,
+  scrollBehavior: 'smooth',
+  WebkitOverflowScrolling: 'touch',
+  overscrollBehavior: 'contain',
 }));
 
 export const ReportTable = ({

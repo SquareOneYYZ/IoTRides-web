@@ -448,7 +448,14 @@ const DevicesPage = () => {
       menu={<SettingsMenu />}
       breadcrumbs={['settingsTitle', 'deviceTitle']}
     >
-      <Box sx={{ minHeight: '100vh', overflowY: 'auto' }}>
+      <Box sx={{
+        minHeight: '100vh',
+        overflowY: 'auto',
+        scrollBehavior: 'smooth',
+        WebkitOverflowScrolling: 'touch',
+        willChange: 'scroll-position',
+      }}
+      >
         <Box
           sx={{
             p: 2,
