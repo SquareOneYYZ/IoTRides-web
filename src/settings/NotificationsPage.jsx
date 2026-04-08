@@ -66,7 +66,17 @@ const NotificationsPage = () => {
           {!loading ? items.filter(filterByKeyword(searchKeyword)).map((item) => (
             <TableRow key={item.id}>
               <TableCell>{item.description}</TableCell>
-              <TableCell>{t(prefixString('event', item.type))}</TableCell>
+              <TableCell>
+                {item.type === 'zoneViolation'
+                  ? [
+                    item.attributes?.zoneTypes,
+                    item.attributes?.violationTypes,
+                  ]
+                    .filter(Boolean)
+                    .map((val) => val.charAt(0).toUpperCase() + val.slice(1))
+                    .join(' ')
+                  : t(prefixString('event', item.type))}
+              </TableCell>
               <TableCell>{formatBoolean(item.always, t)}</TableCell>
               <TableCell>{formatList('alarm', item.attributes.alarms)}</TableCell>
               <TableCell>{formatList('notificator', item.notificators)}</TableCell>
