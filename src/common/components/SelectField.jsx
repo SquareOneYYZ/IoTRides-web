@@ -160,6 +160,13 @@ const SelectField = ({
           onChange={handleVinSelect}
           onInputChange={handleVinInputChange}
           onBlur={handleVinBlur}
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              borderRadius: '13px',
+              '& fieldset': { borderRadius: '13px' },
+            },
+            ...sx,
+          }}
           renderOption={(props, option) => (
             <MenuItem {...props} key={option.vin}>
               <div>
@@ -256,6 +263,13 @@ const SelectField = ({
             size="small"
             options={items}
             getOptionLabel={getOptionLabel}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '13px',
+                '& fieldset': { borderRadius: '13px' },
+              },
+              ...sx,
+            }}
             renderOption={(props, option) => (
               <MenuItem {...props} key={keyGetter(option)} value={keyGetter(option)}>
                 <Tooltip title={titleGetter(option)} placement="right" arrow>
