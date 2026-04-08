@@ -11,6 +11,7 @@ import { useAttributePreference, usePreference } from '../../common/util/prefere
 import usePersistedState, { savePersistedState } from '../../common/util/usePersistedState';
 import { mapImages } from './preloadImages';
 import useMapStyles from './useMapStyles';
+import { FullScreenControl } from '../controls/MapFullScreen';
 
 const element = document.createElement('div');
 element.style.width = '100%';
@@ -51,8 +52,7 @@ const initMap = async () => {
     });
   }
 };
-
-map.addControl(new maplibregl.NavigationControl());
+map.addControl(new FullScreenControl(), 'top-right');
 
 const switcher = new SwitcherControl(
   () => updateReadyValue(false),
@@ -72,7 +72,7 @@ const switcher = new SwitcherControl(
   },
 );
 
-map.addControl(switcher);
+map.addControl(switcher, 'top-right');
 
 const MapView = ({ children }) => {
   const containerEl = useRef(null);
