@@ -16,7 +16,7 @@ const SelectField = ({
   data,
   keyGetter = (item) => item.id,
   titleGetter = (item) => item.name,
-
+  filter,
 }) => {
   const [items, setItems] = useState();
 
@@ -34,14 +34,7 @@ const SelectField = ({
       const response = await fetch(endpoint);
       if (response.ok) {
         const data = await response.json();
-
-        if (endpoint === '/api/notifications/types') {
-          const FilteredTypes = ['deviceFuelDrop', 'deviceFuelIncrease', 'textMessage', 'driverChanged', 'media'];
-
-          setItems(data.filter((item) => !FilteredTypes.includes(item.type)));
-        } else {
-          setItems(data);
-        }
+        setItems(filter ? filter(data) : data);
       } else {
         throw Error(await response.text());
       }
