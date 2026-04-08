@@ -300,11 +300,11 @@ const ReportFilter = ({
               mail: t('reportEmail'),
               schedule: t('reportSchedule'),
             }}
-            sx={{ // ← ADD THIS
+            sx={{
               borderRadius: '13px',
               '& .MuiOutlinedInput-notchedOutline': { borderRadius: '13px' },
             }}
-            MenuProps={{ // ← ADD THIS
+            MenuProps={{
               PaperProps: { sx: { borderRadius: '13px' } },
             }}
           />

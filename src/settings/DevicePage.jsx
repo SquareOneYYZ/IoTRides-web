@@ -59,6 +59,15 @@ const DevicePage = () => {
 
   const validate = () => item && item.name && item.uniqueId;
 
+  const roundedFieldSx = {
+    '& .MuiOutlinedInput-root': {
+      borderRadius: '13px',
+      '& fieldset': { borderRadius: '13px', borderColor: 'rgba(255,255,255,0.23)' },
+      '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.5)' },
+      '&.Mui-focused fieldset': { borderColor: 'primary.main' },
+    },
+  };
+
   const renderVinAutocomplete = (field, labelKey, suggestedValue) => {
     const options = suggestedValue ? [suggestedValue] : [];
 
@@ -67,6 +76,7 @@ const DevicePage = () => {
         freeSolo
         options={options}
         value={item[field] || ''}
+        sx={roundedFieldSx}
         onChange={(event, newValue) => {
           setItem((prev) => ({ ...prev, [field]: newValue || '' }));
         }}
@@ -137,6 +147,7 @@ const DevicePage = () => {
                 value={item.name || ''}
                 onChange={(event) => setItem({ ...item, name: event.target.value })}
                 label={t('sharedName')}
+                sx={roundedFieldSx}
               />
               <TextField
                 value={item.uniqueId || ''}
@@ -144,6 +155,8 @@ const DevicePage = () => {
                 label={t('deviceIdentifier')}
                 helperText={t('deviceIdentifierHelp')}
                 disabled={!admin || Boolean(uniqueId)}
+                sx={roundedFieldSx}
+
               />
             </AccordionDetails>
           </Accordion>
@@ -163,14 +176,17 @@ const DevicePage = () => {
                 value={item.phone || ''}
                 onChange={(event) => setItem({ ...item, phone: event.target.value })}
                 label={t('sharedPhone')}
+                sx={roundedFieldSx}
+
               />
               <TextField
                 value={item.license || ''}
                 onChange={(event) => setItem({ ...item, license: event.target.value })}
                 label={t('deviceLicenseNumber')}
+                sx={roundedFieldSx}
+
               />
 
-              {/* VIN Field — API fires only on search button click or Enter */}
               <SelectField
                 value={item.vin || ''}
                 onChange={(event) => {
@@ -185,11 +201,6 @@ const DevicePage = () => {
                 vinApiEndpoint="/api/devices/Vindecoder"
                 fullWidth
               />
-
-              {/* ── VIN decoded fields with "From VIN" badge design ─────────
-                  Matches screenshot: Value left, green badge right
-              ─────────────────────────────────────────────────────────────── */}
-
               {renderVinAutocomplete('make', 'deviceMake', vinDecodedData?.make)}
               {renderVinAutocomplete('manufacturer', 'deviceManufacturer', vinDecodedData?.manufacturer)}
               {renderVinAutocomplete('model', 'deviceModel', vinDecodedData?.model)}
@@ -208,6 +219,8 @@ const DevicePage = () => {
                 value={item.contact || ''}
                 onChange={(event) => setItem({ ...item, contact: event.target.value })}
                 label={t('deviceContact')}
+                sx={roundedFieldSx}
+
               />
               <SelectField
                 value={item.category || 'default'}
@@ -245,6 +258,7 @@ const DevicePage = () => {
                         setItem({ ...item, expirationTime: new Date(e.target.value).toISOString() });
                       }
                     }}
+                    sx={roundedFieldSx}
                   />
                   <FormControlLabel
                     control={(
@@ -273,6 +287,8 @@ const DevicePage = () => {
                   onChange={handleFiles}
                   showAlerts={false}
                   maxFileSize={500000}
+                  sx={roundedFieldSx}
+
                 />
               </AccordionDetails>
             </Accordion>
