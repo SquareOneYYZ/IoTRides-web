@@ -16,6 +16,7 @@ import useFilter from './useFilter';
 import MainToolbar from './MainToolbar';
 import MainMap from './MainMap';
 import { useAttributePreference } from '../common/util/preferences';
+import WhatsNewPopup from '../common/components/WhatsNewPopup';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -145,6 +146,7 @@ const MainPage = () => {
         )}
       </div>
       <EventsDrawer open={eventsOpen} onClose={() => setEventsOpen(false)} />
+      <WhatsNewPopup />
       {selectedDeviceId && (
         <StatusCard
           deviceId={selectedDeviceId}
