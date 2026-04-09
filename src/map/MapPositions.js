@@ -1,4 +1,6 @@
-import { useId, useCallback, useEffect } from 'react';
+import {
+  useId, useCallback, useEffect, useRef,
+} from 'react';
 import { useSelector } from 'react-redux';
 import { useMediaQuery } from '@mui/material';
 import { useTheme } from '@mui/styles';
@@ -9,14 +11,10 @@ import { useAttributePreference } from '../common/util/preferences';
 import { useCatchCallback } from '../reactHelper';
 import { findFonts } from './core/mapUtil';
 
-const MapPositions = ({
-  positions,
-  onClick,
-  showStatus,
-  selectedPosition,
-  titleField,
-  customIcon,
-}) => {
+const TELEPORT_THRESHOLD_DEG = 0.0045; // ~500 m
+const TELEPORT_THRESHOLD_SQ = TELEPORT_THRESHOLD_DEG * TELEPORT_THRESHOLD_DEG;
+
+const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleField }) => {
   const id = useId();
   const clusters = `${id}-clusters`;
   const selected = `${id}-selected`;
@@ -31,7 +29,32 @@ const MapPositions = ({
   const mapCluster = useAttributePreference('mapCluster', true);
   const directionType = useAttributePreference('mapDirection', 'selected');
 
-  const createFeature = (devices, position, selectedPositionId) => {
+  const baseAnimationDuration = useAttributePreference('mapAnimationDuration', 2500);
+  const enableSmoothing = useAttributePreference('mapEnableSmoothing', true);
+  const useAdaptiveTiming = useAttributePreference('mapAdaptiveTiming', true);
+
+  const animationStateRef = useRef({});
+  const animationFrameRef = useRef(null);
+  const isAnimatingRef = useRef(false);
+  const devicesRef = useRef(devices);
+  const selectedDeviceIdRef = useRef(selectedDeviceId);
+  const selectedPositionRef = useRef(selectedPosition);
+  const lastUpdateTimeRef = useRef({});
+
+  useEffect(() => {
+    devicesRef.current = devices;
+    selectedDeviceIdRef.current = selectedDeviceId;
+    selectedPositionRef.current = selectedPosition;
+  }, [devices, selectedDeviceId, selectedPosition]);
+
+  useEffect(() => {
+    selectedDeviceIdRef.current = selectedDeviceId;
+    if (map.getSource(id)) {
+      updateMapData(); // eslint-disable-line no-use-before-define
+    }
+  }, [selectedDeviceId]);
+
+  const createFeature = useCallback((devices, position, selectedPositionId) => {
     const device = devices[position.deviceId];
     let showDirection;
     switch (directionType) {
@@ -50,59 +73,274 @@ const MapPositions = ({
       deviceId: position.deviceId,
       name: device.name,
       fixTime: formatTime(position.fixTime, 'seconds'),
-      tollName: 'Event Location',
       category: mapIconKey(device.category),
-      color: showStatus
-        ? position.attributes.color || getStatusColor(device.status)
-        : 'neutral',
+      color: showStatus ? position.attributes.color || getStatusColor(device.status) : 'neutral',
       rotation: position.course,
       direction: showDirection,
     };
+  }, [directionType, showStatus]);
+
+  const lerp = (start, end, t) => start + (end - start) * t;
+
+  const easeInOutQuad = (t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
+
+  const interpolateCoordinates = (startLng, startLat, endLng, endLat, progress) => [
+    lerp(startLng, endLng, progress),
+    lerp(startLat, endLat, progress),
+  ];
+
+  const interpolateRotation = (startRotation, endRotation, progress) => {
+    let diff = endRotation - startRotation;
+
+    if (diff > 180) {
+      diff -= 360;
+    } else if (diff < -180) {
+      diff += 360;
+    }
+
+    let result = startRotation + diff * progress;
+    if (result < 0) result += 360;
+    if (result >= 360) result -= 360;
+
+    return result;
   };
 
-  const onMouseEnter = () => {
-    map.getCanvas().style.cursor = 'pointer';
-  };
+  const calculateAnimationDuration = useCallback((deviceId, now) => {
+    if (!useAdaptiveTiming) {
+      return baseAnimationDuration;
+    }
 
-  const onMouseLeave = () => {
-    map.getCanvas().style.cursor = '';
-  };
+    const lastUpdate = lastUpdateTimeRef.current[deviceId];
+    if (!lastUpdate) {
+      return baseAnimationDuration;
+    }
+    const timeBetweenUpdates = now - lastUpdate;
+    const adaptiveDuration = Math.min(timeBetweenUpdates * 0.8, 5000);
+    return Math.max(1000, Math.min(adaptiveDuration, 5000));
+  }, [baseAnimationDuration, useAdaptiveTiming]);
 
-  const onMapClick = useCallback(
-    (event) => {
-      if (!event.defaultPrevented && onClick) {
-        onClick(event.lngLat.lat, event.lngLat.lng);
-      }
-    },
-    [onClick],
-  );
+  const updateMapData = useCallback((stateVals) => {
+    const vals = stateVals ?? Object.values(animationStateRef.current);
+    const currentDevices = devicesRef.current;
+    const currentSelectedDeviceId = selectedDeviceIdRef.current;
+    const currentSelectedPosition = selectedPositionRef.current;
 
-  const onMarkerClick = useCallback(
-    (event) => {
-      event.preventDefault();
-      const feature = event.features[0];
-      if (onClick) {
-        onClick(feature.properties.id, feature.properties.deviceId);
-      }
-    },
-    [onClick],
-  );
+    [id, selected].forEach((source) => {
+      const sourceObj = map.getSource(source);
+      if (!sourceObj) return;
 
-  const onClusterClick = useCatchCallback(
-    async (event) => {
-      event.preventDefault();
-      const features = map.queryRenderedFeatures(event.point, {
-        layers: [clusters],
+      const features = vals
+        .filter((deviceState) => currentDevices.hasOwnProperty(deviceState.properties.deviceId))
+        .filter((deviceState) => {
+          const isSelected = deviceState.properties.deviceId === currentSelectedDeviceId;
+          return source === id ? !isSelected : isSelected;
+        })
+        .map((deviceState) => {
+          const position = deviceState.properties;
+          const { current } = deviceState;
+
+          return {
+            type: 'Feature',
+            geometry: {
+              type: 'Point',
+              coordinates: [current.longitude, current.latitude],
+            },
+            properties: {
+              ...createFeature(currentDevices, position, currentSelectedPosition && currentSelectedPosition.id),
+              rotation: current.rotation,
+            },
+          };
+        });
+
+      sourceObj.setData({
+        type: 'FeatureCollection',
+        features,
       });
-      const clusterId = features[0].properties.cluster_id;
-      const zoom = await map.getSource(id).getClusterExpansionZoom(clusterId);
-      map.easeTo({
-        center: features[0].geometry.coordinates,
-        zoom,
-      });
-    },
-    [clusters],
-  );
+    });
+  }, [id, selected, createFeature]);
+
+  const animate = useCallback(() => {
+    const now = Date.now();
+    const state = animationStateRef.current;
+    const stateVals = Object.values(state);
+    let needsUpdate = false;
+    let hasActiveTargets = false;
+
+    stateVals.forEach((deviceState) => {
+      if (deviceState.target) {
+        hasActiveTargets = true;
+        const elapsed = now - deviceState.startTime;
+        const duration = deviceState.duration || baseAnimationDuration;
+        const progress = Math.min(elapsed / duration, 1);
+        const easedProgress = easeInOutQuad(progress);
+
+        const [lng, lat] = interpolateCoordinates(
+          deviceState.start.longitude,
+          deviceState.start.latitude,
+          deviceState.target.longitude,
+          deviceState.target.latitude,
+          easedProgress,
+        );
+
+        const rotation = interpolateRotation(
+          deviceState.start.rotation,
+          deviceState.target.rotation,
+          easedProgress,
+        );
+
+        deviceState.current = {
+          longitude: lng,
+          latitude: lat,
+          rotation,
+        };
+
+        if (progress >= 1) {
+          deviceState.current = { ...deviceState.target };
+          deviceState.target = null;
+          deviceState.start = null;
+        }
+
+        needsUpdate = true;
+      }
+    });
+
+    if (needsUpdate) {
+      updateMapData(stateVals);
+    }
+
+    if (hasActiveTargets) {
+      animationFrameRef.current = requestAnimationFrame(animate);
+    } else {
+      isAnimatingRef.current = false;
+      animationFrameRef.current = null;
+    }
+  }, [baseAnimationDuration, updateMapData]);
+
+  const isTeleport = (curLng, curLat, newLng, newLat) => {
+    const dLng = newLng - curLng;
+    const dLat = newLat - curLat;
+    return (dLng * dLng + dLat * dLat) > TELEPORT_THRESHOLD_SQ;
+  };
+
+  const updateAnimationState = useCallback((newPositions) => {
+    const now = Date.now();
+    const state = animationStateRef.current;
+    let newTargetAdded = false;
+
+    newPositions.forEach((position) => {
+      const { deviceId } = position;
+      const currentState = state[deviceId];
+      lastUpdateTimeRef.current[deviceId] = now;
+
+      if (!currentState) {
+        state[deviceId] = {
+          current: {
+            longitude: position.longitude,
+            latitude: position.latitude,
+            rotation: position.course || 0,
+          },
+          target: null,
+          startTime: now,
+          properties: position,
+        };
+      } else {
+        const dLng = Math.abs(currentState.current.longitude - position.longitude);
+        const dLat = Math.abs(currentState.current.latitude - position.latitude);
+        const hasChanged = dLng > 0.000001 || dLat > 0.000001;
+
+        const teleport = hasChanged && isTeleport(
+          currentState.current.longitude,
+          currentState.current.latitude,
+          position.longitude,
+          position.latitude,
+        );
+
+        if (teleport) {
+          state[deviceId] = {
+            current: {
+              longitude: position.longitude,
+              latitude: position.latitude,
+              rotation: position.course || 0,
+            },
+            target: null,
+            startTime: now,
+            properties: position,
+          };
+        } else if (hasChanged && enableSmoothing) {
+          const duration = calculateAnimationDuration(deviceId, now);
+          state[deviceId] = {
+            ...currentState,
+            start: { ...currentState.current },
+            target: {
+              longitude: position.longitude,
+              latitude: position.latitude,
+              rotation: position.course || 0,
+            },
+            startTime: now,
+            duration,
+            properties: position,
+          };
+          newTargetAdded = true;
+        } else if (!enableSmoothing) {
+          state[deviceId] = {
+            current: {
+              longitude: position.longitude,
+              latitude: position.latitude,
+              rotation: position.course || 0,
+            },
+            target: null,
+            startTime: now,
+            properties: position,
+          };
+        } else {
+          state[deviceId].properties = position;
+        }
+      }
+    });
+
+    const activeDeviceIds = new Set(newPositions.map((p) => p.deviceId));
+    Object.keys(state).forEach((deviceId) => {
+      if (!activeDeviceIds.has(Number(deviceId))) {
+        delete state[deviceId];
+        delete lastUpdateTimeRef.current[deviceId];
+      }
+    });
+
+    if (newTargetAdded && enableSmoothing && !isAnimatingRef.current) {
+      isAnimatingRef.current = true;
+      animationFrameRef.current = requestAnimationFrame(animate);
+    }
+  }, [enableSmoothing, calculateAnimationDuration, animate]);
+
+  const onMouseEnter = () => map.getCanvas().style.cursor = 'pointer';
+  const onMouseLeave = () => map.getCanvas().style.cursor = '';
+
+  const onMapClick = useCallback((event) => {
+    if (!event.defaultPrevented && onClick) {
+      onClick(event.lngLat.lat, event.lngLat.lng);
+    }
+  }, [onClick]);
+
+  const onMarkerClick = useCallback((event) => {
+    event.preventDefault();
+    const feature = event.features[0];
+    if (onClick) {
+      onClick(feature.properties.id, feature.properties.deviceId);
+    }
+  }, [onClick]);
+
+  const onClusterClick = useCatchCallback(async (event) => {
+    event.preventDefault();
+    const features = map.queryRenderedFeatures(event.point, {
+      layers: [clusters],
+    });
+    const clusterId = features[0].properties.cluster_id;
+    const zoom = await map.getSource(id).getClusterExpansionZoom(clusterId);
+    map.easeTo({
+      center: features[0].geometry.coordinates,
+      zoom,
+    });
+  }, [clusters]);
 
   useEffect(() => {
     map.addSource(id, {
@@ -115,7 +353,6 @@ const MapPositions = ({
       clusterMaxZoom: 14,
       clusterRadius: 50,
     });
-
     map.addSource(selected, {
       type: 'geojson',
       data: {
@@ -123,7 +360,6 @@ const MapPositions = ({
         features: [],
       },
     });
-
     [id, selected].forEach((source) => {
       map.addLayer({
         id: source,
@@ -131,7 +367,7 @@ const MapPositions = ({
         source,
         filter: ['!has', 'point_count'],
         layout: {
-          'icon-image': customIcon || '{category}-{color}',
+          'icon-image': '{category}-{color}',
           'icon-size': iconScale,
           'icon-allow-overlap': true,
           'text-field': `{${titleField || 'name'}}`,
@@ -146,12 +382,15 @@ const MapPositions = ({
           'text-halo-width': 1,
         },
       });
-
       map.addLayer({
         id: `direction-${source}`,
         type: 'symbol',
         source,
-        filter: ['all', ['!has', 'point_count'], ['==', 'direction', true]],
+        filter: [
+          'all',
+          ['!has', 'point_count'],
+          ['==', 'direction', true],
+        ],
         layout: {
           'icon-image': 'direction',
           'icon-size': iconScale,
@@ -165,7 +404,6 @@ const MapPositions = ({
       map.on('mouseleave', source, onMouseLeave);
       map.on('click', source, onMarkerClick);
     });
-
     map.addLayer({
       id: clusters,
       type: 'symbol',
@@ -186,6 +424,10 @@ const MapPositions = ({
     map.on('click', onMapClick);
 
     return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+
       map.off('mouseenter', clusters, onMouseEnter);
       map.off('mouseleave', clusters, onMouseLeave);
       map.off('click', clusters, onClusterClick);
@@ -211,41 +453,17 @@ const MapPositions = ({
         }
       });
     };
-  }, [mapCluster, clusters, onMarkerClick, onClusterClick]);
+  }, [mapCluster, clusters, onMarkerClick, onClusterClick, iconScale, titleField, id, selected, onMapClick]);
 
   useEffect(() => {
-    [id, selected].forEach((source) => {
-      map.getSource(source)?.setData({
-        type: 'FeatureCollection',
-        features: positions
-          .filter((it) => devices.hasOwnProperty(it.deviceId))
-          .filter((it) => (source === id
-            ? it.deviceId !== selectedDeviceId
-            : it.deviceId === selectedDeviceId))
-          .map((position) => ({
-            type: 'Feature',
-            geometry: {
-              type: 'Point',
-              coordinates: [position.longitude, position.latitude],
-            },
-            properties: createFeature(
-              devices,
-              position,
-              selectedPosition && selectedPosition.id,
-            ),
-          })),
-      });
-    });
-  }, [
-    mapCluster,
-    clusters,
-    onMarkerClick,
-    onClusterClick,
-    devices,
-    positions,
-    selectedPosition,
-    selectedDeviceId,
-  ]);
+    const filteredPositions = positions.filter((it) => devices.hasOwnProperty(it.deviceId));
+    updateAnimationState(filteredPositions);
+
+    if (!enableSmoothing) {
+      updateMapData();
+    }
+  }, [positions, devices, enableSmoothing, updateAnimationState, updateMapData]);
+
   return null;
 };
 
