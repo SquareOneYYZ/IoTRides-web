@@ -9,9 +9,12 @@ import './mapControls.css';
 const MEASURE_SOURCE = 'measure-source';
 const MEASURE_PREVIEW_SOURCE = 'measure-preview-source';
 const MEASURE_POINTS_LAYER = 'measure-points';
+const MEASURE_MIDPOINTS_LAYER = 'measure-midpoints';
 const MEASURE_LINE_LAYER = 'measure-line';
 const MEASURE_PREVIEW_LAYER = 'measure-preview-line';
 const MEASURE_LABELS_LAYER = 'measure-labels';
+const MEASURE_MIDPOINT_LABELS_LAYER = 'measure-midpoint-labels';
+const TRIANGLE_IMAGE_ID = 'measure-triangle-icon';
 
 const calculateDistance = (coords) => {
   if (coords.length < 2) return 0;
@@ -36,6 +39,39 @@ const midpoint = (p1, p2) => [
   (p1[0] + p2[0]) / 2,
   (p1[1] + p2[1]) / 2,
 ];
+
+/**
+ * Creates a triangle SVG image and registers it with MapLibre so it can be
+ * used as a symbol icon for midpoint markers.
+ *
+ * Color is orange (#f57c00) so it is visually distinct from the blue (#1976d2)
+ * circle markers used for the actual measurement click-points.
+ */
+const addTriangleImage = () => {
+  if (map.hasImage(TRIANGLE_IMAGE_ID)) return;
+
+  const size = 24;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+
+  // Draw upward-pointing filled triangle
+  ctx.beginPath();
+  ctx.moveTo(size / 2, 2); // top center
+  ctx.lineTo(size - 2, size - 2); // bottom right
+  ctx.lineTo(2, size - 2); // bottom left
+  ctx.closePath();
+
+  ctx.fillStyle = '#f57c00'; // orange fill — distinct from blue points
+  ctx.fill();
+  ctx.strokeStyle = '#ffffff'; // white stroke for readability on any basemap
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  const imageData = ctx.getImageData(0, 0, size, size);
+  map.addImage(TRIANGLE_IMAGE_ID, { width: size, height: size, data: imageData.data });
+};
 
 class MeasureControl {
   constructor() {
@@ -126,9 +162,13 @@ class MeasureControl {
     this.label.textContent = 'Click map';
     map.getCanvas().style.cursor = 'crosshair';
 
+    // Register the triangle image used by the midpoint symbol layer
+    addTriangleImage();
+
     if (!map.getSource(MEASURE_SOURCE)) {
       map.addSource(MEASURE_SOURCE, { type: 'geojson', data: this.getGeoJSON() });
 
+      // ── Connecting line ──────────────────────────────────────────────────────
       map.addLayer({
         id: MEASURE_LINE_LAYER,
         type: 'line',
@@ -138,6 +178,7 @@ class MeasureControl {
         filter: ['==', '$type', 'LineString'],
       });
 
+      // ── Click-point circles (blue) ───────────────────────────────────────────
       map.addLayer({
         id: MEASURE_POINTS_LAYER,
         type: 'circle',
@@ -148,9 +189,48 @@ class MeasureControl {
           'circle-stroke-color': '#1976d2',
           'circle-stroke-width': 2,
         },
-        filter: ['==', '$type', 'Point'],
+        // Only render features explicitly tagged as regular points
+        filter: ['==', ['get', 'markerType'], 'point'],
       });
 
+      // ── Midpoint triangles (orange) ──────────────────────────────────────────
+      map.addLayer({
+        id: MEASURE_MIDPOINTS_LAYER,
+        type: 'symbol',
+        source: MEASURE_SOURCE,
+        layout: {
+          'icon-image': TRIANGLE_IMAGE_ID,
+          'icon-size': 1,
+          'icon-allow-overlap': true,
+          'icon-ignore-placement': true,
+        },
+        filter: ['==', ['get', 'markerType'], 'midpoint'],
+      });
+
+      // ── Segment-distance labels on midpoints (orange) ────────────────────────
+      map.addLayer({
+        id: MEASURE_MIDPOINT_LABELS_LAYER,
+        type: 'symbol',
+        source: MEASURE_SOURCE,
+        layout: {
+          'text-field': ['get', 'label'],
+          'text-size': 11,
+          'text-offset': [0, -1.8],
+          'text-anchor': 'bottom',
+          'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+        },
+        paint: {
+          'text-color': '#f57c00', // orange — matches triangle colour
+          'text-halo-color': '#ffffff',
+          'text-halo-width': 2,
+        },
+        filter: ['all',
+          ['==', ['get', 'markerType'], 'midpoint'],
+          ['!=', ['get', 'label'], ''],
+        ],
+      });
+
+      // ── Labels on click-points (blue, kept for any future use) ──────────────
       map.addLayer({
         id: MEASURE_LABELS_LAYER,
         type: 'symbol',
@@ -167,7 +247,10 @@ class MeasureControl {
           'text-halo-color': '#ffffff',
           'text-halo-width': 2,
         },
-        filter: ['==', '$type', 'Point'],
+        filter: ['all',
+          ['==', ['get', 'markerType'], 'point'],
+          ['!=', ['get', 'label'], ''],
+        ],
       });
     }
 
@@ -211,12 +294,17 @@ class MeasureControl {
     map.off('mousemove', this.onMouseMove);
     document.removeEventListener('keydown', this.onKeyDown);
 
+    if (map.getLayer(MEASURE_MIDPOINT_LABELS_LAYER)) map.removeLayer(MEASURE_MIDPOINT_LABELS_LAYER);
     if (map.getLayer(MEASURE_LABELS_LAYER)) map.removeLayer(MEASURE_LABELS_LAYER);
+    if (map.getLayer(MEASURE_MIDPOINTS_LAYER)) map.removeLayer(MEASURE_MIDPOINTS_LAYER);
     if (map.getLayer(MEASURE_POINTS_LAYER)) map.removeLayer(MEASURE_POINTS_LAYER);
     if (map.getLayer(MEASURE_LINE_LAYER)) map.removeLayer(MEASURE_LINE_LAYER);
     if (map.getLayer(MEASURE_PREVIEW_LAYER)) map.removeLayer(MEASURE_PREVIEW_LAYER);
     if (map.getSource(MEASURE_SOURCE)) map.removeSource(MEASURE_SOURCE);
     if (map.getSource(MEASURE_PREVIEW_SOURCE)) map.removeSource(MEASURE_PREVIEW_SOURCE);
+
+    // Clean up the triangle image to avoid stale registrations on re-activate
+    if (map.hasImage(TRIANGLE_IMAGE_ID)) map.removeImage(TRIANGLE_IMAGE_ID);
   }
 
   handleMapClick(e) {
@@ -278,27 +366,36 @@ class MeasureControl {
   getGeoJSON() {
     const features = [];
 
+    // ── Midpoint triangle markers with segment-distance labels ────────────────
     this.points.forEach((coord, i) => {
-      let label = '';
-      if (i > 0) {
-        const dist = segmentDistance(this.points[i - 1], coord);
-        label = this.formatDist(dist);
-      }
+      if (i === 0) return; // no midpoint before the first click-point
+      const dist = segmentDistance(this.points[i - 1], coord);
       features.push({
         type: 'Feature',
-        properties: { label, pointIndex: i },
-        geometry: { type: 'Point', coordinates: i > 0 ? midpoint(this.points[i - 1], coord) : coord },
+        properties: {
+          markerType: 'midpoint', // ← drives the triangle layer filter
+          label: this.formatDist(dist),
+        },
+        geometry: {
+          type: 'Point',
+          coordinates: midpoint(this.points[i - 1], coord),
+        },
       });
     });
 
+    // ── Regular click-point circle markers ────────────────────────────────────
     this.points.forEach((coord) => {
       features.push({
         type: 'Feature',
-        properties: { label: '' },
+        properties: {
+          markerType: 'point', // ← drives the circle layer filter
+          label: '',
+        },
         geometry: { type: 'Point', coordinates: coord },
       });
     });
 
+    // ── Connecting LineString ─────────────────────────────────────────────────
     if (this.points.length > 1) {
       features.push({
         type: 'Feature',
