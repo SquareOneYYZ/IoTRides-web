@@ -42,7 +42,7 @@ const NotificationPage = () => {
     { key: 'exit', name: 'Exit' },
   ];
 
-  const excludedTypes = ['geofenceEnter', 'geofenceExit'];
+  const excludedTypes = ['geofenceEnter', 'geofenceExit', 'deviceRegionCountryEnter', 'deviceRegionCountryExit', 'deviceRegionStateEnter', 'deviceRegionStateExit', 'deviceRegionCityEnter', 'deviceRegionCityExit'];
 
   const testNotificators = useCatch(async () => {
     await Promise.all(item.notificators.split(/[, ]+/).map(async (notificator) => {
@@ -58,6 +58,29 @@ const NotificationPage = () => {
   });
 
   const validate = () => item && item.type && item.notificators && (!item.notificators?.includes('command') || item.commandId);
+
+  // Helper function to get the first value from comma-separated string
+  const getFirstValue = (value) => {
+    if (!value) return '';
+    const values = value.split(/[, ]+/);
+    return values[0] || '';
+  };
+
+  // Helper function to convert single value to string for storage
+  const setSingleValue = (fieldPath, value) => {
+    const keys = fieldPath.split('.');
+    const newItem = { ...item };
+    let current = newItem;
+
+    for (let i = 0; i < keys.length - 1; i += 1) {
+      if (!current[keys[i]]) {
+        current[keys[i]] = {};
+      }
+      current = current[keys[i]];
+    }
+    current[keys[keys.length - 1]] = value;
+    setItem(newItem);
+  };
 
   return (
     <EditItemView
@@ -98,23 +121,23 @@ const NotificationPage = () => {
               )}
               {item.type === 'zoneViolation' && (
                 <SelectField
-                  multiple
-                  value={item.attributes && item.attributes.zoneTypes ? item.attributes.zoneTypes.split(/[, ]+/) : []}
-                  onChange={(e) => setItem({ ...item, attributes: { ...item.attributes, zoneTypes: e.target.value.join() } })}
+                  value={getFirstValue(item.attributes?.zoneTypes || '')}
+                  onChange={(e) => setItem({ ...item, attributes: { ...item.attributes, zoneTypes: e.target.value } })}
                   data={zoneTypes}
                   keyGetter={(it) => it.key}
+                  titleGetter={(it) => it.name}
                   label={t('alarmZoneType')}
                 />
               )}
               {item.type === 'zoneViolation' && (
-              <SelectField
-                multiple
-                value={item.attributes && item.attributes.violationTypes ? item.attributes.violationTypes.split(/[, ]+/) : []}
-                onChange={(e) => setItem({ ...item, attributes: { ...item.attributes, violationTypes: e.target.value.join() } })}
-                data={violationTypes}
-                keyGetter={(it) => it.key}
-                label={t('alarmViolationType')}
-              />
+                <SelectField
+                  value={getFirstValue(item.attributes?.violationTypes || '')}
+                  onChange={(e) => setItem({ ...item, attributes: { ...item.attributes, violationTypes: e.target.value } })}
+                  data={violationTypes}
+                  keyGetter={(it) => it.key}
+                  titleGetter={(it) => it.name}
+                  label={t('alarmViolationType')}
+                />
               )}
               <SelectField
                 multiple
