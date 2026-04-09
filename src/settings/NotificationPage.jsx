@@ -42,6 +42,8 @@ const NotificationPage = () => {
     { key: 'exit', name: 'Exit' },
   ];
 
+  const excludedTypes = ['geofenceEnter', 'geofenceExit'];
+
   const testNotificators = useCatch(async () => {
     await Promise.all(item.notificators.split(/[, ]+/).map(async (notificator) => {
       const response = await fetch(`/api/notifications/test/${notificator}`, {
@@ -56,6 +58,15 @@ const NotificationPage = () => {
   });
 
   const validate = () => item && item.type && item.notificators && (!item.notificators?.includes('command') || item.commandId);
+
+  const roundedFieldSx = {
+    '& .MuiOutlinedInput-root': {
+      borderRadius: '13px',
+      '& fieldset': { borderRadius: '13px', borderColor: 'rgba(255,255,255,0.23)' },
+      '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.5)' },
+      '&.Mui-focused fieldset': { borderColor: 'primary.main' },
+    },
+  };
 
   return (
     <EditItemView
@@ -82,6 +93,7 @@ const NotificationPage = () => {
                 keyGetter={(it) => it.type}
                 titleGetter={(it) => t(prefixString('event', it.type))}
                 label={t('sharedType')}
+                filter={(types) => types.filter((type) => !excludedTypes.includes(type.type))}
               />
               {item.type === 'alarm' && (
                 <SelectField
@@ -163,6 +175,7 @@ const NotificationPage = () => {
                 value={item.description || ''}
                 onChange={(e) => setItem({ ...item, description: e.target.value })}
                 label={t('sharedDescription')}
+                sx={roundedFieldSx}
               />
               <SelectField
                 value={item.calendarId}

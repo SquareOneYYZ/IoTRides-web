@@ -545,6 +545,13 @@ const EventReportPage = () => {
                       setEventTypes(values);
                     }}
                     multiple
+                    sx={{
+                      borderRadius: '13px',
+                      '& .MuiOutlinedInput-notchedOutline': { borderRadius: '13px' },
+                    }}
+                    MenuProps={{
+                      PaperProps: { sx: { borderRadius: '13px' } },
+                    }}
                   >
                     {allEventTypes.map(([key, string]) => (
                       <MenuItem key={key} value={key}>
@@ -564,6 +571,13 @@ const EventReportPage = () => {
                     keyGetter={(it) => it.key}
                     label={t('sharedAlarms')}
                     fullWidth
+                    sx={{
+                      borderRadius: '13px',
+                      '& .MuiOutlinedInput-notchedOutline': { borderRadius: '13px' },
+                    }}
+                    MenuProps={{
+                      PaperProps: { sx: { borderRadius: '13px' } },
+                    }}
                   />
                 </div>
               )}
