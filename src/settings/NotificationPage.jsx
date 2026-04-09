@@ -65,20 +65,6 @@ const NotificationPage = () => {
     return values[0] || '';
   };
 
-  const setSingleValue = (fieldPath, value) => {
-    const keys = fieldPath.split('.');
-    const newItem = { ...item };
-    let current = newItem;
-
-    for (let i = 0; i < keys.length - 1; i += 1) {
-      if (!current[keys[i]]) {
-        current[keys[i]] = {};
-      }
-      current = current[keys[i]];
-    }
-    current[keys[keys.length - 1]] = value;
-    setItem(newItem);
-  };
   const roundedFieldSx = {
     '& .MuiOutlinedInput-root': {
       borderRadius: '13px',
