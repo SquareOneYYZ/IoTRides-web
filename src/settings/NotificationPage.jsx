@@ -42,6 +42,8 @@ const NotificationPage = () => {
     { key: 'exit', name: 'Exit' },
   ];
 
+  const excludedTypes = ['geofenceEnter', 'geofenceExit'];
+
   const testNotificators = useCatch(async () => {
     await Promise.all(item.notificators.split(/[, ]+/).map(async (notificator) => {
       const response = await fetch(`/api/notifications/test/${notificator}`, {
@@ -91,6 +93,7 @@ const NotificationPage = () => {
                 keyGetter={(it) => it.type}
                 titleGetter={(it) => t(prefixString('event', it.type))}
                 label={t('sharedType')}
+                filter={(types) => types.filter((type) => !excludedTypes.includes(type.type))}
               />
               {item.type === 'alarm' && (
                 <SelectField

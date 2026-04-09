@@ -29,6 +29,7 @@ const SelectField = ({
   data,
   keyGetter = (item) => item.id,
   titleGetter = (item) => item.name,
+  filter,
   renderValue,
   MenuProps,
   sx,
@@ -67,13 +68,8 @@ const SelectField = ({
     if (endpoint) {
       const response = await fetch(endpoint);
       if (response.ok) {
-        const fetchedData = await response.json();
-        if (endpoint === '/api/notifications/types') {
-          const FilteredTypes = ['deviceFuelDrop', 'deviceFuelIncrease', 'textMessage', 'driverChanged', 'media'];
-          setItems(fetchedData.filter((item) => !FilteredTypes.includes(item.type)));
-        } else {
-          setItems(fetchedData);
-        }
+        const data = await response.json();
+        setItems(filter ? filter(data) : data);
       } else {
         throw Error(await response.text());
       }
