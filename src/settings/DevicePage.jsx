@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Accordion,
   AccordionSummary,
@@ -7,8 +7,6 @@ import {
   FormControlLabel,
   Checkbox,
   TextField,
-  Autocomplete,
-  Chip,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { DropzoneArea } from 'react-mui-dropzone';
@@ -59,60 +57,53 @@ const DevicePage = () => {
 
   const validate = () => item && item.name && item.uniqueId;
 
-  const renderVinAutocomplete = (field, labelKey, suggestedValue) => {
-    const options = suggestedValue ? [suggestedValue] : [];
+  // Auto-fill fields when VIN data arrives (only if field is empty)
+  useEffect(() => {
+    if (vinDecodedData) {
+      setItem((prev) => ({
+        ...prev,
+        // Only fill if field is empty
+        make: prev.make || vinDecodedData.make || '',
+        manufacturer: prev.manufacturer || vinDecodedData.manufacturer || '',
+        model: prev.model || vinDecodedData.model || '',
+        modelYear: prev.modelYear || vinDecodedData.modelYear || '',
+        trim: prev.trim || vinDecodedData.trim || '',
+        bodyClass: prev.bodyClass || vinDecodedData.bodyClass || '',
+        vehicleType: prev.vehicleType || vinDecodedData.vehicleType || '',
+        displacementL: prev.displacementL || vinDecodedData.displacementL || '',
+        engineCylinders: prev.engineCylinders || vinDecodedData.engineCylinders || '',
+        engineHP: prev.engineHP || vinDecodedData.engineHP || '',
+        driveType: prev.driveType || vinDecodedData.driveType || '',
+        fuelTypePrimary: prev.fuelTypePrimary || vinDecodedData.fuelTypePrimary || '',
+        batteryType: prev.batteryType || vinDecodedData.batteryType || '',
+      }));
+    }
+  }, [vinDecodedData]);
+
+  const hasConflict = (field, suggestedValue) => {
+    if (!suggestedValue) return false;
+    if (!item[field]) return false;
+    return item[field] !== suggestedValue;
+  };
+
+  const renderVinTextField = (field, labelKey, suggestedValue) => {
+    const isConflict = hasConflict(field, suggestedValue);
 
     return (
-      <Autocomplete
-        freeSolo
-        options={options}
+      <TextField
         value={item[field] || ''}
-        onChange={(event, newValue) => {
-          setItem((prev) => ({ ...prev, [field]: newValue || '' }));
-        }}
-        onInputChange={(event, newInputValue) => {
-          setItem((prev) => ({ ...prev, [field]: newInputValue }));
-        }}
-        renderOption={(props, option) => (
-          <li {...props}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              width: '100%',
-              padding: '8px 0',
-            }}
-            >
-              <span style={{
-                fontSize: '0.9rem',
-                color: '#fff',
-              }}
-              >
-                {option}
-              </span>
-              <Chip
-                label={t('vinSuggestion')}
-                size="small"
-                sx={{
-                  backgroundColor: 'transparent',
-                  border: '1px solid #4caf50',
-                  color: '#4caf50',
-                  fontSize: '0.75rem',
-                  height: '24px',
-                  '& .MuiChip-label': {
-                    padding: '0 8px',
-                  },
-                }}
-              />
-            </div>
-          </li>
-        )}
-        renderInput={(params) => (
-          <TextField
-            {...params}
-            label={t(labelKey)}
-          />
-        )}
+        onChange={(event) => setItem({ ...item, [field]: event.target.value })}
+        label={t(labelKey)}
+        error={isConflict}
+        helperText={isConflict ? `${t('vinConflict')}: ${suggestedValue}` : ''}
+        sx={isConflict ? {
+          '& .MuiOutlinedInput-root': {
+            '& fieldset': {
+              borderColor: '#f44336',
+              borderWidth: '2px',
+            },
+          },
+        } : {}}
       />
     );
   };
@@ -170,7 +161,7 @@ const DevicePage = () => {
                 label={t('deviceLicenseNumber')}
               />
 
-              {/* VIN Field — API fires only on search button click or Enter */}
+              {/* VIN Field */}
               <SelectField
                 value={item.vin || ''}
                 onChange={(event) => {
@@ -185,24 +176,19 @@ const DevicePage = () => {
                 vinApiEndpoint="/api/devices/Vindecoder"
                 fullWidth
               />
-
-              {/* ── VIN decoded fields with "From VIN" badge design ─────────
-                  Matches screenshot: Value left, green badge right
-              ─────────────────────────────────────────────────────────────── */}
-
-              {renderVinAutocomplete('make', 'deviceMake', vinDecodedData?.make)}
-              {renderVinAutocomplete('manufacturer', 'deviceManufacturer', vinDecodedData?.manufacturer)}
-              {renderVinAutocomplete('model', 'deviceModel', vinDecodedData?.model)}
-              {renderVinAutocomplete('modelYear', 'deviceModelYear', vinDecodedData?.modelYear)}
-              {renderVinAutocomplete('trim', 'deviceTrim', vinDecodedData?.trim)}
-              {renderVinAutocomplete('bodyClass', 'deviceBodyClass', vinDecodedData?.bodyClass)}
-              {renderVinAutocomplete('vehicleType', 'deviceVehicleType', vinDecodedData?.vehicleType)}
-              {renderVinAutocomplete('displacementL', 'deviceDisplacementL', vinDecodedData?.displacementL)}
-              {renderVinAutocomplete('engineCylinders', 'deviceEngineCylinders', vinDecodedData?.engineCylinders)}
-              {renderVinAutocomplete('engineHP', 'deviceEngineHP', vinDecodedData?.engineHP)}
-              {renderVinAutocomplete('driveType', 'deviceDriveType', vinDecodedData?.driveType)}
-              {renderVinAutocomplete('fuelTypePrimary', 'deviceFuelTypePrimary', vinDecodedData?.fuelTypePrimary)}
-              {renderVinAutocomplete('batteryType', 'deviceBatteryType', vinDecodedData?.batteryType)}
+              {renderVinTextField('make', 'deviceMake', vinDecodedData?.make)}
+              {renderVinTextField('manufacturer', 'deviceManufacturer', vinDecodedData?.manufacturer)}
+              {renderVinTextField('model', 'deviceModel', vinDecodedData?.model)}
+              {renderVinTextField('modelYear', 'deviceModelYear', vinDecodedData?.modelYear)}
+              {renderVinTextField('trim', 'deviceTrim', vinDecodedData?.trim)}
+              {renderVinTextField('bodyClass', 'deviceBodyClass', vinDecodedData?.bodyClass)}
+              {renderVinTextField('vehicleType', 'deviceVehicleType', vinDecodedData?.vehicleType)}
+              {renderVinTextField('displacementL', 'deviceDisplacementL', vinDecodedData?.displacementL)}
+              {renderVinTextField('engineCylinders', 'deviceEngineCylinders', vinDecodedData?.engineCylinders)}
+              {renderVinTextField('engineHP', 'deviceEngineHP', vinDecodedData?.engineHP)}
+              {renderVinTextField('driveType', 'deviceDriveType', vinDecodedData?.driveType)}
+              {renderVinTextField('fuelTypePrimary', 'deviceFuelTypePrimary', vinDecodedData?.fuelTypePrimary)}
+              {renderVinTextField('batteryType', 'deviceBatteryType', vinDecodedData?.batteryType)}
 
               <TextField
                 value={item.contact || ''}

@@ -244,6 +244,7 @@
 	"deviceFuelTypePrimary": "Fuel Type",
 	"deviceBatteryType": "Battery Type",
 	"vinSuggestion": "From VIN",
+	"vinConflict": "VIN suggests",
 	"groupDialog": "Group",
 	"groupParent": "Group",
 	"groupNoGroup": "No Group",
