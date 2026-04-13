@@ -1,9 +1,12 @@
-import { useId, useEffect } from 'react';
+import { useId, useEffect, createElement } from 'react';
 import { useSelector } from 'react-redux';
+import { createPortal } from 'react-dom';
 import { useTheme } from '@mui/styles';
 import { map } from './core/MapView';
 import { findFonts, geofenceToFeature } from './core/mapUtil';
 import { useAttributePreference } from '../common/util/preferences';
+import GeofenceTooltip from './GeofenceTooltip';
+import useGeofenceTooltip from '../common/attributes/useGeofenceTooltip';
 
 const MapGeofence = () => {
   const id = useId();
@@ -13,7 +16,7 @@ const MapGeofence = () => {
   const mapGeofences = useAttributePreference('mapGeofences', true);
 
   const geofences = useSelector((state) => state.geofences.items);
-
+  const tooltip = useGeofenceTooltip(mapGeofences ? map : null);
   useEffect(() => {
     if (mapGeofences) {
       map.addSource(id, {
@@ -91,7 +94,10 @@ const MapGeofence = () => {
     }
   }, [mapGeofences, geofences]);
 
-  return null;
+  return createPortal(
+    createElement(GeofenceTooltip, tooltip),
+    document.body,
+  );
 };
 
 export default MapGeofence;
