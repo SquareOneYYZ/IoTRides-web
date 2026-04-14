@@ -10,7 +10,7 @@ const MapSelectedDevice = ({ mapReady }) => {
   const currentId = useSelector((state) => state.devices.selectedId);
   const previousTime = usePrevious(currentTime);
   const previousId = usePrevious(currentId);
-
+  const previousMapReady = usePrevious(mapReady);
   const selectZoom = useAttributePreference('web.selectZoom', 10);
   const mapFollow = useAttributePreference('mapFollow', false);
 
@@ -21,17 +21,21 @@ const MapSelectedDevice = ({ mapReady }) => {
   useEffect(() => {
     if (!mapReady) return;
 
-    const positionChanged = position && (!previousPosition || position.latitude !== previousPosition.latitude || position.longitude !== previousPosition.longitude);
+    const positionChanged = position && (!previousPosition
+      || position.latitude !== previousPosition.latitude
+      || position.longitude !== previousPosition.longitude);
 
-    if ((currentId !== previousId || currentTime !== previousTime || (mapFollow && positionChanged)) && position) {
+    if ((currentId !== previousId
+      || currentTime !== previousTime
+      || !previousMapReady
+      || (mapFollow && positionChanged)) && position) {
       map.easeTo({
         center: [position.longitude, position.latitude],
         zoom: Math.max(map.getZoom(), selectZoom),
         offset: [0, -dimensions.popupMapOffset / 2],
       });
     }
-  }, [currentId, previousId, currentTime, previousTime, mapFollow, position, selectZoom, mapReady]);
-
+  }, [currentId, previousId, currentTime, previousTime, mapFollow, position, selectZoom, mapReady, previousMapReady]);
   return null;
 };
 

@@ -9,9 +9,15 @@ import {
   TextField,
   Autocomplete,
   Chip,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { DropzoneArea } from 'react-mui-dropzone';
+import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import GpsFixedIcon from '@mui/icons-material/GpsFixed';
+import { devicesActions } from '../store';
 import EditItemView from './components/EditItemView';
 import EditAttributesAccordion from './components/EditAttributesAccordion';
 import SelectField from '../common/components/SelectField';
@@ -33,6 +39,8 @@ const DevicePage = () => {
   const deviceAttributes = useDeviceAttributes(t);
   const query = useQuery();
   const uniqueId = query.get('uniqueId');
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const [item, setItem] = useState(uniqueId ? { uniqueId } : null);
   const [vinDecodedData, setVinDecodedData] = useState(null);
@@ -56,6 +64,13 @@ const DevicePage = () => {
       }
     }
   });
+
+  const handleLocateOnMap = () => {
+    navigate('/');
+    setTimeout(() => {
+      dispatch(devicesActions.selectId(item.id));
+    }, 300);
+  };
 
   const validate = () => item && item.name && item.uniqueId;
 
@@ -141,6 +156,16 @@ const DevicePage = () => {
           <Accordion defaultExpanded>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="subtitle1">{t('sharedRequired')}</Typography>
+              {item.id && (
+                <Tooltip title="Show on Map">
+                  <IconButton
+                    size="small"
+                    onClick={handleLocateOnMap}
+                  >
+                    <GpsFixedIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              )}
             </AccordionSummary>
             <AccordionDetails className={classes.details}>
               <TextField
