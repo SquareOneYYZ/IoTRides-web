@@ -12,6 +12,12 @@ import {
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { DropzoneArea } from 'react-mui-dropzone';
+import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import GpsFixedIcon from '@mui/icons-material/GpsFixed';
+import { IconButton, Tooltip } from '@mui/material';
+import { devicesActions } from '../store';
+
 import EditItemView from './components/EditItemView';
 import EditAttributesAccordion from './components/EditAttributesAccordion';
 import SelectField from '../common/components/SelectField';
@@ -24,11 +30,6 @@ import useCommonDeviceAttributes from '../common/attributes/useCommonDeviceAttri
 import { useCatch } from '../reactHelper';
 import useQuery from '../common/util/useQuery';
 import useSettingsStyles from './common/useSettingsStyles';
-import { useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import GpsFixedIcon from '@mui/icons-material/GpsFixed';
-import { IconButton, Tooltip } from '@mui/material';
-import { devicesActions } from '../store';
 
 const DevicePage = () => {
   const classes = useSettingsStyles();
