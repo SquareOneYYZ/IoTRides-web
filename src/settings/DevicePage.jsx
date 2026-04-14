@@ -24,6 +24,11 @@ import useCommonDeviceAttributes from '../common/attributes/useCommonDeviceAttri
 import { useCatch } from '../reactHelper';
 import useQuery from '../common/util/useQuery';
 import useSettingsStyles from './common/useSettingsStyles';
+import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import GpsFixedIcon from '@mui/icons-material/GpsFixed';
+import { IconButton, Tooltip } from '@mui/material';
+import { devicesActions } from '../store';
 
 const DevicePage = () => {
   const classes = useSettingsStyles();
@@ -33,6 +38,8 @@ const DevicePage = () => {
   const deviceAttributes = useDeviceAttributes(t);
   const query = useQuery();
   const uniqueId = query.get('uniqueId');
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const [item, setItem] = useState(uniqueId ? { uniqueId } : null);
   const [vinDecodedData, setVinDecodedData] = useState(null);
@@ -56,6 +63,13 @@ const DevicePage = () => {
       }
     }
   });
+
+  const handleLocateOnMap = () => {
+    navigate('/');
+    setTimeout(() => {
+      dispatch(devicesActions.selectId(item.id));
+    }, 300);
+  };
 
   const validate = () => item && item.name && item.uniqueId;
 
@@ -141,6 +155,16 @@ const DevicePage = () => {
           <Accordion defaultExpanded>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="subtitle1">{t('sharedRequired')}</Typography>
+              {item.id && (
+                <Tooltip title="Show on Map">
+                  <IconButton
+                    size="small"
+                    onClick={handleLocateOnMap}
+                  >
+                    <GpsFixedIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              )}
             </AccordionSummary>
             <AccordionDetails className={classes.details}>
               <TextField
