@@ -9,15 +9,14 @@ import {
   TextField,
   Autocomplete,
   Chip,
+  IconButton, Tooltip ,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { DropzoneArea } from 'react-mui-dropzone';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import GpsFixedIcon from '@mui/icons-material/GpsFixed';
-import { IconButton, Tooltip } from '@mui/material';
 import { devicesActions } from '../store';
-
 import EditItemView from './components/EditItemView';
 import EditAttributesAccordion from './components/EditAttributesAccordion';
 import SelectField from '../common/components/SelectField';
