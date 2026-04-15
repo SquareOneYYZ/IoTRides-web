@@ -3,7 +3,7 @@ import React, {
 } from 'react';
 import {
   IconButton, Paper, Slider, Toolbar, Typography, Box, Chip,
-  Tooltip,
+  Tooltip, CircularProgress,
 } from '@mui/material';
 import makeStyles from '@mui/styles/makeStyles';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -27,6 +27,7 @@ import MapCamera from '../map/MapCamera';
 import MapGeofence from '../map/MapGeofence';
 import StatusCard from '../common/components/StatusCard';
 import MapScale from '../map/MapScale';
+import useChunkedReplay from '../reports/components/useChunkedReplay';
 
 const SPEED_OPTIONS = [1, 1.5, 2, 5, 10];
 
@@ -91,13 +92,6 @@ const useStyles = makeStyles((theme) => ({
     gap: theme.spacing(0.75),
     flexWrap: 'wrap',
   },
-  formControlLabel: {
-    height: '100%',
-    width: '100%',
-    paddingRight: theme.spacing(1),
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
   content: {
     display: 'flex',
     flexDirection: 'column',
@@ -108,6 +102,14 @@ const useStyles = makeStyles((theme) => ({
       margin: theme.spacing(1.5),
     },
   },
+  bufferIndicator: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing(1),
+    padding: theme.spacing(1),
+    color: theme.palette.text.secondary,
+  },
 }));
 
 const ReplayPage = () => {
@@ -117,7 +119,17 @@ const ReplayPage = () => {
   const timerRef = useRef();
   const defaultDeviceId = useSelector((state) => state.devices.selectedId);
 
-  const [positions, setPositions] = useState([]);
+  const {
+    positions,
+    totalCount,
+    isBuffering,
+    loadingSession,
+    error,
+    initSession,
+    checkAndPrefetch,
+    seekTo,
+  } = useChunkedReplay();
+
   const [index, setIndex] = useState(0);
   const [selectedDeviceId, setSelectedDeviceId] = useState(defaultDeviceId);
   const [showCard, setShowCard] = useState(false);
@@ -125,7 +137,6 @@ const ReplayPage = () => {
   const [to, setTo] = useState();
   const [expanded, setExpanded] = useState(true);
   const [playing, setPlaying] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [smoothPosition, setSmoothPosition] = useState(null);
   const [animationProgress, setAnimationProgress] = useState(0);
   const [speed, setSpeed] = useState(1);
@@ -134,9 +145,7 @@ const ReplayPage = () => {
   const deviceName = useSelector((state) => {
     if (selectedDeviceId) {
       const device = state.devices.items[selectedDeviceId];
-      if (device) {
-        return device.name;
-      }
+      if (device) return device.name;
     }
     return null;
   });
@@ -149,10 +158,20 @@ const ReplayPage = () => {
           if (newProgress >= 1) {
             setIndex((prevIndex) => {
               const nextIndex = prevIndex + 1;
-              if (nextIndex >= positions.length - 1) {
+
+              const shouldPause = checkAndPrefetch(nextIndex, () => setPlaying(true));
+              if (shouldPause) {
                 setPlaying(false);
+                return prevIndex; 
+              }
+
+              if (nextIndex >= positions.length - 1) {
+                if (nextIndex >= totalCount - 1) {
+                  setPlaying(false); 
+                }
                 return nextIndex;
               }
+
               return nextIndex;
             });
             return 0;
@@ -166,7 +185,7 @@ const ReplayPage = () => {
     }
 
     return () => clearInterval(timerRef.current);
-  }, [playing, positions, speed]);
+  }, [playing, positions, speed, checkAndPrefetch, totalCount]);
 
   useEffect(() => {
     if (positions.length > 0 && index < positions.length - 1) {
@@ -174,68 +193,49 @@ const ReplayPage = () => {
       const nextPos = positions[index + 1];
 
       if (currentPos && nextPos) {
-        const interpolatedPosition = {
+        setSmoothPosition({
           ...currentPos,
-          latitude:
-            currentPos.latitude
-            + (nextPos.latitude - currentPos.latitude) * animationProgress,
-          longitude:
-            currentPos.longitude
-            + (nextPos.longitude - currentPos.longitude) * animationProgress,
-          speed:
-            currentPos.speed
-            + (nextPos.speed - currentPos.speed) * animationProgress,
-          course:
-            currentPos.course
-            + (nextPos.course - currentPos.course) * animationProgress,
-        };
-
-        setSmoothPosition(interpolatedPosition);
+          latitude: currentPos.latitude + (nextPos.latitude - currentPos.latitude) * animationProgress,
+          longitude: currentPos.longitude + (nextPos.longitude - currentPos.longitude) * animationProgress,
+          speed: currentPos.speed + (nextPos.speed - currentPos.speed) * animationProgress,
+          course: currentPos.course + (nextPos.course - currentPos.course) * animationProgress,
+        });
       }
     } else if (positions.length > 0 && index < positions.length) {
       setSmoothPosition(positions[index]);
     }
   }, [positions, index, animationProgress]);
 
-  const onPointClick = useCallback(
-    (_, index) => {
-      setIndex(index);
-      setAnimationProgress(0);
-      setPlaying(false);
-    },
-    [setIndex],
-  );
+  const onPointClick = useCallback((_, idx) => {
+    setIndex(idx);
+    setAnimationProgress(0);
+    setPlaying(false);
+  }, []);
 
-  const onMarkerClick = useCallback(
-    (positionId) => {
-      setShowCard(!!positionId);
-    },
-    [setShowCard],
-  );
+  const onMarkerClick = useCallback((positionId) => {
+    setShowCard(!!positionId);
+  }, []);
 
-  const handleSubmit = useCatch(async ({ deviceId, from, to }) => {
-    setLoading(true);
-    setSelectedDeviceId(deviceId);
-    setFrom(from);
-    setTo(to);
-    const query = new URLSearchParams({ deviceId, from, to });
-    try {
-      const response = await fetch(`/api/positions?${query.toString()}`);
-      if (response.ok) {
-        setIndex(0);
-        const positions = await response.json();
-        setPositions(positions);
-        if (positions.length) {
-          setExpanded(false);
-        } else {
-          throw Error(t('sharedNoData'));
-        }
-      } else {
-        throw Error(await response.text());
-      }
-    } finally {
-      setLoading(false);
+  const handleSliderChange = useCallback(async (_, newIndex) => {
+    setPlaying(false);
+    setAnimationProgress(0);
+
+    if (newIndex >= positions.length) {
+      await seekTo(newIndex);
     }
+
+    setIndex(newIndex);
+  }, [positions.length, seekTo]);
+
+  const handleSubmit = useCatch(async ({ deviceId, from: f, to: t2 }) => {
+    setSelectedDeviceId(deviceId);
+    setFrom(f);
+    setTo(t2);
+    setIndex(0);
+    setPlaying(false);
+
+    const ok = await initSession(deviceId, f, t2);
+    if (ok) setExpanded(false);
   });
 
   const handleDownload = () => {
@@ -243,20 +243,16 @@ const ReplayPage = () => {
     window.location.assign(`/api/positions/kml?${query.toString()}`);
   };
 
+  const sliderMax = Math.max(positions.length - 1, 0);
+  const displayIndex = Math.min(index, positions.length - 1);
+  const currentPosition = positions[displayIndex];
+
   return (
     <div className={classes.root}>
       <MapView>
         <MapGeofence />
-        <MapRoutePath
-          positions={positions}
-          onClick={onPointClick}
-          expandPointsOnClick
-        />
-        <MapRoutePoints
-          positions={positions}
-          onClick={onPointClick}
-          useGlobalExpansion
-        />
+        <MapRoutePath positions={positions} onClick={onPointClick} expandPointsOnClick />
+        <MapRoutePoints positions={positions} onClick={onPointClick} useGlobalExpansion />
         {smoothPosition && (
           <MapPositions
             positions={[smoothPosition]}
@@ -267,6 +263,7 @@ const ReplayPage = () => {
       </MapView>
       <MapScale />
       <MapCamera positions={positions} />
+
       <div className={`${classes.sidebar} ${titleExpanded ? 'expanded' : ''}`}>
         <Paper elevation={3} square>
           <Toolbar
@@ -278,11 +275,7 @@ const ReplayPage = () => {
               paddingBottom: 1,
             }}
           >
-            <IconButton
-              edge="start"
-              sx={{ mr: 2 }}
-              onClick={() => navigate(-1)}
-            >
+            <IconButton edge="start" sx={{ mr: 2 }} onClick={() => navigate(-1)}>
               <ArrowBackIcon />
             </IconButton>
             <Tooltip
@@ -323,9 +316,26 @@ const ReplayPage = () => {
             )}
           </Toolbar>
         </Paper>
+
         <Paper className={classes.content} square>
           {!expanded ? (
             <>
+              {/* Buffer underrun indicator */}
+              {isBuffering && (
+                <Box className={classes.bufferIndicator}>
+                  <CircularProgress size={14} />
+                  <Typography variant="caption">Buffering…</Typography>
+                </Box>
+              )}
+
+              {/* Error display */}
+              {error && (
+                <Typography variant="caption" color="error" align="center" sx={{ mb: 1 }}>
+                  {error}
+                </Typography>
+              )}
+
+              {/* Speed chips */}
               <Box className={classes.speedControl}>
                 <Box className={classes.speedChips}>
                   {SPEED_OPTIONS.map((speedOption) => (
@@ -344,16 +354,15 @@ const ReplayPage = () => {
 
               <Slider
                 className={classes.slider}
-                max={positions.length - 1}
-                step={null}
-                marks={positions.map((_, index) => ({ value: index }))}
-                value={index}
-                onChange={(_, newIndex) => {
-                  setIndex(newIndex);
-                  setAnimationProgress(0);
-                  setPlaying(false);
-                }}
+                max={totalCount > 0 ? totalCount - 1 : sliderMax}
+                step={1}
+                marks={positions.length < 500
+                  ? positions.map((_, i) => ({ value: i }))
+                  : false}
+                value={displayIndex}
+                onChange={handleSliderChange}
               />
+
               <div
                 style={{
                   display: 'flex',
@@ -364,41 +373,47 @@ const ReplayPage = () => {
                 }}
               >
                 <Typography variant="caption" color="text.secondary">
-                  -1hr
+                  {positions[0] ? formatTime(positions[0].fixTime, 'seconds') : ''}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  +1hr
+                  {`${positions.length}${totalCount > positions.length ? `/${totalCount}` : ''} pts`}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {positions[positions.length - 1]
+                    ? formatTime(positions[positions.length - 1].fixTime, 'seconds')
+                    : ''}
                 </Typography>
               </div>
+
               <div className={classes.controls}>
-                {`${index + 1}/${positions.length}`}
+                {`${displayIndex + 1}/${totalCount || positions.length}`}
                 <IconButton
                   onClick={() => {
-                    setIndex((index) => index - 1);
+                    setIndex((i) => Math.max(0, i - 1));
                     setAnimationProgress(0);
                     setPlaying(false);
                   }}
-                  disabled={playing || index <= 0}
+                  disabled={playing || isBuffering || displayIndex <= 0}
                 >
                   <FastRewindIcon />
                 </IconButton>
                 <IconButton
                   onClick={() => setPlaying(!playing)}
-                  disabled={index >= positions.length - 1}
+                  disabled={isBuffering || (displayIndex >= (totalCount || positions.length) - 1)}
                 >
                   {playing ? <PauseIcon /> : <PlayArrowIcon />}
                 </IconButton>
                 <IconButton
                   onClick={() => {
-                    setIndex((index) => index + 1);
+                    setIndex((i) => i + 1);
                     setAnimationProgress(0);
                     setPlaying(false);
                   }}
-                  disabled={playing || index >= positions.length - 1}
+                  disabled={playing || isBuffering || displayIndex >= positions.length - 1}
                 >
                   <FastForwardIcon />
                 </IconButton>
-                {formatTime(positions[index].fixTime, 'seconds')}
+                {currentPosition ? formatTime(currentPosition.fixTime, 'seconds') : ''}
               </div>
             </>
           ) : (
@@ -406,15 +421,16 @@ const ReplayPage = () => {
               handleSubmit={handleSubmit}
               fullScreen
               showOnly
-              loading={loading}
+              loading={loadingSession}
             />
           )}
         </Paper>
       </div>
-      {showCard && index < positions.length && (
+
+      {showCard && currentPosition && (
         <StatusCard
           deviceId={selectedDeviceId}
-          position={positions[index]}
+          position={currentPosition}
           onClose={() => setShowCard(false)}
           disableActions
         />

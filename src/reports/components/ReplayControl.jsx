@@ -10,6 +10,7 @@ import {
   Box,
   Chip,
   Tooltip,
+  CircularProgress,
 } from '@mui/material';
 import makeStyles from '@mui/styles/makeStyles';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -29,6 +30,7 @@ import MapPositions from '../../map/MapPositions';
 import MapCamera from '../../map/MapCamera';
 import MapScale from '../../map/MapScale';
 import StatusCard from '../../common/components/StatusCard';
+import useChunkedReplay from '../useChunkedReplay';
 
 const SPEED_OPTIONS = [1, 1.5, 2, 5, 10];
 
@@ -68,7 +70,6 @@ const useStyles = makeStyles((theme) => ({
       right: 0,
     },
   },
-
   title: {
     flexGrow: 1,
   },
@@ -104,6 +105,14 @@ const useStyles = makeStyles((theme) => ({
       margin: theme.spacing(1.5),
     },
   },
+  bufferIndicator: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing(1),
+    padding: theme.spacing(1),
+    color: theme.palette.text.secondary,
+  },
 }));
 
 const interpolatePosition = (pos1, pos2, progress) => ({
@@ -116,18 +125,33 @@ const interpolatePosition = (pos1, pos2, progress) => ({
 });
 
 const ReplayControl = ({
-  replayPositions,
   selectedItem,
   deviceName,
   eventPosition,
   onClose,
   showEventType = false,
   initialSpeed = 1,
+  replayFrom,
+  replayTo,
+  replayPositions: externalPositions,
 }) => {
   const t = useTranslation();
   const classes = useStyles();
   const timerRef = useRef();
   const animationRef = useRef();
+
+  const {
+    positions: chunkedPositions,
+    totalCount,
+    isBuffering,
+    loadingSession,
+    error,
+    initSession,
+    checkAndPrefetch,
+    seekTo,
+  } = useChunkedReplay();
+
+  const positions = externalPositions || chunkedPositions;
 
   const [replayIndex, setReplayIndex] = useState(0);
   const [replayPlaying, setReplayPlaying] = useState(false);
@@ -135,20 +159,37 @@ const ReplayControl = ({
   const [speed, setSpeed] = useState(initialSpeed);
   const [interpolatedPosition, setInterpolatedPosition] = useState(null);
   const [expanded, setExpanded] = useState(false);
+
   const getInterval = () => 500 / speed;
 
   useEffect(() => {
-    if (replayPositions.length > 0) {
-      setInterpolatedPosition(replayPositions[0]);
+    if (selectedItem?.deviceId && replayFrom && replayTo && !externalPositions) {
+      initSession(selectedItem.deviceId, replayFrom, replayTo);
     }
-  }, [replayPositions]);
+  }, [selectedItem?.deviceId, replayFrom, replayTo, externalPositions]);
 
   useEffect(() => {
-    if (replayPlaying && replayPositions.length > 0) {
+    if (positions.length > 0) {
+      setInterpolatedPosition(positions[0]);
+    }
+  }, [positions]);
+
+  useEffect(() => {
+    if (replayPlaying && positions.length > 0) {
       timerRef.current = setInterval(() => {
         setReplayIndex((index) => {
           const nextIndex = index + 1;
-          if (nextIndex >= replayPositions.length - 1) {
+
+          if (!externalPositions) {
+            const shouldPause = checkAndPrefetch(nextIndex, () => setReplayPlaying(true));
+            if (shouldPause) {
+              setReplayPlaying(false);
+              return index;
+            }
+          }
+
+          const maxKnown = totalCount > 0 ? totalCount - 1 : positions.length - 1;
+          if (nextIndex >= maxKnown) {
             setReplayPlaying(false);
             return nextIndex;
           }
@@ -160,15 +201,17 @@ const ReplayControl = ({
     }
 
     return () => clearInterval(timerRef.current);
-  }, [replayPlaying, replayPositions, speed]);
+  }, [replayPlaying, positions, speed, checkAndPrefetch, totalCount, externalPositions]);
 
   useEffect(() => {
-    if (!replayPlaying || replayPositions.length === 0 || replayIndex >= replayPositions.length - 1) {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-      if (replayIndex < replayPositions.length) {
-        setInterpolatedPosition(replayPositions[replayIndex]);
+    if (
+      !replayPlaying
+      || positions.length === 0
+      || replayIndex >= positions.length - 1
+    ) {
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+      if (replayIndex < positions.length) {
+        setInterpolatedPosition(positions[replayIndex]);
       }
       return;
     }
@@ -181,11 +224,10 @@ const ReplayControl = ({
       const elapsed = currentTime - startTime;
       const progress = Math.min(elapsed / duration, 1);
 
-      if (replayIndex < replayPositions.length - 1) {
-        const currentPos = replayPositions[replayIndex];
-        const nextPos = replayPositions[replayIndex + 1];
-        const interpolated = interpolatePosition(currentPos, nextPos, progress);
-        setInterpolatedPosition(interpolated);
+      if (replayIndex < positions.length - 1) {
+        setInterpolatedPosition(
+          interpolatePosition(positions[replayIndex], positions[replayIndex + 1], progress),
+        );
       }
 
       if (progress < 1) {
@@ -194,54 +236,62 @@ const ReplayControl = ({
     };
 
     animationRef.current = requestAnimationFrame(animate);
-  }, [replayPlaying, replayIndex, replayPositions, speed]);
+    return () => {
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    };
+  }, [replayPlaying, replayIndex, positions, speed]);
 
   useEffect(() => {
-    if (!replayPlaying && replayPositions.length > 0 && replayIndex < replayPositions.length) {
-      setInterpolatedPosition(replayPositions[replayIndex]);
+    if (!replayPlaying && positions.length > 0 && replayIndex < positions.length) {
+      setInterpolatedPosition(positions[replayIndex]);
     }
-  }, [replayIndex, replayPlaying, replayPositions]);
+  }, [replayIndex, replayPlaying, positions]);
 
-  const onMarkerClick = useCallback(
-    (positionId) => {
-      setShowCard(!!positionId);
-    },
-    [setShowCard],
-  );
+  const onMarkerClick = useCallback((positionId) => {
+    setShowCard(!!positionId);
+  }, []);
 
   const onPointClick = useCallback((_, index) => {
     setReplayIndex(index);
     setReplayPlaying(false);
   }, []);
 
+  const handleSliderChange = useCallback(async (_, newIndex) => {
+    setReplayPlaying(false);
+
+    if (!externalPositions && newIndex >= positions.length) {
+      await seekTo(newIndex);
+    }
+
+    setReplayIndex(newIndex);
+  }, [externalPositions, positions.length, seekTo]);
+
   const handleClose = () => {
     clearInterval(timerRef.current);
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
-    }
+    if (animationRef.current) cancelAnimationFrame(animationRef.current);
     onClose();
-  };
-
-  const handleSpeedChange = (newSpeed) => {
-    setSpeed(newSpeed);
   };
 
   const handleDownload = () => {
     if (!selectedItem) return;
-    const query = new URLSearchParams({
-      deviceId: selectedItem.deviceId,
-      from: replayPositions[0]?.fixTime,
-      to: replayPositions[replayPositions.length - 1]?.fixTime,
-    });
+    const from = positions[0]?.fixTime;
+    const to = positions[positions.length - 1]?.fixTime;
+    const query = new URLSearchParams({ deviceId: selectedItem.deviceId, from, to });
     window.location.assign(`/api/positions/kml?${query.toString()}`);
   };
+
+  const displayIndex = Math.min(replayIndex, positions.length - 1);
+  const currentPosition = positions[displayIndex];
+  const knownTotal = totalCount > 0 ? totalCount : positions.length;
+  const sliderMax = knownTotal - 1;
+  const isLoading = loadingSession;
 
   return (
     <div className={classes.root}>
       <MapView>
         <MapGeofence />
-        <MapRoutePath positions={replayPositions} />
-        <MapRoutePoints positions={replayPositions} onClick={onPointClick} />
+        <MapRoutePath positions={positions} />
+        <MapRoutePoints positions={positions} onClick={onPointClick} />
         {eventPosition && (
           <MapPositions
             positions={[eventPosition]}
@@ -251,19 +301,13 @@ const ReplayControl = ({
           />
         )}
         {interpolatedPosition && (
-          <MapPositions
-            positions={[interpolatedPosition]}
-            onClick={onMarkerClick}
-          />
+          <MapPositions positions={[interpolatedPosition]} onClick={onMarkerClick} />
         )}
       </MapView>
       <MapScale />
-      <MapCamera positions={replayPositions} />
+      <MapCamera positions={positions} />
 
-      {/* Sidebar */}
-      <div
-        className={`${classes.sidebar} ${expanded ? 'expanded' : ''}`}
-      >
+      <div className={`${classes.sidebar} ${expanded ? 'expanded' : ''}`}>
         <Paper elevation={3} square>
           <Toolbar
             sx={{
@@ -302,37 +346,47 @@ const ReplayControl = ({
                 {deviceName ? ` - ${deviceName}` : ''}
               </Typography>
             </Tooltip>
-            <IconButton onClick={handleDownload} disabled={replayPositions.length === 0}>
+            <IconButton onClick={handleDownload} disabled={positions.length === 0}>
               <DownloadIcon />
             </IconButton>
           </Toolbar>
         </Paper>
 
         <Paper className={classes.content} square>
-          {/* Speed Control */}
           <Typography
             variant="subtitle1"
             align="center"
             noWrap
-            sx={{
-              maxWidth: '100%',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
+            sx={{ maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis' }}
             className={classes.title}
           >
             {showEventType && selectedItem?.type
               ? t(prefixString('event', selectedItem.type))
               : t('reportReplay')}
           </Typography>
+
+          {(isLoading || isBuffering) && (
+            <Box className={classes.bufferIndicator}>
+              <CircularProgress size={14} />
+              <Typography variant="caption">
+                {isLoading ? t('sharedLoading') : 'Buffering…'}
+              </Typography>
+            </Box>
+          )}
+
+          {error && (
+            <Typography variant="caption" color="error" align="center" sx={{ mb: 1 }}>
+              {error}
+            </Typography>
+          )}
+
           <Box className={classes.speedControl}>
             <Box className={classes.speedChips}>
               {SPEED_OPTIONS.map((speedOption) => (
                 <Chip
                   key={speedOption}
                   label={`${speedOption}x`}
-                  onClick={() => handleSpeedChange(speedOption)}
+                  onClick={() => setSpeed(speedOption)}
                   color={speed === speedOption ? 'primary' : 'default'}
                   variant={speed === speedOption ? 'filled' : 'outlined'}
                   size="small"
@@ -342,17 +396,16 @@ const ReplayControl = ({
             </Box>
           </Box>
 
-          {/* Slider */}
           <Slider
             className={classes.slider}
-            max={replayPositions.length - 1}
-            step={null}
-            marks={replayPositions.map((_, index) => ({ value: index }))}
-            value={replayIndex}
-            onChange={(_, newIndex) => {
-              setReplayIndex(newIndex);
-              setReplayPlaying(false);
-            }}
+            max={sliderMax}
+            step={1}
+            marks={positions.length < 500
+              ? positions.map((_, i) => ({ value: i }))
+              : false}
+            value={displayIndex}
+            onChange={handleSliderChange}
+            disabled={isLoading}
           />
 
           <div
@@ -365,47 +418,54 @@ const ReplayControl = ({
             }}
           >
             <Typography variant="caption" color="text.secondary">
-              -1hr
+              {positions[0] ? formatTime(positions[0].fixTime, 'seconds') : '—'}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              +1hr
+              {`${positions.length}${totalCount > positions.length ? `/${totalCount}` : ''} pts`}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {currentPosition ? formatTime(currentPosition.fixTime, 'seconds') : '—'}
             </Typography>
           </div>
 
           {/* Controls */}
           <div className={classes.controls}>
-            <span>{`${replayIndex + 1}/${replayPositions.length}`}</span>
+            <span>{`${displayIndex + 1}/${knownTotal}`}</span>
             <IconButton
               onClick={() => {
-                setReplayIndex((index) => index - 1);
+                setReplayIndex((i) => Math.max(0, i - 1));
                 setReplayPlaying(false);
               }}
-              disabled={replayPlaying || replayIndex <= 0}
+              disabled={replayPlaying || isBuffering || displayIndex <= 0}
             >
               <FastRewindIcon />
             </IconButton>
             <IconButton
               onClick={() => setReplayPlaying(!replayPlaying)}
-              disabled={replayIndex >= replayPositions.length - 1}
+              disabled={isLoading || isBuffering || displayIndex >= knownTotal - 1}
             >
               {replayPlaying ? <PauseIcon /> : <PlayArrowIcon />}
-
+            </IconButton>
+            <IconButton
+              onClick={() => {
+                setReplayIndex((i) => i + 1);
+                setReplayPlaying(false);
+              }}
+              disabled={replayPlaying || isBuffering || displayIndex >= positions.length - 1}
+            >
               <FastForwardIcon />
             </IconButton>
             <span>
-              {replayIndex < replayPositions.length
-                ? formatTime(replayPositions[replayIndex].fixTime, 'seconds')
-                : ''}
+              {currentPosition ? formatTime(currentPosition.fixTime, 'seconds') : ''}
             </span>
           </div>
         </Paper>
       </div>
 
-      {/* Status Card */}
-      {showCard && replayIndex < replayPositions.length && (
+      {showCard && currentPosition && (
         <StatusCard
           deviceId={selectedItem?.deviceId}
-          position={replayPositions[replayIndex]}
+          position={currentPosition}
           onClose={() => setShowCard(false)}
           disableActions
         />
