@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import makeStyles from '@mui/styles/makeStyles';
-import { useLocalization, useTranslation } from '../common/components/LocalizationProvider';
+import { useTranslation } from '../common/components/LocalizationProvider';
 
 const useStyles = makeStyles((theme) => ({
   title: {
