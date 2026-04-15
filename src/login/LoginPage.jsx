@@ -77,14 +77,14 @@ const LoginPage = () => {
   const [announcementShown, setAnnouncementShown] = useState(false);
   const announcement = useSelector((state) => state.session.server.announcement);
 
-  const handlePasswordLogin = async (event, otpCode = '') => {
+  const handlePasswordLogin = async (event) => {
     event.preventDefault();
     setFailed(false);
     try {
       const query = `email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
       const response = await fetch('/api/session', {
         method: 'POST',
-        body: new URLSearchParams(otpCode ? `${query}&code=${otpCode}` : query),
+        body: new URLSearchParams(code.length ? `${query}&code=${code}` : query),
       });
       if (response.ok) {
         const user = await response.json();
@@ -101,6 +101,27 @@ const LoginPage = () => {
       setPassword('');
     }
   };
+
+  const handleOtpSubmit = useCatch(async (code) => {
+    setFailed(false);
+    try {
+      const query = `email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
+      const response = await fetch('/api/session', {
+        method: 'POST',
+        body: new URLSearchParams(`${query}&code=${code}`),
+      });
+      if (response.ok) {
+        const user = await response.json();
+        generateLoginToken();
+        dispatch(sessionActions.updateUser(user));
+        navigate('/');
+      } else {
+        throw Error(await response.text());
+      }
+    } catch (error) {
+      setFailed(true);
+    }
+  });
 
   const handleTokenLogin = useCatch(async (token) => {
     const response = await fetch(`/api/session?token=${encodeURIComponent(token)}`);
@@ -182,7 +203,7 @@ const LoginPage = () => {
         <OtpModal
           open={codeEnabled}
           onClose={() => setCodeEnabled(false)}
-          onSubmit={(code) => handlePasswordLogin(syntheticEvent, code)}
+          onSubmit={handleOtpSubmit}
           error={failed}
         />
         <Button
