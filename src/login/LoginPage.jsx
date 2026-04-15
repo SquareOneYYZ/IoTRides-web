@@ -19,6 +19,7 @@ import {
 import LogoImage from './LogoImage';
 import { useCatch } from '../reactHelper';
 import Loader from '../common/components/Loader';
+import OtpModal from './OtpModal';
 
 const useStyles = makeStyles((theme) => ({
   options: {
@@ -76,14 +77,14 @@ const LoginPage = () => {
   const [announcementShown, setAnnouncementShown] = useState(false);
   const announcement = useSelector((state) => state.session.server.announcement);
 
-  const handlePasswordLogin = async (event) => {
+  const handlePasswordLogin = async (event, otpCode = '') => {
     event.preventDefault();
     setFailed(false);
     try {
       const query = `email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
       const response = await fetch('/api/session', {
         method: 'POST',
-        body: new URLSearchParams(code.length ? `${query}&code=${code}` : query),
+        body: new URLSearchParams(otpCode ? `${query}&code=${otpCode}` : query),
       });
       if (response.ok) {
         const user = await response.json();
@@ -178,17 +179,12 @@ const LoginPage = () => {
           autoFocus={!!email}
           onChange={(e) => setPassword(e.target.value)}
         />
-        {codeEnabled && (
-          <TextField
-            required
-            error={failed}
-            label={t('loginTotpCode')}
-            name="code"
-            value={code}
-            type="number"
-            onChange={(e) => setCode(e.target.value)}
-          />
-        )}
+        <OtpModal
+          open={codeEnabled}
+          onClose={() => setCodeEnabled(false)}
+          onSubmit={(code) => handlePasswordLogin(syntheticEvent, code)}
+          error={failed}
+        />
         <Button
           onClick={handlePasswordLogin}
           type="submit"
