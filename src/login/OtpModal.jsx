@@ -21,47 +21,89 @@ const useStyles = makeStyles((theme) => ({
     flexDirection: 'column',
     alignItems: 'center',
     gap: theme.spacing(2),
-    padding: theme.spacing(3),
+    marginTop: theme.spacing(3),
+    padding: theme.spacing(2, 3),
+    [theme.breakpoints.down('sm')]: {
+      padding: theme.spacing(2, 1.5),
+    },
   },
-  otpContainer: {
+  pillWrapper: {
+    width: '100%',
+    borderRadius: 10,
+    border: `3px solid ${theme.palette.divider}`,
+    backgroundColor: theme.palette.action.hover,
+    padding: theme.spacing(1.5, 2.5),
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: theme.spacing(1),
+    transition: 'border-color 0.15s',
+    '&:focus-within': {
+      borderColor: theme.palette.primary.main,
+      boxShadow: `0 0 0 3px ${theme.palette.primary.main}22`,
+    },
+  },
+  pillWrapperError: {
+    borderColor: `${theme.palette.error.main} !important`,
+    boxShadow: `0 0 0 3px ${theme.palette.error.main}22 !important`,
+  },
+  inputRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing(2),
+  },
+  inputGroup: {
+    display: 'flex',
+    gap: theme.spacing(0.5),
+  },
+  otpInput: {
+    width: 'clamp(28px, 8vw, 36px)',
+    height: 'clamp(36px, 10vw, 44px)',
+    fontSize: 'clamp(20px, 5vw, 25px)',
+    fontWeight: 900,
+    textAlign: 'center',
+    background: 'transparent',
+    border: 'none',
+    outline: 'none',
+    color: theme.palette.text.primary,
+    caretColor: theme.palette.primary.main,
+  },
+  dotsRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing(2),
+  },
+  dotGroup: {
     display: 'flex',
     gap: theme.spacing(1.5),
-    justifyContent: 'center',
   },
-  otpBox: {
-    width: 44,
-    height: 52,
-    borderRadius: theme.shape.borderRadius,
-    border: `3px solid ${theme.palette.divider}`,
-    fontSize: 22,
-    fontWeight: 600,
-    textAlign: 'center',
-    outline: 'none',
-    backgroundColor: theme.palette.background.paper,
-    color: theme.palette.text.primary,
-    transition: 'border-color 0.15s, box-shadow 0.15s',
-    caretColor: 'transparent',
-    '&:hover': {
-      borderColor: theme.palette.primary.light,
-    },
-    '&:focus': {
-      borderColor: theme.palette.primary.main,
-      boxShadow: `0 0 0 3px ${theme.palette.secondary.main}22`,
-    },
+  dot: {
+    width: 7,
+    height: 7,
+    borderRadius: '50%',
+    backgroundColor: theme.palette.primary.main,
+    transition: 'background-color 0.15s, opacity 0.15s',
   },
-  otpBoxError: {
-    borderColor: theme.palette.error.main,
-    '&:focus': {
-      borderColor: theme.palette.error.main,
-      boxShadow: `0 0 0 3px ${theme.palette.error.main}22`,
-    },
-  },
-  otpBoxFilled: {
-    borderColor: theme.palette.primary.main,
+  dotEmpty: {
+    backgroundColor: theme.palette.divider,
   },
   actions: {
     padding: theme.spacing(2, 3),
     gap: theme.spacing(1),
+    [theme.breakpoints.down('sm')]: {
+      flexDirection: 'column-reverse',
+      padding: theme.spacing(1.5, 2),
+      '& > button': { width: '100%', margin: '0 !important' },
+    },
+  },
+  otpInputError: {
+    color: theme.palette.error.main,
+    caretColor: theme.palette.error.main,
+  },
+  dotError: {
+    backgroundColor: theme.palette.error.main,
   },
 }));
 
@@ -78,9 +120,7 @@ const OtpModal = ({ open, onClose, onSubmit, error }) => {
     const newDigits = [...digits];
     newDigits[index] = digit;
     setDigits(newDigits);
-    if (digit && index < OTP_LENGTH - 1) {
-      inputRefs.current[index + 1]?.focus();
-    }
+    if (digit && index < OTP_LENGTH - 1) inputRefs.current[index + 1]?.focus();
   };
 
   const handleKeyDown = (index, e) => {
@@ -111,16 +151,53 @@ const OtpModal = ({ open, onClose, onSubmit, error }) => {
     inputRefs.current[Math.min(pasted.length, OTP_LENGTH - 1)]?.focus();
   };
 
-  const handleSubmit = () => {
-    onSubmit(digits.join(''));
-  };
+  const handleSubmit = () => onSubmit(digits.join(''));
 
   const handleClose = () => {
     setDigits(Array(OTP_LENGTH).fill(''));
     onClose();
   };
 
-  const isComplete = digits.every(Boolean);
+  const renderInputGroup = (start, end) => (
+    <div className={classes.inputGroup}>
+      {digits.slice(start, end).map((digit, i) => {
+        const index = start + i;
+        return (
+          <input
+            key={index}
+            ref={(el) => { inputRefs.current[index] = el; }}
+            className={[
+              classes.otpInput,
+              error ? classes.otpInputError : ''
+            ].join(' ')}
+            type="text"
+            inputMode="numeric"
+            maxLength={1}
+            value={digit}
+            autoFocus={index === 0}
+            onChange={(e) => handleChange(index, e.target.value)}
+            onKeyDown={(e) => handleKeyDown(index, e)}
+            onPaste={handlePaste}
+          />
+        );
+      })}
+    </div>
+  );
+
+  const renderDotGroup = (start, end) => (
+    <div className={classes.dotGroup}>
+      {digits.slice(start, end).map((digit, i) => (
+        <div
+          key={start + i}
+          className={[
+            classes.dot,
+            !digit ? classes.dotEmpty : '',
+            error ? classes.dotError : '',
+          ].join(' ')}
+        />
+      ))}
+    </div>
+  );
 
   return (
     <Dialog
@@ -128,9 +205,8 @@ const OtpModal = ({ open, onClose, onSubmit, error }) => {
       onClose={handleClose}
       fullWidth
       maxWidth="xs"
-      BackdropProps={{
-        sx: { backdropFilter: 'blur(4px)', backgroundColor: 'rgba(0,0,0,0.4)' }
-      }}
+      BackdropProps={{ sx: { backdropFilter: 'blur(4px)', backgroundColor: 'rgba(0,0,0,0.4)' } }}
+      PaperProps={{ sx: { mx: { xs: 2, sm: 4 } } }}
     >
       <DialogTitle disableTypography className={classes.title}>
         <Typography variant="h6">{t('loginTotpCode')}</Typography>
@@ -140,46 +216,35 @@ const OtpModal = ({ open, onClose, onSubmit, error }) => {
       </DialogTitle>
 
       <DialogContent className={classes.content}>
-        <Typography variant="body2" sx={{ mt: 5 }} color="textSecondary" align="center">
+        <Typography variant="body2" color="textSecondary" align="center">
           Enter the 6-digit code from your authenticator app.
         </Typography>
-        <Box className={classes.otpContainer}>
-          {digits.map((digit, index) => (
-            <input
-              key={index}
-              ref={(el) => { inputRefs.current[index] = el; }}
-              className={[
-                classes.otpBox,
-                error ? classes.otpBoxError : '',
-                digit && !error ? classes.otpBoxFilled : '',
-              ].join(' ')}
-              type="text"
-              inputMode="numeric"
-              maxLength={1}
-              value={digit}
-              autoFocus={index === 0}
-              onChange={(e) => handleChange(index, e.target.value)}
-              onKeyDown={(e) => handleKeyDown(index, e)}
-              onPaste={handlePaste}
-            />
-          ))}
+
+        <Box className={[classes.pillWrapper, error ? classes.pillWrapperError : ''].join(' ')}>
+          <div className={classes.inputRow}>
+            {renderInputGroup(0, 3)}
+            {renderInputGroup(3, 6)}
+          </div>
+          <div className={classes.dotsRow}>
+            {renderDotGroup(0, 3)}
+            {renderDotGroup(3, 6)}
+          </div>
         </Box>
+
         {error && (
-          <Typography variant="caption" color="error">
+          <Typography sx={{ fontSize: ['14px'] }, { fontWeight: 600 }} variant="caption" color="error">
             Invalid or expired code. Please try again.
           </Typography>
         )}
       </DialogContent>
 
       <DialogActions className={classes.actions}>
-        <Button onClick={handleClose} color="primary">
-          {t('sharedCancel')}
-        </Button>
+        <Button onClick={handleClose} color="primary">{t('sharedCancel')}</Button>
         <Button
           onClick={handleSubmit}
           variant="contained"
-          color="primary"
-          disabled={!isComplete}
+          color={error ? 'error' : 'primary'}
+          disabled={!digits.every(Boolean)}
         >
           {t('loginLogin')}
         </Button>
