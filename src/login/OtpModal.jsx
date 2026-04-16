@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Button, Typography, IconButton, Box,
@@ -115,6 +115,8 @@ const OtpModal = ({ open, onClose, onSubmit, error }) => {
   const [digits, setDigits] = useState(Array(OTP_LENGTH).fill(''));
   const inputRefs = useRef([]);
 
+  const handleSubmit = () => onSubmit(digits.join(''));
+
   const handleChange = (index, value) => {
     const digit = value.replace(/\D/g, '').slice(-1);
     const newDigits = [...digits];
@@ -151,12 +153,16 @@ const OtpModal = ({ open, onClose, onSubmit, error }) => {
     inputRefs.current[Math.min(pasted.length, OTP_LENGTH - 1)]?.focus();
   };
 
-  const handleSubmit = () => onSubmit(digits.join(''));
-
   const handleClose = () => {
     setDigits(Array(OTP_LENGTH).fill(''));
     onClose();
   };
+
+  useEffect(() => {
+    if (inputRefs.current[0]) {
+      inputRefs.current[0].focus();
+    }
+  }, []);
 
   const renderInputGroup = (start, end) => (
     <div className={classes.inputGroup}>
@@ -168,13 +174,12 @@ const OtpModal = ({ open, onClose, onSubmit, error }) => {
             ref={(el) => { inputRefs.current[index] = el; }}
             className={[
               classes.otpInput,
-              error ? classes.otpInputError : ''
+              error ? classes.otpInputError : '',
             ].join(' ')}
             type="text"
             inputMode="numeric"
             maxLength={1}
             value={digit}
-            autoFocus={index === 0}
             onChange={(e) => handleChange(index, e.target.value)}
             onKeyDown={(e) => handleKeyDown(index, e)}
             onPaste={handlePaste}
@@ -188,7 +193,8 @@ const OtpModal = ({ open, onClose, onSubmit, error }) => {
     <div className={classes.dotGroup}>
       {digits.slice(start, end).map((digit, i) => (
         <div
-          key={start + i}
+          // eslint-disable-next-line react/no-array-index-key
+          key={`dot-${start}-${i}-${digit || 'empty'}`}
           className={[
             classes.dot,
             !digit ? classes.dotEmpty : '',
@@ -232,7 +238,11 @@ const OtpModal = ({ open, onClose, onSubmit, error }) => {
         </Box>
 
         {error && (
-          <Typography sx={{ fontSize: ['14px'] }, { fontWeight: 600 }} variant="caption" color="error">
+          <Typography
+            sx={{ fontSize: '14px', fontWeight: 600 }}
+            variant="caption"
+            color="error"
+          >
             Invalid or expired code. Please try again.
           </Typography>
         )}
