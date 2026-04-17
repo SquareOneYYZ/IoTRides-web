@@ -27,53 +27,109 @@ const useStyles = makeStyles((theme) => ({
       padding: theme.spacing(2, 1.5),
     },
   },
-  pillWrapper: {
+  pill: {
+    position: 'relative',
     width: '100%',
-    borderRadius: 10,
-    border: `3px solid ${theme.palette.divider}`,
-    backgroundColor: theme.palette.action.hover,
-    padding: theme.spacing(1.5, 2.5),
     display: 'flex',
-    flexDirection: 'column',
     alignItems: 'center',
-    gap: theme.spacing(1),
-    transition: 'border-color 0.15s',
+    justifyContent: 'center',
+    backgroundColor: theme.palette.action.hover,
+    border: `3px solid ${theme.palette.divider}`,
+    borderRadius: 10,
+    padding: theme.spacing(1.5, 2.5),
+    boxSizing: 'border-box',
+    cursor: 'text',
+    transition: 'border-color 0.15s, box-shadow 0.15s',
     '&:focus-within': {
       borderColor: theme.palette.primary.main,
       boxShadow: `0 0 0 3px ${theme.palette.primary.main}22`,
     },
   },
-  pillWrapperError: {
+  pillError: {
     borderColor: `${theme.palette.error.main} !important`,
     boxShadow: `0 0 0 3px ${theme.palette.error.main}22 !important`,
   },
-  inputRow: {
+  pillShake: {
+    animation: '$shake 0.5s ease',
+  },
+  '@keyframes shake': {
+    '0%, 100%': { transform: 'translateX(0)' },
+    '15%': { transform: 'translateX(-6px)' },
+    '30%': { transform: 'translateX(6px)' },
+    '45%': { transform: 'translateX(-5px)' },
+    '60%': { transform: 'translateX(5px)' },
+    '75%': { transform: 'translateX(-3px)' },
+    '90%': { transform: 'translateX(3px)' },
+  },
+  hiddenInput: {
+    position: 'absolute',
+    inset: 0,
+    width: '100%',
+    height: '100%',
+    opacity: 0,
+    cursor: 'text',
+    zIndex: 1,
+    fontSize: 16,
+    border: 'none',
+    background: 'transparent',
+  },
+  displayRow: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: theme.spacing(2),
+    pointerEvents: 'none',
+    zIndex: 0,
+    gap: theme.spacing(4),
   },
-  inputGroup: {
+  group: {
     display: 'flex',
-    gap: theme.spacing(0.5),
+    gap: theme.spacing(1.5),
   },
-  otpInput: {
-    width: 'clamp(28px, 8vw, 36px)',
+  digitSlot: {
+    width: 'clamp(22px, 6vw, 30px)',
     height: 'clamp(36px, 10vw, 44px)',
-    fontSize: 'clamp(20px, 5vw, 25px)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: 'clamp(18px, 4vw, 22px)',
     fontWeight: 900,
-    textAlign: 'center',
-    background: 'transparent',
-    border: 'none',
-    outline: 'none',
     color: theme.palette.text.primary,
-    caretColor: theme.palette.primary.main,
+    userSelect: 'none',
+  },
+  digitSlotError: {
+    color: theme.palette.error.main,
+  },
+  pillCursor: {
+    position: 'absolute',
+    left: '50%',
+    top: '50%',
+    transform: 'translate(-50%, -50%)',
+    width: 2,
+    height: 22,
+    borderRadius: 1,
+    backgroundColor: theme.palette.primary.main,
+    animation: '$blink 1s step-end infinite',
+    pointerEvents: 'none',
+    zIndex: 0,
+  },
+  slotCursor: {
+    width: 2,
+    height: 22,
+    borderRadius: 1,
+    backgroundColor: theme.palette.primary.main,
+    animation: '$blink 1s step-end infinite',
+  },
+  '@keyframes blink': {
+    '0%, 100%': { opacity: 1 },
+    '50%': { opacity: 0 },
   },
   dotsRow: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: theme.spacing(2),
+    gap: theme.spacing(4),
+    marginTop: theme.spacing(0.5),
+    pointerEvents: 'none',
   },
   dotGroup: {
     display: 'flex',
@@ -84,10 +140,13 @@ const useStyles = makeStyles((theme) => ({
     height: 7,
     borderRadius: '50%',
     backgroundColor: theme.palette.primary.main,
-    transition: 'background-color 0.15s, opacity 0.15s',
+    transition: 'background-color 0.15s',
   },
   dotEmpty: {
     backgroundColor: theme.palette.divider,
+  },
+  dotError: {
+    backgroundColor: theme.palette.error.main,
   },
   actions: {
     padding: theme.spacing(2, 3),
@@ -98,13 +157,6 @@ const useStyles = makeStyles((theme) => ({
       '& > button': { width: '100%', margin: '0 !important' },
     },
   },
-  otpInputError: {
-    color: theme.palette.error.main,
-    caretColor: theme.palette.error.main,
-  },
-  dotError: {
-    backgroundColor: theme.palette.error.main,
-  },
 }));
 
 const OTP_LENGTH = 6;
@@ -112,78 +164,57 @@ const OTP_LENGTH = 6;
 const OtpModal = ({ open, onClose, onSubmit, error }) => {
   const classes = useStyles();
   const t = useTranslation();
-  const [digits, setDigits] = useState(Array(OTP_LENGTH).fill(''));
-  const inputRefs = useRef([]);
+  const [value, setValue] = useState('');
+  const [focused, setFocused] = useState(false);
+  const [shakeKey, setShakeKey] = useState(0);
+  const inputRef = useRef(null);
 
-  const handleSubmit = () => onSubmit(digits.join(''));
+  useEffect(() => {
+    if (error) {
+      setShakeKey((k) => k + 1);
+      setValue('');
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
+  }, [error]);
 
-  const handleChange = (index, value) => {
-    const digit = value.replace(/\D/g, '').slice(-1);
-    const newDigits = [...digits];
-    newDigits[index] = digit;
-    setDigits(newDigits);
-    if (digit && index < OTP_LENGTH - 1) inputRefs.current[index + 1]?.focus();
+  const handleChange = (e) => {
+    const clean = e.target.value.replace(/\D/g, '').slice(0, OTP_LENGTH);
+    setValue(clean);
   };
 
-  const handleKeyDown = (index, e) => {
-    if (e.key === 'Backspace') {
-      if (digits[index]) {
-        const newDigits = [...digits];
-        newDigits[index] = '';
-        setDigits(newDigits);
-      } else if (index > 0) {
-        inputRefs.current[index - 1]?.focus();
-      }
-    } else if (e.key === 'ArrowLeft' && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    } else if (e.key === 'ArrowRight' && index < OTP_LENGTH - 1) {
-      inputRefs.current[index + 1]?.focus();
-    } else if (e.key === 'Enter' && digits.every(Boolean)) {
-      handleSubmit();
-    }
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && value.length === OTP_LENGTH) handleSubmit();
   };
 
   const handlePaste = (e) => {
     e.preventDefault();
     const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, OTP_LENGTH);
-    if (!pasted) return;
-    const newDigits = [...digits];
-    pasted.split('').forEach((char, i) => { newDigits[i] = char; });
-    setDigits(newDigits);
-    inputRefs.current[Math.min(pasted.length, OTP_LENGTH - 1)]?.focus();
+    setValue(pasted);
   };
 
+  const handleSubmit = () => onSubmit(value);
+
   const handleClose = () => {
-    setDigits(Array(OTP_LENGTH).fill(''));
+    setValue('');
     onClose();
   };
 
-  useEffect(() => {
-    if (inputRefs.current[0]) {
-      inputRefs.current[0].focus();
-    }
-  }, []);
-
-  const renderInputGroup = (start, end) => (
-    <div className={classes.inputGroup}>
-      {digits.slice(start, end).map((digit, i) => {
+  const renderGroup = (start, end) => (
+    <div className={classes.group}>
+      {Array.from({ length: end - start }).map((_, i) => {
         const index = start + i;
+        const char = value[index] || '';
+        const isCursorSlot = focused && value.length === index && index > 0;
         return (
-          <input
+          <div
             key={index}
-            ref={(el) => { inputRefs.current[index] = el; }}
             className={[
-              classes.otpInput,
-              error ? classes.otpInputError : '',
+              classes.digitSlot,
+              error ? classes.digitSlotError : '',
             ].join(' ')}
-            type="text"
-            inputMode="numeric"
-            maxLength={1}
-            value={digit}
-            onChange={(e) => handleChange(index, e.target.value)}
-            onKeyDown={(e) => handleKeyDown(index, e)}
-            onPaste={handlePaste}
-          />
+          >
+            {char || (isCursorSlot ? <span className={classes.slotCursor} /> : null)}
+          </div>
         );
       })}
     </div>
@@ -191,17 +222,20 @@ const OtpModal = ({ open, onClose, onSubmit, error }) => {
 
   const renderDotGroup = (start, end) => (
     <div className={classes.dotGroup}>
-      {digits.slice(start, end).map((digit, i) => (
-        <div
-          // eslint-disable-next-line react/no-array-index-key
-          key={`dot-${start}-${i}-${digit || 'empty'}`}
-          className={[
-            classes.dot,
-            !digit ? classes.dotEmpty : '',
-            error ? classes.dotError : '',
-          ].join(' ')}
-        />
-      ))}
+      {Array.from({ length: end - start }).map((_, i) => {
+        const index = start + i;
+        const filled = !!value[index];
+        return (
+          <div
+            key={index}
+            className={[
+              classes.dot,
+              !filled ? classes.dotEmpty : '',
+              error ? classes.dotError : '',
+            ].join(' ')}
+          />
+        );
+      })}
     </div>
   );
 
@@ -226,37 +260,61 @@ const OtpModal = ({ open, onClose, onSubmit, error }) => {
           Enter the 6-digit code from your authenticator app.
         </Typography>
 
-        <Box className={[classes.pillWrapper, error ? classes.pillWrapperError : ''].join(' ')}>
-          <div className={classes.inputRow}>
-            {renderInputGroup(0, 3)}
-            {renderInputGroup(3, 6)}
-          </div>
-          <div className={classes.dotsRow}>
-            {renderDotGroup(0, 3)}
-            {renderDotGroup(3, 6)}
+        <Box
+          key={shakeKey}
+          className={[
+            classes.pill,
+            error ? classes.pillError : '',
+            error ? classes.pillShake : '',
+          ].join(' ')}
+          onClick={() => inputRef.current?.focus()}
+        >
+          <input
+            ref={inputRef}
+            className={classes.hiddenInput}
+            type="text"
+            inputMode="numeric"
+            maxLength={OTP_LENGTH}
+            value={value}
+            autoFocus
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
+          />
+
+          {focused && value.length === 0 && (
+            <span className={classes.pillCursor} />
+          )}
+
+          <div className={classes.displayRow}>
+            {renderGroup(0, 3)}
+            {renderGroup(3, 6)}
           </div>
         </Box>
 
+        <Box className={classes.dotsRow}>
+          {renderDotGroup(0, 3)}
+          {renderDotGroup(3, 6)}
+        </Box>
+
         {error && (
-          <Typography
-            sx={{ fontSize: '14px', fontWeight: 600 }}
-            variant="caption"
-            color="error"
-          >
+          <Typography sx={{ fontSize: '14px', fontWeight: 600 }} variant="caption" color="error">
             Invalid or expired code. Please try again.
           </Typography>
         )}
       </DialogContent>
 
       <DialogActions className={classes.actions}>
-        <Button onClick={handleClose} color="primary">{t('sharedCancel')}</Button>
+        <Button variant='outlined' onClick={handleClose} color="primary">{t('sharedCancel')}</Button>
         <Button
           onClick={handleSubmit}
           variant="contained"
           color={error ? 'error' : 'primary'}
-          disabled={!digits.every(Boolean)}
+          disabled={value.length !== OTP_LENGTH}
         >
-          {t('loginLogin')}
+          {error ? t('loginRetry') : t('loginLogin')}
         </Button>
       </DialogActions>
     </Dialog>
