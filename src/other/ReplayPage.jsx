@@ -31,10 +31,18 @@ import useChunkedReplay from '../reports/components/useChunkedReplay';
 
 const SPEED_OPTIONS = [1, 1.5, 2, 5, 10];
 
+// ─── Logger (same colour scheme as hook) ──────────────────────────────────
+const LOG = {
+  play:   (msg, data) => console.log(`%c[PLAY]    ${msg}`, 'color:#10b981;font-weight:bold', data ?? ''),
+  slider: (msg, data) => console.log(`%c[SLIDER]  ${msg}`, 'color:#f97316;font-weight:bold', data ?? ''),
+  interp: (msg, data) => console.log(`%c[INTERP]  ${msg}`, 'color:#a78bfa;font-weight:bold', data ?? ''),
+  map:    (msg, data) => console.log(`%c[MAP]     ${msg}`, 'color:#34d399;font-weight:bold', data ?? ''),
+  warn:   (msg, data) => console.warn(`[WARN]    ${msg}`, data ?? ''),
+  error:  (msg, data) => console.error(`[ERROR]   ${msg}`, data ?? ''),
+};
+
 const useStyles = makeStyles((theme) => ({
-  root: {
-    height: '100%',
-  },
+  root: { height: '100%' },
   sidebar: {
     display: 'flex',
     flexDirection: 'column',
@@ -46,11 +54,7 @@ const useStyles = makeStyles((theme) => ({
     width: theme.dimensions.drawerWidthDesktop,
     maxWidth: '90vw',
     transition: 'width 0.3s ease',
-
-    '&.expanded': {
-      width: 600,
-    },
-
+    '&.expanded': { width: 600 },
     [theme.breakpoints.down('md')]: {
       width: 'calc(100% - 16px)',
       maxWidth: 'calc(100% - 16px)',
@@ -58,7 +62,6 @@ const useStyles = makeStyles((theme) => ({
       left: 0,
       right: 0,
     },
-
     [theme.breakpoints.down('sm')]: {
       width: '100%',
       maxWidth: '100%',
@@ -67,12 +70,8 @@ const useStyles = makeStyles((theme) => ({
       right: 0,
     },
   },
-  title: {
-    flexGrow: 1,
-  },
-  slider: {
-    width: '100%',
-  },
+  title: { flexGrow: 1 },
+  slider: { width: '100%' },
   controls: {
     display: 'flex',
     justifyContent: 'space-between',
@@ -116,7 +115,6 @@ const ReplayPage = () => {
   const t = useTranslation();
   const classes = useStyles();
   const navigate = useNavigate();
-  const timerRef = useRef();
   const defaultDeviceId = useSelector((state) => state.devices.selectedId);
 
   const {
@@ -130,17 +128,31 @@ const ReplayPage = () => {
     seekTo,
   } = useChunkedReplay();
 
-  const [index, setIndex] = useState(0);
+  const [index, setIndex]               = useState(0);
   const [selectedDeviceId, setSelectedDeviceId] = useState(defaultDeviceId);
-  const [showCard, setShowCard] = useState(false);
-  const [from, setFrom] = useState();
-  const [to, setTo] = useState();
-  const [expanded, setExpanded] = useState(true);
-  const [playing, setPlaying] = useState(false);
+  const [showCard, setShowCard]         = useState(false);
+  const [from, setFrom]                 = useState();
+  const [to, setTo]                     = useState();
+  const [expanded, setExpanded]         = useState(true);
+  const [playing, setPlaying]           = useState(false);
   const [smoothPosition, setSmoothPosition] = useState(null);
   const [animationProgress, setAnimationProgress] = useState(0);
-  const [speed, setSpeed] = useState(1);
+  const [speed, setSpeed]               = useState(1);
   const [titleExpanded, setTitleExpanded] = useState(false);
+
+  // CRITICAL: use refs so the interval callback always sees latest values
+  // without needing to re-register the interval on every state change.
+  const indexRef        = useRef(0);
+  const playingRef      = useRef(false);
+  const positionsRef    = useRef([]);
+  const speedRef        = useRef(1);
+  const timerRef        = useRef(null);
+
+  // Keep refs in sync with state
+  useEffect(() => { indexRef.current = index; }, [index]);
+  useEffect(() => { playingRef.current = playing; }, [playing]);
+  useEffect(() => { positionsRef.current = positions; }, [positions]);
+  useEffect(() => { speedRef.current = speed; }, [speed]);
 
   const deviceName = useSelector((state) => {
     if (selectedDeviceId) {
@@ -150,64 +162,121 @@ const ReplayPage = () => {
     return null;
   });
 
+  // ─── Log whenever positions array changes ───────────────────────────────
   useEffect(() => {
-    if (playing && positions.length > 0) {
-      timerRef.current = setInterval(() => {
-        setAnimationProgress((progress) => {
-          const newProgress = progress + 0.02 * speed;
-          if (newProgress >= 1) {
-            setIndex((prevIndex) => {
-              const nextIndex = prevIndex + 1;
+    if (positions.length > 0) {
+      LOG.map('positions array updated', {
+        length: positions.length,
+        totalCount,
+        firstPos: positions[0],
+        lastPos: positions[positions.length - 1],
+      });
+    }
+  }, [positions.length]);
 
-              const shouldPause = checkAndPrefetch(nextIndex, () => setPlaying(true));
-              if (shouldPause) {
-                setPlaying(false);
-                return prevIndex; 
-              }
+  // ─── Log smoothPosition updates (fires ~60fps during playback) ──────────
+  // Uncomment below if you want to verify interpolation is working:
+  // useEffect(() => {
+  //   if (smoothPosition) LOG.interp('smoothPosition updated', smoothPosition);
+  // }, [smoothPosition]);
 
-              if (nextIndex >= positions.length - 1) {
-                if (nextIndex >= totalCount - 1) {
-                  setPlaying(false); 
-                }
-                return nextIndex;
-              }
+  // ─── Playback interval ──────────────────────────────────────────────────
+  // BUG FIX: The previous implementation re-created the interval on every
+  // render because it captured positions/index as state directly.
+  // We now use refs so the interval is created ONCE when playing starts.
+  useEffect(() => {
+    if (!playing) {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+        LOG.play('Playback stopped — interval cleared');
+      }
+      return;
+    }
 
-              return nextIndex;
+    LOG.play('Playback started', { speed, index, positionsLoaded: positions.length, totalCount });
+
+    timerRef.current = setInterval(() => {
+      setAnimationProgress((progress) => {
+        const newProgress = progress + 0.02 * speedRef.current;
+        if (newProgress >= 1) {
+          const currentIdx = indexRef.current;
+          const pos = positionsRef.current;
+          const nextIndex = currentIdx + 1;
+
+          // Check for end of all known data
+          if (nextIndex >= pos.length) {
+            LOG.play('Reached end of loaded positions', { nextIndex, loaded: pos.length, totalCount });
+            // Check buffer / pre-fetch
+            const shouldPause = checkAndPrefetch(nextIndex, () => {
+              LOG.play('Auto-resuming after buffer refill');
+              setPlaying(true);
             });
+            if (shouldPause) {
+              LOG.play('Paused — waiting for next chunk');
+              setPlaying(false);
+              return 0;
+            }
+            // Truly at the end
+            setPlaying(false);
             return 0;
           }
 
-          return newProgress;
-        });
-      }, 16);
-    } else {
+          checkAndPrefetch(nextIndex, () => {
+            LOG.play('Auto-resuming after buffer refill');
+            setPlaying(true);
+          });
+
+          LOG.play(`Tick → index ${currentIdx} → ${nextIndex}`, {
+            fixTime: pos[nextIndex]?.fixTime,
+            lat: pos[nextIndex]?.latitude,
+            lng: pos[nextIndex]?.longitude,
+          });
+
+          setIndex(nextIndex);
+          indexRef.current = nextIndex;
+          return 0;
+        }
+        return newProgress;
+      });
+    }, 16);
+
+    return () => {
       clearInterval(timerRef.current);
-    }
+      timerRef.current = null;
+    };
+    // Only re-run when playing actually toggles — refs handle the rest
+  }, [playing]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    return () => clearInterval(timerRef.current);
-  }, [playing, positions, speed, checkAndPrefetch, totalCount]);
-
+  // ─── Smooth interpolation ───────────────────────────────────────────────
   useEffect(() => {
-    if (positions.length > 0 && index < positions.length - 1) {
-      const currentPos = positions[index];
-      const nextPos = positions[index + 1];
+    if (positions.length === 0) return;
 
+    const clampedIndex = Math.min(index, positions.length - 1);
+
+    if (clampedIndex < positions.length - 1) {
+      const currentPos = positions[clampedIndex];
+      const nextPos    = positions[clampedIndex + 1];
       if (currentPos && nextPos) {
-        setSmoothPosition({
+        const interpolated = {
           ...currentPos,
-          latitude: currentPos.latitude + (nextPos.latitude - currentPos.latitude) * animationProgress,
+          latitude:  currentPos.latitude  + (nextPos.latitude  - currentPos.latitude)  * animationProgress,
           longitude: currentPos.longitude + (nextPos.longitude - currentPos.longitude) * animationProgress,
-          speed: currentPos.speed + (nextPos.speed - currentPos.speed) * animationProgress,
-          course: currentPos.course + (nextPos.course - currentPos.course) * animationProgress,
-        });
+          speed:     currentPos.speed     + (nextPos.speed     - currentPos.speed)     * animationProgress,
+          course:    currentPos.course    + (nextPos.course    - currentPos.course)    * animationProgress,
+        };
+        setSmoothPosition(interpolated);
       }
-    } else if (positions.length > 0 && index < positions.length) {
-      setSmoothPosition(positions[index]);
+    } else {
+      setSmoothPosition(positions[clampedIndex]);
     }
   }, [positions, index, animationProgress]);
 
+  // ─── Callbacks ──────────────────────────────────────────────────────────
   const onPointClick = useCallback((_, idx) => {
+    LOG.slider(`Route point clicked`, { idx });
     setIndex(idx);
+    indexRef.current = idx;
     setAnimationProgress(0);
     setPlaying(false);
   }, []);
@@ -217,24 +286,32 @@ const ReplayPage = () => {
   }, []);
 
   const handleSliderChange = useCallback(async (_, newIndex) => {
+    LOG.slider(`Slider moved`, { newIndex, currentlyLoaded: positions.length, totalCount });
     setPlaying(false);
     setAnimationProgress(0);
 
     if (newIndex >= positions.length) {
+      LOG.slider('Seeking beyond loaded range — fetching chunk on demand');
       await seekTo(newIndex);
     }
 
     setIndex(newIndex);
-  }, [positions.length, seekTo]);
+    indexRef.current = newIndex;
+  }, [positions.length, seekTo, totalCount]);
 
+  // ─── Submit ─────────────────────────────────────────────────────────────
   const handleSubmit = useCatch(async ({ deviceId, from: f, to: t2 }) => {
+    console.log('%c[ReplayPage] handleSubmit called', 'color:#0ea5e9;font-weight:bold', { deviceId, from: f, to: t2 });
     setSelectedDeviceId(deviceId);
     setFrom(f);
     setTo(t2);
     setIndex(0);
+    indexRef.current = 0;
     setPlaying(false);
+    setSmoothPosition(null);
 
     const ok = await initSession(deviceId, f, t2);
+    console.log('%c[ReplayPage] initSession result:', 'color:#0ea5e9;font-weight:bold', ok ? 'SUCCESS' : 'FAILED');
     if (ok) setExpanded(false);
   });
 
@@ -243,9 +320,22 @@ const ReplayPage = () => {
     window.location.assign(`/api/positions/kml?${query.toString()}`);
   };
 
-  const sliderMax = Math.max(positions.length - 1, 0);
-  const displayIndex = Math.min(index, positions.length - 1);
-  const currentPosition = positions[displayIndex];
+  const handlePlayPause = () => {
+    const next = !playing;
+    LOG.play(`User clicked ${next ? 'Play' : 'Pause'}`, {
+      index,
+      positionsLoaded: positions.length,
+      totalCount,
+      isBuffering,
+    });
+    setPlaying(next);
+  };
+
+  // ─── Derived ────────────────────────────────────────────────────────────
+  const displayIndex  = Math.min(index, Math.max(0, positions.length - 1));
+  const currentPos    = positions[displayIndex];
+  const knownTotal    = totalCount > 0 ? totalCount : positions.length;
+  const atEnd         = displayIndex >= knownTotal - 1;
 
   return (
     <div className={classes.root}>
@@ -266,23 +356,11 @@ const ReplayPage = () => {
 
       <div className={`${classes.sidebar} ${titleExpanded ? 'expanded' : ''}`}>
         <Paper elevation={3} square>
-          <Toolbar
-            sx={{
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: 'unset',
-              paddingTop: 1,
-              paddingBottom: 1,
-            }}
-          >
+          <Toolbar sx={{ alignItems: 'center', justifyContent: 'center', minHeight: 'unset', paddingTop: 1, paddingBottom: 1 }}>
             <IconButton edge="start" sx={{ mr: 2 }} onClick={() => navigate(-1)}>
               <ArrowBackIcon />
             </IconButton>
-            <Tooltip
-              title={`${t('reportReplay')}${deviceName ? ` - ${deviceName}` : ''}`}
-              arrow
-              placement="bottom"
-            >
+            <Tooltip title={`${t('reportReplay')}${deviceName ? ` - ${deviceName}` : ''}`} arrow placement="bottom">
               <Typography
                 variant="subtitle1"
                 onClick={() => setTitleExpanded((prev) => !prev)}
@@ -303,15 +381,10 @@ const ReplayPage = () => {
                 {deviceName ? ` - ${deviceName}` : ''}
               </Typography>
             </Tooltip>
-
             {!expanded && (
               <>
-                <IconButton onClick={handleDownload}>
-                  <DownloadIcon />
-                </IconButton>
-                <IconButton edge="end" onClick={() => setExpanded(true)}>
-                  <TuneIcon />
-                </IconButton>
+                <IconButton onClick={handleDownload}><DownloadIcon /></IconButton>
+                <IconButton edge="end" onClick={() => setExpanded(true)}><TuneIcon /></IconButton>
               </>
             )}
           </Toolbar>
@@ -320,31 +393,27 @@ const ReplayPage = () => {
         <Paper className={classes.content} square>
           {!expanded ? (
             <>
-              {/* Buffer underrun indicator */}
               {isBuffering && (
                 <Box className={classes.bufferIndicator}>
                   <CircularProgress size={14} />
                   <Typography variant="caption">Buffering…</Typography>
                 </Box>
               )}
-
-              {/* Error display */}
               {error && (
                 <Typography variant="caption" color="error" align="center" sx={{ mb: 1 }}>
                   {error}
                 </Typography>
               )}
 
-              {/* Speed chips */}
               <Box className={classes.speedControl}>
                 <Box className={classes.speedChips}>
-                  {SPEED_OPTIONS.map((speedOption) => (
+                  {SPEED_OPTIONS.map((opt) => (
                     <Chip
-                      key={speedOption}
-                      label={`${speedOption}x`}
-                      onClick={() => setSpeed(speedOption)}
-                      color={speed === speedOption ? 'primary' : 'default'}
-                      variant={speed === speedOption ? 'filled' : 'outlined'}
+                      key={opt}
+                      label={`${opt}x`}
+                      onClick={() => { LOG.play(`Speed changed to ${opt}x`); setSpeed(opt); speedRef.current = opt; }}
+                      color={speed === opt ? 'primary' : 'default'}
+                      variant={speed === opt ? 'filled' : 'outlined'}
                       size="small"
                       sx={{ minWidth: 48 }}
                     />
@@ -354,24 +423,15 @@ const ReplayPage = () => {
 
               <Slider
                 className={classes.slider}
-                max={totalCount > 0 ? totalCount - 1 : sliderMax}
+                max={knownTotal > 1 ? knownTotal - 1 : 0}
                 step={1}
-                marks={positions.length < 500
-                  ? positions.map((_, i) => ({ value: i }))
-                  : false}
+                marks={positions.length < 500 ? positions.map((_, i) => ({ value: i })) : false}
                 value={displayIndex}
                 onChange={handleSliderChange}
+                disabled={loadingSession || positions.length === 0}
               />
 
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginTop: -10,
-                  marginBottom: 8,
-                }}
-              >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: -10, marginBottom: 8 }}>
                 <Typography variant="caption" color="text.secondary">
                   {positions[0] ? formatTime(positions[0].fixTime, 'seconds') : ''}
                 </Typography>
@@ -379,17 +439,18 @@ const ReplayPage = () => {
                   {`${positions.length}${totalCount > positions.length ? `/${totalCount}` : ''} pts`}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  {positions[positions.length - 1]
-                    ? formatTime(positions[positions.length - 1].fixTime, 'seconds')
-                    : ''}
+                  {positions[positions.length - 1] ? formatTime(positions[positions.length - 1].fixTime, 'seconds') : ''}
                 </Typography>
               </div>
 
               <div className={classes.controls}>
-                {`${displayIndex + 1}/${totalCount || positions.length}`}
+                <span>{`${displayIndex + 1}/${knownTotal}`}</span>
                 <IconButton
                   onClick={() => {
-                    setIndex((i) => Math.max(0, i - 1));
+                    const ni = Math.max(0, index - 1);
+                    LOG.slider('Step back', { from: index, to: ni });
+                    setIndex(ni);
+                    indexRef.current = ni;
                     setAnimationProgress(0);
                     setPlaying(false);
                   }}
@@ -398,14 +459,17 @@ const ReplayPage = () => {
                   <FastRewindIcon />
                 </IconButton>
                 <IconButton
-                  onClick={() => setPlaying(!playing)}
-                  disabled={isBuffering || (displayIndex >= (totalCount || positions.length) - 1)}
+                  onClick={handlePlayPause}
+                  disabled={isBuffering || atEnd || positions.length === 0}
                 >
                   {playing ? <PauseIcon /> : <PlayArrowIcon />}
                 </IconButton>
                 <IconButton
                   onClick={() => {
-                    setIndex((i) => i + 1);
+                    const ni = Math.min(positions.length - 1, index + 1);
+                    LOG.slider('Step forward', { from: index, to: ni });
+                    setIndex(ni);
+                    indexRef.current = ni;
                     setAnimationProgress(0);
                     setPlaying(false);
                   }}
@@ -413,7 +477,9 @@ const ReplayPage = () => {
                 >
                   <FastForwardIcon />
                 </IconButton>
-                {currentPosition ? formatTime(currentPosition.fixTime, 'seconds') : ''}
+                <span>
+                  {currentPos ? formatTime(currentPos.fixTime, 'seconds') : '—'}
+                </span>
               </div>
             </>
           ) : (
@@ -427,10 +493,10 @@ const ReplayPage = () => {
         </Paper>
       </div>
 
-      {showCard && currentPosition && (
+      {showCard && currentPos && (
         <StatusCard
           deviceId={selectedDeviceId}
-          position={currentPosition}
+          position={currentPos}
           onClose={() => setShowCard(false)}
           disableActions
         />
