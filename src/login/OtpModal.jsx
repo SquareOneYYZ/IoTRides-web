@@ -177,6 +177,8 @@ const OtpModal = ({ open, onClose, onSubmit, error }) => {
     }
   }, [error]);
 
+  const handleSubmit = () => onSubmit(value);
+
   const handleChange = (e) => {
     const clean = e.target.value.replace(/\D/g, '').slice(0, OTP_LENGTH);
     setValue(clean);
@@ -191,8 +193,6 @@ const OtpModal = ({ open, onClose, onSubmit, error }) => {
     const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, OTP_LENGTH);
     setValue(pasted);
   };
-
-  const handleSubmit = () => onSubmit(value);
 
   const handleClose = () => {
     setValue('');
@@ -276,6 +276,7 @@ const OtpModal = ({ open, onClose, onSubmit, error }) => {
             inputMode="numeric"
             maxLength={OTP_LENGTH}
             value={value}
+          // eslint-disable-next-line
             autoFocus
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
@@ -307,7 +308,7 @@ const OtpModal = ({ open, onClose, onSubmit, error }) => {
       </DialogContent>
 
       <DialogActions className={classes.actions}>
-        <Button variant='outlined' onClick={handleClose} color="primary">{t('sharedCancel')}</Button>
+        <Button variant="outlined" onClick={handleClose} color="primary">{t('sharedCancel')}</Button>
         <Button
           onClick={handleSubmit}
           variant="contained"
