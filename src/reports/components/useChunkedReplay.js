@@ -1,231 +1,383 @@
 import { useState, useRef, useCallback } from 'react';
 
-const CHUNK_SIZE = 200;
-const PREFETCH_THRESHOLD = 50;
+const BASE_URL = 'http://localhost:8082';
+export const CHUNK_SIZE = 500;
+const LONG_RANGE_HOURS = 24;
+const PREFETCH_THRESHOLD = 100;
+const LS_KEY = 'replay_session';
 
-// ─── Console styling ────────────────────────────────────────────────────────
-// Open browser DevTools → Console tab to see these logs
-const LOG = {
-  session: (msg, data) => console.log(`%c[SESSION] ${msg}`, 'color:#0ea5e9;font-weight:bold', data ?? ''),
-  chunk:   (msg, data) => console.log(`%c[CHUNK]   ${msg}`, 'color:#8b5cf6;font-weight:bold', data ?? ''),
-  buffer:  (msg, data) => console.log(`%c[BUFFER]  ${msg}`, 'color:#f59e0b;font-weight:bold', data ?? ''),
-  play:    (msg, data) => console.log(`%c[PLAY]    ${msg}`, 'color:#10b981;font-weight:bold', data ?? ''),
-  seek:    (msg, data) => console.log(`%c[SEEK]    ${msg}`, 'color:#f97316;font-weight:bold', data ?? ''),
-  error:   (msg, data) => console.error(`[ERROR]   ${msg}`, data ?? ''),
-  warn:    (msg, data) => console.warn(`[WARN]    ${msg}`, data ?? ''),
+export const LOG = {
+  mode:     (msg, d) => console.log(`%c[MODE]     ${msg}`, 'color:#06b6d4;font-weight:bold', d ?? ''),
+  session:  (msg, d) => console.log(`%c[SESSION]  ${msg}`, 'color:#0ea5e9;font-weight:bold', d ?? ''),
+  overview: (msg, d) => console.log(`%c[OVERVIEW] ${msg}`, 'color:#8b5cf6;font-weight:bold', d ?? ''),
+  chunk:    (msg, d) => console.log(`%c[CHUNK]    ${msg}`, 'color:#a855f7;font-weight:bold', d ?? ''),
+  buffer:   (msg, d) => console.log(`%c[BUFFER]   ${msg}`, 'color:#f59e0b;font-weight:bold', d ?? ''),
+  play:     (msg, d) => console.log(`%c[PLAY]     ${msg}`, 'color:#10b981;font-weight:bold', d ?? ''),
+  slider:   (msg, d) => console.log(`%c[SLIDER]   ${msg}`, 'color:#f97316;font-weight:bold', d ?? ''),
+  old:      (msg, d) => console.log(`%c[OLD-API]  ${msg}`, 'color:#64748b;font-weight:bold', d ?? ''),
+  warn:     (msg, d) => console.warn(`[WARN]     ${msg}`, d ?? ''),
+  error:    (msg, d) => console.error(`[ERROR]    ${msg}`, d ?? ''),
 };
 
-const useChunkedReplay = () => {
-  const [positions, setPositions]           = useState([]);
-  const [totalCount, setTotalCount]         = useState(0);
-  const [isBuffering, setIsBuffering]       = useState(false);
-  const [loadingSession, setLoadingSession] = useState(false);
-  const [error, setError]                   = useState(null);
+export const isLongRange = (from, to) => {
+  if (!from || !to) return false;
+  const diffHours = (new Date(to) - new Date(from)) / (1000 * 60 * 60);
+  const long = diffHours > LONG_RANGE_HOURS;
+  LOG.mode(`Range = ${diffHours.toFixed(1)}h → ${long ? 'SESSION API' : 'OLD API'}`, { from, to });
+  return long;
+};
+
+const lsSave = (payload) => {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify({ ...payload, savedAt: new Date().toISOString() }));
+    LOG.session('Saved to localStorage', payload);
+  } catch (e) {
+    LOG.warn('localStorage write failed', e.message);
+  }
+};
+
+const lsLoad = () => {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    LOG.session('Loaded from localStorage', data);
+    return data;
+  } catch (e) {
+    return null;
+  }
+};
+
+const lsClear = () => {
+  try {
+    localStorage.removeItem(LS_KEY);
+    LOG.session('Cleared localStorage');
+  } catch (e) { /* silent */ }
+};
+
+const useReplaySession = () => {
+  const [positions, setPositions]               = useState([]);
+  const [overviewPositions, setOverviewPositions] = useState([]);
+  const [totalCount, setTotalCount]             = useState(0);
+  const [isBuffering, setIsBuffering]           = useState(false);
+  const [loadingSession, setLoadingSession]     = useState(false);
+  const [loadingOverview, setLoadingOverview]   = useState(false);
+  const [error, setError]                       = useState(null);
+  const [isLongRangeMode, setIsLongRangeMode]   = useState(false);
 
   const sessionIdRef     = useRef(null);
   const loadedUpToRef    = useRef(0);
+  const totalCountRef    = useRef(0);
   const isFetchingRef    = useRef(false);
   const pendingResumeRef = useRef(null);
-  // CRITICAL: totalCountRef mirrors state so fetchChunk/checkAndPrefetch
-  // always see the latest value even inside stale closures.
-  const totalCountRef    = useRef(0);
 
-  // ─── reset ──────────────────────────────────────────────────────────────
   const reset = useCallback(() => {
-    LOG.session('Resetting all replay state');
+    LOG.session('Reset');
     sessionIdRef.current     = null;
     loadedUpToRef.current    = 0;
+    totalCountRef.current    = 0;
     isFetchingRef.current    = false;
     pendingResumeRef.current = null;
-    totalCountRef.current    = 0;
+    lsClear();
     setPositions([]);
+    setOverviewPositions([]);
     setTotalCount(0);
     setIsBuffering(false);
     setError(null);
+    setIsLongRangeMode(false);
   }, []);
 
-  // ─── fetchChunk ─────────────────────────────────────────────────────────
-  const fetchChunk = useCallback(async (offset) => {
+  const fetchChunk = useCallback(async (offset, mode = 'append') => {
     if (!sessionIdRef.current) {
-      LOG.warn('fetchChunk skipped — no sessionId', { offset });
-      return;
+      LOG.warn('fetchChunk: no sessionId', { offset });
+      return null;
     }
     if (isFetchingRef.current) {
-      LOG.warn('fetchChunk skipped — already fetching', { offset });
-      return;
+      LOG.warn('fetchChunk: already fetching', { offset });
+      return null;
     }
     if (totalCountRef.current > 0 && offset >= totalCountRef.current) {
-      LOG.chunk(`fetchChunk skipped — offset ${offset} >= totalCount ${totalCountRef.current}`);
-      return;
+      LOG.chunk(`offset ${offset} >= totalCount ${totalCountRef.current} — done`);
+      return null;
     }
 
     isFetchingRef.current = true;
     const url = `/api/replay/session/${sessionIdRef.current}/chunk?offset=${offset}&limit=${CHUNK_SIZE}`;
-    LOG.chunk(`Fetching chunk`, { offset, limit: CHUNK_SIZE, url });
+    LOG.chunk(`Fetching [${mode}]`, { offset, url });
     console.time(`[CHUNK] offset=${offset}`);
 
     try {
-      const response = await fetch(url);
+      const res = await fetch(url);
       console.timeEnd(`[CHUNK] offset=${offset}`);
 
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`HTTP ${response.status}: ${text}`);
-      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
 
-      const chunk = await response.json();
+      const chunk = await res.json();
 
       if (!chunk || chunk.length === 0) {
-        LOG.chunk('Empty chunk — all data loaded');
-        return;
+        LOG.chunk('Empty chunk — end of data');
+        return [];
       }
 
-      LOG.chunk(`Chunk received`, {
+      LOG.chunk('Received', {
         offset,
-        received: chunk.length,
+        count:        chunk.length,
         firstFixTime: chunk[0]?.fixTime,
         lastFixTime:  chunk[chunk.length - 1]?.fixTime,
       });
 
-      setPositions((prev) => {
-        const merged = [...prev, ...chunk];
-        loadedUpToRef.current = merged.length;
-        LOG.buffer('Buffer updated', {
-          before: prev.length,
-          after:  merged.length,
-          total:  totalCountRef.current,
-          pct:    `${((merged.length / (totalCountRef.current || 1)) * 100).toFixed(1)}%`,
+      if (mode === 'replace') {
+        setPositions(chunk);
+        loadedUpToRef.current = chunk.length;
+        LOG.buffer('Buffer replaced', { length: chunk.length });
+      } else {
+        setPositions((prev) => {
+          const merged = [...prev, ...chunk];
+          loadedUpToRef.current = merged.length;
+          LOG.buffer('Buffer appended', {
+            before: prev.length,
+            after:  merged.length,
+            total:  totalCountRef.current,
+            pct:    `${((merged.length / (totalCountRef.current || 1)) * 100).toFixed(1)}%`,
+          });
+          return merged;
         });
-        return merged;
-      });
+      }
 
       if (pendingResumeRef.current) {
-        LOG.buffer('Buffer ready — auto-resuming playback');
+        LOG.buffer('Resuming playback after buffer refill');
         setIsBuffering(false);
         pendingResumeRef.current();
         pendingResumeRef.current = null;
       }
+
+      return chunk;
     } catch (err) {
       LOG.error('fetchChunk failed', { offset, error: err.message });
       setError(err.message);
+      return null;
     } finally {
       isFetchingRef.current = false;
     }
-  }, []); // intentionally empty — uses only refs
+  }, []);
 
-  // ─── checkAndPrefetch ───────────────────────────────────────────────────
+  const fetchOverview = useCallback(async (sessionId) => {
+    const url = `/api/replay/session/${sessionId}/overview`;
+    LOG.overview('Fetching', { url });
+    console.time('[OVERVIEW]');
+    setLoadingOverview(true);
+
+    try {
+      const res = await fetch(url);
+      console.timeEnd('[OVERVIEW]');
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+
+      const data = await res.json();
+      const pts = Array.isArray(data) ? data : (data.positions ?? data.data ?? []);
+
+      LOG.overview('Received', { points: pts.length });
+      setOverviewPositions(pts);
+      return pts;
+    } catch (err) {
+      LOG.error('fetchOverview failed', err.message);
+      setOverviewPositions([]);
+      return [];
+    } finally {
+      setLoadingOverview(false);
+    }
+  }, []);
+
   const checkAndPrefetch = useCallback((currentIndex, onResume) => {
     const loaded = loadedUpToRef.current;
     const total  = totalCountRef.current;
 
     if (currentIndex >= loaded && loaded < total) {
-      LOG.buffer(`UNDERRUN — pausing`, { currentIndex, loaded, total });
+      LOG.buffer('UNDERRUN — pausing', { currentIndex, loaded, total });
       pendingResumeRef.current = onResume;
       setIsBuffering(true);
-      fetchChunk(loaded);
-      return true; // caller must pause
+      fetchChunk(loaded, 'append');
+      return true;
     }
 
     if (loaded < total && currentIndex >= loaded - PREFETCH_THRESHOLD && !isFetchingRef.current) {
-      LOG.buffer(`Pre-fetch triggered`, { currentIndex, loaded, remaining: loaded - currentIndex });
-      fetchChunk(loaded);
+      LOG.buffer('Pre-fetch', { currentIndex, loaded, remaining: loaded - currentIndex });
+      fetchChunk(loaded, 'append');
     }
 
     return false;
   }, [fetchChunk]);
 
-  // ─── seekTo ─────────────────────────────────────────────────────────────
-  const seekTo = useCallback(async (targetIndex) => {
-    const loaded = loadedUpToRef.current;
-    LOG.seek(`seekTo`, { targetIndex, loaded });
-
-    if (targetIndex < loaded) {
-      LOG.seek('Target already in buffer — no fetch needed');
-      return;
-    }
-
-    const chunkStart = Math.floor(targetIndex / CHUNK_SIZE) * CHUNK_SIZE;
-    LOG.seek(`Seeking beyond buffer`, { targetIndex, chunkStart });
-
-    setPositions((prev) => prev.slice(0, chunkStart));
-    loadedUpToRef.current = chunkStart;
+  const sliderSeek = useCallback(async (sliderValue) => {
+    LOG.slider('Seek', { sliderValue, total: totalCountRef.current });
+    const offset = Math.floor(sliderValue / CHUNK_SIZE) * CHUNK_SIZE;
+    LOG.slider('Aligned offset', { sliderValue, offset });
     setIsBuffering(true);
-    await fetchChunk(chunkStart);
+    await fetchChunk(offset, 'replace');
     setIsBuffering(false);
   }, [fetchChunk]);
 
-  // ─── initSession ────────────────────────────────────────────────────────
-  const initSession = useCallback(async (deviceId, from, to) => {
-    LOG.session('initSession called', { deviceId, from, to });
-    reset();
+  const initLongRange = useCallback(async (deviceId, from, to) => {
+    LOG.session('initLongRange', { deviceId, from, to });
     setLoadingSession(true);
     setError(null);
+    setIsLongRangeMode(true);
 
     try {
+      LOG.session(`POST /api/replay/session`);
       console.time('[SESSION] POST');
-      const response = await fetch('/api/replay/session', {
-        method: 'POST',
+
+      const sessionRes = await fetch(`/api/replay/session`, {
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ deviceId, from, to }),
+        body:    JSON.stringify({ deviceId, from, to }),
       });
       console.timeEnd('[SESSION] POST');
 
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`HTTP ${response.status}: ${text}`);
+      if (!sessionRes.ok) {
+        throw new Error(`HTTP ${sessionRes.status}: ${await sessionRes.text()}`);
       }
 
-      const data = await response.json();
-      LOG.session('Session response from server', data);
+      const data = await sessionRes.json();
+      LOG.session('Response', data);
 
-      // Handle different possible response shapes from server
       const sessionId = data.sessionId ?? data.id ?? data.session_id;
       const count     = data.totalCount ?? data.total ?? data.count ?? data.size ?? 0;
 
       if (!sessionId) {
-        throw new Error(`Session response missing sessionId/id. Full response: ${JSON.stringify(data)}`);
+        throw new Error(`No sessionId in response. Keys: ${Object.keys(data).join(', ')}`);
       }
 
       sessionIdRef.current  = sessionId;
       totalCountRef.current = count;
       setTotalCount(count);
+      lsSave({ sessionId, totalCount: count, deviceId, from, to });
 
-      LOG.session(`Session ready`, { sessionId, totalCount: count });
+      LOG.session('Session ready', { sessionId, totalCount: count });
 
       if (count === 0) {
-        LOG.warn('Server returned totalCount=0 — no positions in this date range');
+        LOG.warn('totalCount = 0 — no data in range');
         return false;
       }
 
-      await fetchChunk(0);
+      fetchOverview(sessionId);
+      await fetchChunk(0, 'append');
 
-      LOG.session('First chunk loaded, playback ready', {
+      LOG.session('initLongRange complete', {
         sessionId,
         totalCount: count,
-        loadedSoFar: loadedUpToRef.current,
+        loaded: loadedUpToRef.current,
       });
 
       return true;
     } catch (err) {
-      LOG.error('initSession failed', err.message);
+      LOG.error('initLongRange failed', err.message);
+      setError(err.message);
+      lsClear();
+      return false;
+    } finally {
+      setLoadingSession(false);
+    }
+  }, [fetchOverview, fetchChunk]);
+
+  const initOldApi = useCallback(async (deviceId, from, to) => {
+    LOG.old('initOldApi (range <= 24h)', { deviceId, from, to });
+    setLoadingSession(true);
+    setError(null);
+    setIsLongRangeMode(false);
+    lsClear();
+
+    try {
+      const query = new URLSearchParams({ deviceId, from, to });
+      const url   = `/api/positions?${query.toString()}`;
+      LOG.old(`GET ${url}`);
+      console.time('[OLD-API]');
+
+      const res = await fetch(url);
+      console.timeEnd('[OLD-API]');
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+
+      const data = await res.json();
+      LOG.old('Received', { count: data.length });
+
+      if (!data.length) {
+        LOG.warn('0 positions returned');
+        return false;
+      }
+
+      setPositions(data);
+      setTotalCount(data.length);
+      totalCountRef.current = data.length;
+      loadedUpToRef.current = data.length;
+
+      return true;
+    } catch (err) {
+      LOG.error('initOldApi failed', err.message);
       setError(err.message);
       return false;
     } finally {
       setLoadingSession(false);
     }
-  }, [reset, fetchChunk]);
+  }, []);
+
+  const init = useCallback(async (deviceId, from, to) => {
+    reset();
+
+    const saved = lsLoad();
+    const sameQuery = saved
+      && saved.sessionId
+      && String(saved.deviceId) === String(deviceId)
+      && saved.from === from
+      && saved.to   === to;
+
+    if (sameQuery) {
+      LOG.session('Validating saved session...', { sessionId: saved.sessionId });
+      const testUrl = `${BASE_URL}/api/replay/session/${saved.sessionId}/chunk?offset=0&limit=1`;
+
+      try {
+        const testRes = await fetch(testUrl);
+        if (testRes.ok) {
+          LOG.session('Saved session alive — reusing', saved);
+          sessionIdRef.current  = saved.sessionId;
+          totalCountRef.current = saved.totalCount;
+          setTotalCount(saved.totalCount);
+          setIsLongRangeMode(true);
+          fetchOverview(saved.sessionId);
+          await fetchChunk(0, 'append');
+          return true;
+        }
+        LOG.warn(`Saved session expired (${testRes.status}) — creating new`);
+        lsClear();
+      } catch (e) {
+        LOG.warn('Session validation failed — creating new', e.message);
+        lsClear();
+      }
+    }
+
+    if (isLongRange(from, to)) {
+      return initLongRange(deviceId, from, to);
+    }
+    return initOldApi(deviceId, from, to);
+  }, [reset, initLongRange, initOldApi, fetchOverview, fetchChunk]);
+
+  const getStoredSession = useCallback(() => lsLoad(), []);
 
   return {
     positions,
+    overviewPositions,
     totalCount,
     isBuffering,
     loadingSession,
+    loadingOverview,
     error,
-    initSession,
+    isLongRangeMode,
+    init,
+    sliderSeek,
     checkAndPrefetch,
-    seekTo,
     reset,
+    getStoredSession,
   };
 };
 
-export default useChunkedReplay;
+export default useReplaySession;

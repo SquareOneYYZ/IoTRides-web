@@ -3,7 +3,7 @@ import React, {
 } from 'react';
 import {
   IconButton, Paper, Slider, Toolbar, Typography, Box, Chip,
-  Tooltip, CircularProgress,
+  Tooltip, CircularProgress, LinearProgress,
 } from '@mui/material';
 import makeStyles from '@mui/styles/makeStyles';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -27,19 +27,10 @@ import MapCamera from '../map/MapCamera';
 import MapGeofence from '../map/MapGeofence';
 import StatusCard from '../common/components/StatusCard';
 import MapScale from '../map/MapScale';
-import useChunkedReplay from '../reports/components/useChunkedReplay';
+import useReplaySession, { LOG, CHUNK_SIZE } from '../reports/components/useChunkedReplay';
 
 const SPEED_OPTIONS = [1, 1.5, 2, 5, 10];
-
-// ─── Logger (same colour scheme as hook) ──────────────────────────────────
-const LOG = {
-  play:   (msg, data) => console.log(`%c[PLAY]    ${msg}`, 'color:#10b981;font-weight:bold', data ?? ''),
-  slider: (msg, data) => console.log(`%c[SLIDER]  ${msg}`, 'color:#f97316;font-weight:bold', data ?? ''),
-  interp: (msg, data) => console.log(`%c[INTERP]  ${msg}`, 'color:#a78bfa;font-weight:bold', data ?? ''),
-  map:    (msg, data) => console.log(`%c[MAP]     ${msg}`, 'color:#34d399;font-weight:bold', data ?? ''),
-  warn:   (msg, data) => console.warn(`[WARN]    ${msg}`, data ?? ''),
-  error:  (msg, data) => console.error(`[ERROR]   ${msg}`, data ?? ''),
-};
+const PLAY_TICK_MS = 300;
 
 const useStyles = makeStyles((theme) => ({
   root: { height: '100%' },
@@ -59,15 +50,11 @@ const useStyles = makeStyles((theme) => ({
       width: 'calc(100% - 16px)',
       maxWidth: 'calc(100% - 16px)',
       margin: theme.spacing(1),
-      left: 0,
-      right: 0,
     },
     [theme.breakpoints.down('sm')]: {
       width: '100%',
       maxWidth: '100%',
       margin: 0,
-      left: 0,
-      right: 0,
     },
   },
   title: { flexGrow: 1 },
@@ -90,6 +77,7 @@ const useStyles = makeStyles((theme) => ({
     display: 'flex',
     gap: theme.spacing(0.75),
     flexWrap: 'wrap',
+    justifyContent: 'center',
   },
   content: {
     display: 'flex',
@@ -101,13 +89,21 @@ const useStyles = makeStyles((theme) => ({
       margin: theme.spacing(1.5),
     },
   },
-  bufferIndicator: {
+  statusRow: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     gap: theme.spacing(1),
-    padding: theme.spacing(1),
+    padding: theme.spacing(0.75),
     color: theme.palette.text.secondary,
+    minHeight: 32,
+  },
+  modeBadge: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    padding: '2px 6px',
+    borderRadius: 4,
+    letterSpacing: 0.5,
   },
 }));
 
@@ -119,125 +115,126 @@ const ReplayPage = () => {
 
   const {
     positions,
+    overviewPositions,
     totalCount,
     isBuffering,
     loadingSession,
+    loadingOverview,
     error,
-    initSession,
+    isLongRangeMode,
+    init,
+    sliderSeek,
     checkAndPrefetch,
-    seekTo,
-  } = useChunkedReplay();
+    getStoredSession,
+  } = useReplaySession();
 
-  const [index, setIndex]               = useState(0);
+  const [index, setIndex]                       = useState(0);
   const [selectedDeviceId, setSelectedDeviceId] = useState(defaultDeviceId);
-  const [showCard, setShowCard]         = useState(false);
-  const [from, setFrom]                 = useState();
-  const [to, setTo]                     = useState();
-  const [expanded, setExpanded]         = useState(true);
-  const [playing, setPlaying]           = useState(false);
-  const [smoothPosition, setSmoothPosition] = useState(null);
-  const [animationProgress, setAnimationProgress] = useState(0);
-  const [speed, setSpeed]               = useState(1);
-  const [titleExpanded, setTitleExpanded] = useState(false);
+  const [showCard, setShowCard]                 = useState(false);
+  const [from, setFrom]                         = useState();
+  const [to, setTo]                             = useState();
+  const [expanded, setExpanded]                 = useState(true);
+  const [playing, setPlaying]                   = useState(false);
+  const [smoothPosition, setSmoothPosition]     = useState(null);
+  const [animProgress, setAnimProgress]         = useState(0);
+  const [speed, setSpeed]                       = useState(1);
+  const [titleExpanded, setTitleExpanded]       = useState(false);
 
-  // CRITICAL: use refs so the interval callback always sees latest values
-  // without needing to re-register the interval on every state change.
-  const indexRef        = useRef(0);
-  const playingRef      = useRef(false);
-  const positionsRef    = useRef([]);
-  const speedRef        = useRef(1);
-  const timerRef        = useRef(null);
+  const indexRef     = useRef(0);
+  const positionsRef = useRef([]);
+  const speedRef     = useRef(1);
+  const timerRef     = useRef(null);
 
-  // Keep refs in sync with state
   useEffect(() => { indexRef.current = index; }, [index]);
-  useEffect(() => { playingRef.current = playing; }, [playing]);
   useEffect(() => { positionsRef.current = positions; }, [positions]);
   useEffect(() => { speedRef.current = speed; }, [speed]);
 
   const deviceName = useSelector((state) => {
     if (selectedDeviceId) {
-      const device = state.devices.items[selectedDeviceId];
-      if (device) return device.name;
+      const d = state.devices.items[selectedDeviceId];
+      if (d) return d.name;
     }
     return null;
   });
 
-  // ─── Log whenever positions array changes ───────────────────────────────
+  useEffect(() => {
+    const stored = getStoredSession();
+    if (stored) LOG.session('Existing session on mount', stored);
+  }, []);
+
   useEffect(() => {
     if (positions.length > 0) {
-      LOG.map('positions array updated', {
-        length: positions.length,
+      LOG.buffer('Positions updated', {
+        length:    positions.length,
         totalCount,
-        firstPos: positions[0],
-        lastPos: positions[positions.length - 1],
+        mode:      isLongRangeMode ? 'SESSION' : 'OLD-API',
+        firstTime: positions[0]?.fixTime,
+        firstLat:  positions[0]?.latitude,
+        firstLng:  positions[0]?.longitude,
       });
     }
   }, [positions.length]);
 
-  // ─── Log smoothPosition updates (fires ~60fps during playback) ──────────
-  // Uncomment below if you want to verify interpolation is working:
-  // useEffect(() => {
-  //   if (smoothPosition) LOG.interp('smoothPosition updated', smoothPosition);
-  // }, [smoothPosition]);
+  useEffect(() => {
+    if (overviewPositions.length > 0) {
+      LOG.overview('Overview ready', { points: overviewPositions.length });
+    }
+  }, [overviewPositions.length]);
 
-  // ─── Playback interval ──────────────────────────────────────────────────
-  // BUG FIX: The previous implementation re-created the interval on every
-  // render because it captured positions/index as state directly.
-  // We now use refs so the interval is created ONCE when playing starts.
   useEffect(() => {
     if (!playing) {
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
-        LOG.play('Playback stopped — interval cleared');
+        LOG.play('Stopped');
       }
       return;
     }
 
-    LOG.play('Playback started', { speed, index, positionsLoaded: positions.length, totalCount });
+    LOG.play('Started', {
+      mode:   isLongRangeMode ? 'SESSION' : 'OLD-API',
+      speed:  speedRef.current,
+      index:  indexRef.current,
+      loaded: positionsRef.current.length,
+      total:  totalCount,
+    });
 
     timerRef.current = setInterval(() => {
-      setAnimationProgress((progress) => {
-        const newProgress = progress + 0.02 * speedRef.current;
-        if (newProgress >= 1) {
-          const currentIdx = indexRef.current;
-          const pos = positionsRef.current;
-          const nextIndex = currentIdx + 1;
+      setAnimProgress((prev) => {
+        const intervalMs = PLAY_TICK_MS / speedRef.current;
+        const next = prev + (16 / intervalMs);
+        if (next < 1) return next;
 
-          // Check for end of all known data
-          if (nextIndex >= pos.length) {
-            LOG.play('Reached end of loaded positions', { nextIndex, loaded: pos.length, totalCount });
-            // Check buffer / pre-fetch
-            const shouldPause = checkAndPrefetch(nextIndex, () => {
-              LOG.play('Auto-resuming after buffer refill');
-              setPlaying(true);
-            });
-            if (shouldPause) {
-              LOG.play('Paused — waiting for next chunk');
-              setPlaying(false);
-              return 0;
-            }
-            // Truly at the end
+        const pos      = positionsRef.current;
+        const curIdx   = indexRef.current;
+        const nextIdx  = curIdx + 1;
+
+        if (isLongRangeMode) {
+          const shouldPause = checkAndPrefetch(nextIdx, () => {
+            LOG.play('Auto-resume after buffer refill');
+            setPlaying(true);
+          });
+          if (shouldPause) {
             setPlaying(false);
             return 0;
           }
+        }
 
-          checkAndPrefetch(nextIndex, () => {
-            LOG.play('Auto-resuming after buffer refill');
-            setPlaying(true);
-          });
-
-          LOG.play(`Tick → index ${currentIdx} → ${nextIndex}`, {
-            fixTime: pos[nextIndex]?.fixTime,
-            lat: pos[nextIndex]?.latitude,
-            lng: pos[nextIndex]?.longitude,
-          });
-
-          setIndex(nextIndex);
-          indexRef.current = nextIndex;
+        if (nextIdx >= pos.length) {
+          LOG.play('End of loaded data', { nextIdx, loaded: pos.length, total: totalCount });
+          setPlaying(false);
           return 0;
         }
-        return newProgress;
+
+        LOG.play(`Tick ${curIdx} → ${nextIdx}`, {
+          lat:     pos[nextIdx]?.latitude,
+          lng:     pos[nextIdx]?.longitude,
+          fixTime: pos[nextIdx]?.fixTime,
+        });
+
+        setIndex(nextIdx);
+        indexRef.current = nextIdx;
+        return 0;
       });
     }, 16);
 
@@ -245,63 +242,28 @@ const ReplayPage = () => {
       clearInterval(timerRef.current);
       timerRef.current = null;
     };
-    // Only re-run when playing actually toggles — refs handle the rest
   }, [playing]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ─── Smooth interpolation ───────────────────────────────────────────────
   useEffect(() => {
     if (positions.length === 0) return;
-
-    const clampedIndex = Math.min(index, positions.length - 1);
-
-    if (clampedIndex < positions.length - 1) {
-      const currentPos = positions[clampedIndex];
-      const nextPos    = positions[clampedIndex + 1];
-      if (currentPos && nextPos) {
-        const interpolated = {
-          ...currentPos,
-          latitude:  currentPos.latitude  + (nextPos.latitude  - currentPos.latitude)  * animationProgress,
-          longitude: currentPos.longitude + (nextPos.longitude - currentPos.longitude) * animationProgress,
-          speed:     currentPos.speed     + (nextPos.speed     - currentPos.speed)     * animationProgress,
-          course:    currentPos.course    + (nextPos.course    - currentPos.course)    * animationProgress,
-        };
-        setSmoothPosition(interpolated);
-      }
-    } else {
-      setSmoothPosition(positions[clampedIndex]);
+    const clamped = Math.min(index, positions.length - 1);
+    const cur = positions[clamped];
+    const nxt = positions[clamped + 1];
+    if (cur && nxt) {
+      setSmoothPosition({
+        ...cur,
+        latitude:  cur.latitude  + (nxt.latitude  - cur.latitude)  * animProgress,
+        longitude: cur.longitude + (nxt.longitude - cur.longitude) * animProgress,
+        speed:     cur.speed     + (nxt.speed     - cur.speed)     * animProgress,
+        course:    cur.course    + (nxt.course    - cur.course)    * animProgress,
+      });
+    } else if (cur) {
+      setSmoothPosition(cur);
     }
-  }, [positions, index, animationProgress]);
+  }, [positions, index, animProgress]);
 
-  // ─── Callbacks ──────────────────────────────────────────────────────────
-  const onPointClick = useCallback((_, idx) => {
-    LOG.slider(`Route point clicked`, { idx });
-    setIndex(idx);
-    indexRef.current = idx;
-    setAnimationProgress(0);
-    setPlaying(false);
-  }, []);
-
-  const onMarkerClick = useCallback((positionId) => {
-    setShowCard(!!positionId);
-  }, []);
-
-  const handleSliderChange = useCallback(async (_, newIndex) => {
-    LOG.slider(`Slider moved`, { newIndex, currentlyLoaded: positions.length, totalCount });
-    setPlaying(false);
-    setAnimationProgress(0);
-
-    if (newIndex >= positions.length) {
-      LOG.slider('Seeking beyond loaded range — fetching chunk on demand');
-      await seekTo(newIndex);
-    }
-
-    setIndex(newIndex);
-    indexRef.current = newIndex;
-  }, [positions.length, seekTo, totalCount]);
-
-  // ─── Submit ─────────────────────────────────────────────────────────────
   const handleSubmit = useCatch(async ({ deviceId, from: f, to: t2 }) => {
-    console.log('%c[ReplayPage] handleSubmit called', 'color:#0ea5e9;font-weight:bold', { deviceId, from: f, to: t2 });
+    LOG.session('Form submitted', { deviceId, from: f, to: t2 });
     setSelectedDeviceId(deviceId);
     setFrom(f);
     setTo(t2);
@@ -309,64 +271,88 @@ const ReplayPage = () => {
     indexRef.current = 0;
     setPlaying(false);
     setSmoothPosition(null);
+    setAnimProgress(0);
 
-    const ok = await initSession(deviceId, f, t2);
-    console.log('%c[ReplayPage] initSession result:', 'color:#0ea5e9;font-weight:bold', ok ? 'SUCCESS' : 'FAILED');
+    const ok = await init(deviceId, f, t2);
+    LOG.session(`init result: ${ok ? 'SUCCESS' : 'FAILED'}`);
     if (ok) setExpanded(false);
   });
+
+  const handleSliderChange = useCallback(async (_, sliderValue) => {
+    LOG.slider('Changed', { sliderValue, mode: isLongRangeMode ? 'SESSION' : 'OLD-API' });
+    setPlaying(false);
+    setAnimProgress(0);
+
+    if (isLongRangeMode) {
+      await sliderSeek(sliderValue);
+      const chunkOffset = Math.floor(sliderValue / CHUNK_SIZE) * CHUNK_SIZE;
+      const localIndex  = sliderValue - chunkOffset;
+      LOG.slider('Local index after seek', { sliderValue, chunkOffset, localIndex });
+      setIndex(localIndex);
+      indexRef.current = localIndex;
+    } else {
+      setIndex(sliderValue);
+      indexRef.current = sliderValue;
+    }
+  }, [isLongRangeMode, sliderSeek]);
+
+  const onPointClick = useCallback((_, idx) => {
+    LOG.slider('Route point clicked', { idx });
+    setIndex(idx);
+    indexRef.current = idx;
+    setAnimProgress(0);
+    setPlaying(false);
+  }, []);
+
+  const onMarkerClick = useCallback((positionId) => {
+    setShowCard(!!positionId);
+  }, []);
+
+  const handlePlayPause = () => {
+    const next = !playing;
+    LOG.play(`${next ? 'PLAY' : 'PAUSE'}`, { index, loaded: positions.length, total: totalCount });
+    setPlaying(next);
+  };
 
   const handleDownload = () => {
     const query = new URLSearchParams({ deviceId: selectedDeviceId, from, to });
     window.location.assign(`/api/positions/kml?${query.toString()}`);
   };
 
-  const handlePlayPause = () => {
-    const next = !playing;
-    LOG.play(`User clicked ${next ? 'Play' : 'Pause'}`, {
-      index,
-      positionsLoaded: positions.length,
-      totalCount,
-      isBuffering,
-    });
-    setPlaying(next);
-  };
-
-  // ─── Derived ────────────────────────────────────────────────────────────
-  const displayIndex  = Math.min(index, Math.max(0, positions.length - 1));
-  const currentPos    = positions[displayIndex];
-  const knownTotal    = totalCount > 0 ? totalCount : positions.length;
-  const atEnd         = displayIndex >= knownTotal - 1;
+  const displayIndex   = Math.min(index, Math.max(0, positions.length - 1));
+  const currentPos     = positions[displayIndex];
+  const knownTotal     = totalCount > 0 ? totalCount : positions.length;
+  const sliderMax      = isLongRangeMode ? (totalCount > 1 ? totalCount - 1 : 0) : (positions.length > 1 ? positions.length - 1 : 0);
+  const routePositions = isLongRangeMode && overviewPositions.length > 0 ? overviewPositions : positions;
+  const loadingAny     = loadingSession || loadingOverview;
 
   return (
     <div className={classes.root}>
       <MapView>
         <MapGeofence />
-        <MapRoutePath positions={positions} onClick={onPointClick} expandPointsOnClick />
-        <MapRoutePoints positions={positions} onClick={onPointClick} useGlobalExpansion />
+        <MapRoutePath positions={routePositions} onClick={onPointClick} expandPointsOnClick />
+        {!isLongRangeMode && (
+          <MapRoutePoints positions={positions} onClick={onPointClick} useGlobalExpansion />
+        )}
         {smoothPosition && (
-          <MapPositions
-            positions={[smoothPosition]}
-            onClick={onMarkerClick}
-            titleField="fixTime"
-          />
+          <MapPositions positions={[smoothPosition]} onClick={onMarkerClick} titleField="fixTime" />
         )}
       </MapView>
       <MapScale />
-      <MapCamera positions={positions} />
+      <MapCamera positions={routePositions} />
 
       <div className={`${classes.sidebar} ${titleExpanded ? 'expanded' : ''}`}>
         <Paper elevation={3} square>
-          <Toolbar sx={{ alignItems: 'center', justifyContent: 'center', minHeight: 'unset', paddingTop: 1, paddingBottom: 1 }}>
+          <Toolbar sx={{ alignItems: 'center', justifyContent: 'center', minHeight: 'unset', pt: 1, pb: 1 }}>
             <IconButton edge="start" sx={{ mr: 2 }} onClick={() => navigate(-1)}>
               <ArrowBackIcon />
             </IconButton>
             <Tooltip title={`${t('reportReplay')}${deviceName ? ` - ${deviceName}` : ''}`} arrow placement="bottom">
               <Typography
                 variant="subtitle1"
-                onClick={() => setTitleExpanded((prev) => !prev)}
+                onClick={() => setTitleExpanded((p) => !p)}
                 noWrap={!titleExpanded}
                 sx={{
-                  maxWidth: '100%',
                   overflow: 'hidden',
                   textOverflow: titleExpanded ? 'unset' : 'ellipsis',
                   whiteSpace: titleExpanded ? 'normal' : 'nowrap',
@@ -388,19 +374,36 @@ const ReplayPage = () => {
               </>
             )}
           </Toolbar>
+          {loadingAny && <LinearProgress sx={{ height: 2 }} />}
         </Paper>
 
         <Paper className={classes.content} square>
           {!expanded ? (
             <>
-              {isBuffering && (
-                <Box className={classes.bufferIndicator}>
-                  <CircularProgress size={14} />
-                  <Typography variant="caption">Buffering…</Typography>
-                </Box>
-              )}
+              <Box className={classes.statusRow}>
+                <span
+                  className={classes.modeBadge}
+                  style={{
+                    background: isLongRangeMode ? '#0ea5e920' : '#64748b20',
+                    color:      isLongRangeMode ? '#0ea5e9'   : '#64748b',
+                    border:     `1px solid ${isLongRangeMode ? '#0ea5e940' : '#64748b40'}`,
+                  }}
+                >
+                  {isLongRangeMode ? 'SESSION MODE' : 'DIRECT MODE'}
+                </span>
+                {isBuffering && (
+                  <>
+                    <CircularProgress size={12} />
+                    <Typography variant="caption">Buffering…</Typography>
+                  </>
+                )}
+                {loadingOverview && (
+                  <Typography variant="caption" color="text.secondary">Loading route…</Typography>
+                )}
+              </Box>
+
               {error && (
-                <Typography variant="caption" color="error" align="center" sx={{ mb: 1 }}>
+                <Typography variant="caption" color="error" align="center" sx={{ mb: 1, display: 'block' }}>
                   {error}
                 </Typography>
               )}
@@ -411,11 +414,11 @@ const ReplayPage = () => {
                     <Chip
                       key={opt}
                       label={`${opt}x`}
-                      onClick={() => { LOG.play(`Speed changed to ${opt}x`); setSpeed(opt); speedRef.current = opt; }}
+                      onClick={() => { setSpeed(opt); speedRef.current = opt; }}
                       color={speed === opt ? 'primary' : 'default'}
                       variant={speed === opt ? 'filled' : 'outlined'}
                       size="small"
-                      sx={{ minWidth: 48 }}
+                      sx={{ minWidth: 46 }}
                     />
                   ))}
                 </Box>
@@ -423,72 +426,71 @@ const ReplayPage = () => {
 
               <Slider
                 className={classes.slider}
-                max={knownTotal > 1 ? knownTotal - 1 : 0}
+                max={sliderMax}
                 step={1}
-                marks={positions.length < 500 ? positions.map((_, i) => ({ value: i })) : false}
+                marks={!isLongRangeMode && positions.length < 500
+                  ? positions.map((_, i) => ({ value: i }))
+                  : false}
                 value={displayIndex}
                 onChange={handleSliderChange}
-                disabled={loadingSession || positions.length === 0}
+                disabled={loadingAny || positions.length === 0}
               />
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: -10, marginBottom: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: -8, marginBottom: 8 }}>
                 <Typography variant="caption" color="text.secondary">
-                  {positions[0] ? formatTime(positions[0].fixTime, 'seconds') : ''}
+                  {positions[0] ? formatTime(positions[0].fixTime, 'seconds') : '—'}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
                   {`${positions.length}${totalCount > positions.length ? `/${totalCount}` : ''} pts`}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  {positions[positions.length - 1] ? formatTime(positions[positions.length - 1].fixTime, 'seconds') : ''}
+                  {currentPos ? formatTime(currentPos.fixTime, 'seconds') : '—'}
                 </Typography>
               </div>
 
               <div className={classes.controls}>
-                <span>{`${displayIndex + 1}/${knownTotal}`}</span>
+                <Typography variant="caption">{`${displayIndex + 1}/${knownTotal}`}</Typography>
+
                 <IconButton
                   onClick={() => {
                     const ni = Math.max(0, index - 1);
-                    LOG.slider('Step back', { from: index, to: ni });
                     setIndex(ni);
                     indexRef.current = ni;
-                    setAnimationProgress(0);
+                    setAnimProgress(0);
                     setPlaying(false);
                   }}
                   disabled={playing || isBuffering || displayIndex <= 0}
                 >
                   <FastRewindIcon />
                 </IconButton>
+
                 <IconButton
                   onClick={handlePlayPause}
-                  disabled={isBuffering || atEnd || positions.length === 0}
+                  disabled={isBuffering || loadingAny || positions.length === 0}
                 >
                   {playing ? <PauseIcon /> : <PlayArrowIcon />}
                 </IconButton>
+
                 <IconButton
                   onClick={() => {
                     const ni = Math.min(positions.length - 1, index + 1);
-                    LOG.slider('Step forward', { from: index, to: ni });
                     setIndex(ni);
                     indexRef.current = ni;
-                    setAnimationProgress(0);
+                    setAnimProgress(0);
                     setPlaying(false);
                   }}
                   disabled={playing || isBuffering || displayIndex >= positions.length - 1}
                 >
                   <FastForwardIcon />
                 </IconButton>
-                <span>
+
+                <Typography variant="caption">
                   {currentPos ? formatTime(currentPos.fixTime, 'seconds') : '—'}
-                </span>
+                </Typography>
               </div>
             </>
           ) : (
-            <ReportFilter
-              handleSubmit={handleSubmit}
-              fullScreen
-              showOnly
-              loading={loadingSession}
-            />
+            <ReportFilter handleSubmit={handleSubmit} fullScreen showOnly loading={loadingSession} />
           )}
         </Paper>
       </div>
