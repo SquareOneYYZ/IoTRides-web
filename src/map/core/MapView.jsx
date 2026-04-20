@@ -12,6 +12,7 @@ import usePersistedState, { savePersistedState } from '../../common/util/usePers
 import { mapImages } from './preloadImages';
 import useMapStyles from './useMapStyles';
 import { FullScreenControl } from '../controls/MapFullScreen';
+import ContextMenu from './ContextMenu';
 
 const element = document.createElement('div');
 element.style.width = '100%';
@@ -24,6 +25,9 @@ maplibregl.addProtocol('google', googleProtocol);
 export const map = new maplibregl.Map({
   container: element,
 });
+
+// Disable right-click drag rotation — rotation moves to middle-click
+map.dragRotate.disable();
 
 let ready = false;
 const readyListeners = new Set();
@@ -52,6 +56,7 @@ const initMap = async () => {
     });
   }
 };
+
 map.addControl(new FullScreenControl(), 'top-right');
 
 const switcher = new SwitcherControl(
@@ -78,6 +83,12 @@ const MapView = ({ children }) => {
   const containerEl = useRef(null);
 
   const [mapReady, setMapReady] = useState(false);
+  const [contextMenu, setContextMenu] = useState({
+    visible: false,
+    x: 0,
+    y: 0,
+    lngLat: null,
+  });
 
   const mapStyles = useMapStyles();
   const activeMapStyles = useAttributePreference('activeMapStyles', 'locationIqStreets,locationIqDark,openFreeMap');
@@ -102,31 +113,135 @@ const MapView = ({ children }) => {
   }, [mapStyles, defaultMapStyle]);
 
   useEffect(() => {
-    const listener = (ready) => setMapReady(ready);
+    const listener = (r) => setMapReady(r);
     addReadyListener(listener);
     return () => {
       removeReadyListener(listener);
     };
   }, []);
 
+  // Right-click context menu
+  useEffect(() => {
+    const handleContextMenu = (e) => {
+      e.preventDefault();
+      const rect = containerEl.current?.getBoundingClientRect();
+      setContextMenu({
+        visible: true,
+        x: (rect?.left ?? 0) + e.point.x,
+        y: (rect?.top ?? 0) + e.point.y,
+        lngLat: e.lngLat,
+      });
+    };
+
+    map.on('contextmenu', handleContextMenu);
+    return () => map.off('contextmenu', handleContextMenu);
+  }, []);
+
+  // Middle-click rotation (replaces right-click drag rotation)
+  useEffect(() => {
+    let isMiddleDown = false;
+    let lastX = 0;
+
+    const onMouseDown = (e) => {
+      if (e.button === 1) {
+        e.preventDefault();
+        isMiddleDown = true;
+        lastX = e.clientX;
+      }
+    };
+
+    const onMouseMove = (e) => {
+      if (!isMiddleDown) return;
+      const delta = e.clientX - lastX;
+      lastX = e.clientX;
+      map.rotateTo(map.getBearing() + delta * 0.5, { duration: 0 });
+    };
+
+    const onMouseUp = (e) => {
+      if (e.button === 1) {
+        isMiddleDown = false;
+      }
+    };
+
+    const canvas = map.getCanvas();
+    canvas.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+
+    return () => {
+      canvas.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+  }, []);
+
+  const handleContextMenuClose = () => {
+    setContextMenu((prev) => ({ ...prev, visible: false }));
+  };
+
+  const handleGeofence = (lngLat) => {
+    // TODO: navigate to geofence creation page with coords pre-filled
+    // Example: navigate(`/geofences/new?lat=${lngLat.lat}&lng=${lngLat.lng}`);
+    // eslint-disable-next-line no-console
+    console.log('Create Geofence Here →', lngLat);
+  };
+
+  const handleNearestVehicle = (lngLat) => {
+    // TODO: find nearest device from your devices store and select/highlight it
+    // eslint-disable-next-line no-console
+    console.log('Find Nearest Vehicle →', lngLat);
+  };
+
+  const handleMeasure = (lngLat) => {
+    // TODO: activate your measure tool with lngLat as the start point
+    // eslint-disable-next-line no-console
+    console.log('Measure From Here →', lngLat);
+  };
+
   useLayoutEffect(() => {
     const currentEl = containerEl.current;
     currentEl.appendChild(element);
     map.resize();
+
+    // Suppress the native browser context menu on the map element
+    const suppressNativeMenu = (e) => e.preventDefault();
+    element.addEventListener('contextmenu', suppressNativeMenu);
+
+    // Suppress native middle-click scroll/autoscroll on the map canvas
+    const suppressMiddleScroll = (e) => {
+      if (e.button === 1) e.preventDefault();
+    };
+    element.addEventListener('mousedown', suppressMiddleScroll);
+
     return () => {
+      element.removeEventListener('contextmenu', suppressNativeMenu);
+      element.removeEventListener('mousedown', suppressMiddleScroll);
       currentEl.removeChild(element);
     };
   }, [containerEl]);
 
   return (
-    <div style={{ width: '100%', height: '100%' }} ref={containerEl}>
-      {React.Children.map(children, (child) => {
-        if (React.isValidElement(child) && child.type.handlesMapReady) {
-          return React.cloneElement(child, { mapReady });
-        }
-        return mapReady ? child : null;
-      })}
-    </div>
+    <>
+      <div style={{ width: '100%', height: '100%' }} ref={containerEl}>
+        {React.Children.map(children, (child) => {
+          if (React.isValidElement(child) && child.type.handlesMapReady) {
+            return React.cloneElement(child, { mapReady });
+          }
+          return mapReady ? child : null;
+        })}
+      </div>
+
+      <ContextMenu
+        visible={contextMenu.visible}
+        x={contextMenu.x}
+        y={contextMenu.y}
+        lngLat={contextMenu.lngLat}
+        onClose={handleContextMenuClose}
+        onGeofence={handleGeofence}
+        onNearestVehicle={handleNearestVehicle}
+        onMeasure={handleMeasure}
+      />
+    </>
   );
 };
 
