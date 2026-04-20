@@ -27,7 +27,7 @@ import MapCamera from '../map/MapCamera';
 import MapGeofence from '../map/MapGeofence';
 import StatusCard from '../common/components/StatusCard';
 import MapScale from '../map/MapScale';
-import useReplaySession, { LOG, CHUNK_SIZE } from '../reports/components/useChunkedReplay';
+import useReplaySession, { CHUNK_SIZE } from '../reports/components/useChunkedReplay';
 
 const SPEED_OPTIONS = [1, 1.5, 2, 5, 10];
 const PLAY_TICK_MS = 300;
@@ -128,22 +128,22 @@ const ReplayPage = () => {
     getStoredSession,
   } = useReplaySession();
 
-  const [index, setIndex]                       = useState(0);
+  const [index, setIndex] = useState(0);
   const [selectedDeviceId, setSelectedDeviceId] = useState(defaultDeviceId);
-  const [showCard, setShowCard]                 = useState(false);
-  const [from, setFrom]                         = useState();
-  const [to, setTo]                             = useState();
-  const [expanded, setExpanded]                 = useState(true);
-  const [playing, setPlaying]                   = useState(false);
-  const [smoothPosition, setSmoothPosition]     = useState(null);
-  const [animProgress, setAnimProgress]         = useState(0);
-  const [speed, setSpeed]                       = useState(1);
-  const [titleExpanded, setTitleExpanded]       = useState(false);
+  const [showCard, setShowCard] = useState(false);
+  const [from, setFrom] = useState();
+  const [to, setTo] = useState();
+  const [expanded, setExpanded] = useState(true);
+  const [playing, setPlaying] = useState(false);
+  const [smoothPosition, setSmoothPosition] = useState(null);
+  const [animProgress, setAnimProgress] = useState(0);
+  const [speed, setSpeed] = useState(1);
+  const [titleExpanded, setTitleExpanded] = useState(false);
 
-  const indexRef     = useRef(0);
+  const indexRef = useRef(0);
   const positionsRef = useRef([]);
-  const speedRef     = useRef(1);
-  const timerRef     = useRef(null);
+  const speedRef = useRef(1);
+  const timerRef = useRef(null);
 
   useEffect(() => { indexRef.current = index; }, [index]);
   useEffect(() => { positionsRef.current = positions; }, [positions]);
@@ -158,46 +158,17 @@ const ReplayPage = () => {
   });
 
   useEffect(() => {
-    const stored = getStoredSession();
-    if (stored) LOG.session('Existing session on mount', stored);
+    getStoredSession();
   }, []);
-
-  useEffect(() => {
-    if (positions.length > 0) {
-      LOG.buffer('Positions updated', {
-        length:    positions.length,
-        totalCount,
-        mode:      isLongRangeMode ? 'SESSION' : 'OLD-API',
-        firstTime: positions[0]?.fixTime,
-        firstLat:  positions[0]?.latitude,
-        firstLng:  positions[0]?.longitude,
-      });
-    }
-  }, [positions.length]);
-
-  useEffect(() => {
-    if (overviewPositions.length > 0) {
-      LOG.overview('Overview ready', { points: overviewPositions.length });
-    }
-  }, [overviewPositions.length]);
 
   useEffect(() => {
     if (!playing) {
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
-        LOG.play('Stopped');
       }
       return;
     }
-
-    LOG.play('Started', {
-      mode:   isLongRangeMode ? 'SESSION' : 'OLD-API',
-      speed:  speedRef.current,
-      index:  indexRef.current,
-      loaded: positionsRef.current.length,
-      total:  totalCount,
-    });
 
     timerRef.current = setInterval(() => {
       setAnimProgress((prev) => {
@@ -205,13 +176,12 @@ const ReplayPage = () => {
         const next = prev + (16 / intervalMs);
         if (next < 1) return next;
 
-        const pos      = positionsRef.current;
-        const curIdx   = indexRef.current;
-        const nextIdx  = curIdx + 1;
+        const pos = positionsRef.current;
+        const curIdx = indexRef.current;
+        const nextIdx = curIdx + 1;
 
         if (isLongRangeMode) {
           const shouldPause = checkAndPrefetch(nextIdx, () => {
-            LOG.play('Auto-resume after buffer refill');
             setPlaying(true);
           });
           if (shouldPause) {
@@ -221,16 +191,9 @@ const ReplayPage = () => {
         }
 
         if (nextIdx >= pos.length) {
-          LOG.play('End of loaded data', { nextIdx, loaded: pos.length, total: totalCount });
           setPlaying(false);
           return 0;
         }
-
-        LOG.play(`Tick ${curIdx} → ${nextIdx}`, {
-          lat:     pos[nextIdx]?.latitude,
-          lng:     pos[nextIdx]?.longitude,
-          fixTime: pos[nextIdx]?.fixTime,
-        });
 
         setIndex(nextIdx);
         indexRef.current = nextIdx;
@@ -252,10 +215,10 @@ const ReplayPage = () => {
     if (cur && nxt) {
       setSmoothPosition({
         ...cur,
-        latitude:  cur.latitude  + (nxt.latitude  - cur.latitude)  * animProgress,
+        latitude: cur.latitude + (nxt.latitude - cur.latitude) * animProgress,
         longitude: cur.longitude + (nxt.longitude - cur.longitude) * animProgress,
-        speed:     cur.speed     + (nxt.speed     - cur.speed)     * animProgress,
-        course:    cur.course    + (nxt.course    - cur.course)    * animProgress,
+        speed: cur.speed + (nxt.speed - cur.speed) * animProgress,
+        course: cur.course + (nxt.course - cur.course) * animProgress,
       });
     } else if (cur) {
       setSmoothPosition(cur);
@@ -263,7 +226,6 @@ const ReplayPage = () => {
   }, [positions, index, animProgress]);
 
   const handleSubmit = useCatch(async ({ deviceId, from: f, to: t2 }) => {
-    LOG.session('Form submitted', { deviceId, from: f, to: t2 });
     setSelectedDeviceId(deviceId);
     setFrom(f);
     setTo(t2);
@@ -274,20 +236,17 @@ const ReplayPage = () => {
     setAnimProgress(0);
 
     const ok = await init(deviceId, f, t2);
-    LOG.session(`init result: ${ok ? 'SUCCESS' : 'FAILED'}`);
     if (ok) setExpanded(false);
   });
 
   const handleSliderChange = useCallback(async (_, sliderValue) => {
-    LOG.slider('Changed', { sliderValue, mode: isLongRangeMode ? 'SESSION' : 'OLD-API' });
     setPlaying(false);
     setAnimProgress(0);
 
     if (isLongRangeMode) {
       await sliderSeek(sliderValue);
       const chunkOffset = Math.floor(sliderValue / CHUNK_SIZE) * CHUNK_SIZE;
-      const localIndex  = sliderValue - chunkOffset;
-      LOG.slider('Local index after seek', { sliderValue, chunkOffset, localIndex });
+      const localIndex = sliderValue - chunkOffset;
       setIndex(localIndex);
       indexRef.current = localIndex;
     } else {
@@ -297,7 +256,6 @@ const ReplayPage = () => {
   }, [isLongRangeMode, sliderSeek]);
 
   const onPointClick = useCallback((_, idx) => {
-    LOG.slider('Route point clicked', { idx });
     setIndex(idx);
     indexRef.current = idx;
     setAnimProgress(0);
@@ -309,9 +267,7 @@ const ReplayPage = () => {
   }, []);
 
   const handlePlayPause = () => {
-    const next = !playing;
-    LOG.play(`${next ? 'PLAY' : 'PAUSE'}`, { index, loaded: positions.length, total: totalCount });
-    setPlaying(next);
+    setPlaying((p) => !p);
   };
 
   const handleDownload = () => {
@@ -319,12 +275,12 @@ const ReplayPage = () => {
     window.location.assign(`/api/positions/kml?${query.toString()}`);
   };
 
-  const displayIndex   = Math.min(index, Math.max(0, positions.length - 1));
-  const currentPos     = positions[displayIndex];
-  const knownTotal     = totalCount > 0 ? totalCount : positions.length;
-  const sliderMax      = isLongRangeMode ? (totalCount > 1 ? totalCount - 1 : 0) : (positions.length > 1 ? positions.length - 1 : 0);
+  const displayIndex = Math.min(index, Math.max(0, positions.length - 1));
+  const currentPos = positions[displayIndex];
+  const knownTotal = totalCount > 0 ? totalCount : positions.length;
+  const sliderMax = isLongRangeMode ? (totalCount > 1 ? totalCount - 1 : 0) : (positions.length > 1 ? positions.length - 1 : 0);
   const routePositions = isLongRangeMode && overviewPositions.length > 0 ? overviewPositions : positions;
-  const loadingAny     = loadingSession || loadingOverview;
+  const loadingAny = loadingSession || loadingOverview;
 
   return (
     <div className={classes.root}>
@@ -380,28 +336,6 @@ const ReplayPage = () => {
         <Paper className={classes.content} square>
           {!expanded ? (
             <>
-              <Box className={classes.statusRow}>
-                <span
-                  className={classes.modeBadge}
-                  style={{
-                    background: isLongRangeMode ? '#0ea5e920' : '#64748b20',
-                    color:      isLongRangeMode ? '#0ea5e9'   : '#64748b',
-                    border:     `1px solid ${isLongRangeMode ? '#0ea5e940' : '#64748b40'}`,
-                  }}
-                >
-                  {isLongRangeMode ? 'SESSION MODE' : 'DIRECT MODE'}
-                </span>
-                {isBuffering && (
-                  <>
-                    <CircularProgress size={12} />
-                    <Typography variant="caption">Buffering…</Typography>
-                  </>
-                )}
-                {loadingOverview && (
-                  <Typography variant="caption" color="text.secondary">Loading route…</Typography>
-                )}
-              </Box>
-
               {error && (
                 <Typography variant="caption" color="error" align="center" sx={{ mb: 1, display: 'block' }}>
                   {error}
@@ -442,9 +376,6 @@ const ReplayPage = () => {
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
                   {`${positions.length}${totalCount > positions.length ? `/${totalCount}` : ''} pts`}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {currentPos ? formatTime(currentPos.fixTime, 'seconds') : '—'}
                 </Typography>
               </div>
 
