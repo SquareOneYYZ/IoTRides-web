@@ -228,16 +228,14 @@ const SelectField = ({
               multiple
               value={value}
               onChange={onChange}
-              renderValue={(selected) =>
-              (renderValue
+              renderValue={(selected) => (renderValue
                 ? renderValue(selected)
                 : selected
                   .map((val) => {
                     const item = items.find((i) => keyGetter(i) === val);
                     return item ? titleGetter(item) : val;
                   })
-                  .join(', '))
-              }
+                  .join(', '))}
               MenuProps={MenuProps}
               sx={{
                 borderRadius: '13px',
