@@ -1,6 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
 
-const BASE_URL = 'http://localhost:8082';
 export const CHUNK_SIZE = 500;
 const LONG_RANGE_HOURS = 24;
 const PREFETCH_THRESHOLD = 100;
@@ -157,53 +156,6 @@ const useReplaySession = () => {
     setIsBuffering(false);
   }, [fetchChunk]);
 
-  const initLongRange = useCallback(async (deviceId, from, to) => {
-    setLoadingSession(true);
-    setError(null);
-    setIsLongRangeMode(true);
-
-    try {
-      const sessionRes = await fetch('/api/replay/session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ deviceId, from, to }),
-      });
-
-      if (!sessionRes.ok) {
-        throw new Error(`HTTP ${sessionRes.status}: ${await sessionRes.text()}`);
-      }
-
-      const data = await sessionRes.json();
-
-      const sessionId = data.sessionId ?? data.id ?? data.session_id;
-      const count = data.totalCount ?? data.total ?? data.count ?? data.size ?? 0;
-
-      if (!sessionId) {
-        throw new Error(`No sessionId in response. Keys: ${Object.keys(data).join(', ')}`);
-      }
-
-      sessionIdRef.current = sessionId;
-      totalCountRef.current = count;
-      setTotalCount(count);
-      lsSave({ sessionId, totalCount: count, deviceId, from, to });
-
-      if (count === 0) {
-        return false;
-      }
-
-      fetchOverview(sessionId);
-      await fetchChunk(0, 'append');
-
-      return true;
-    } catch (err) {
-      setError(err.message);
-      lsClear();
-      return false;
-    } finally {
-      setLoadingSession(false);
-    }
-  }, [fetchOverview, fetchChunk]);
-
   const initOldApi = useCallback(async (deviceId, from, to) => {
     setLoadingSession(true);
     setError(null);
@@ -237,6 +189,63 @@ const useReplaySession = () => {
       setLoadingSession(false);
     }
   }, []);
+
+  const initLongRange = useCallback(async (deviceId, from, to) => {
+    setLoadingSession(true);
+    setError(null);
+    setIsLongRangeMode(true);
+
+    try {
+      const sessionRes = await fetch(`/api/replay/session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceId, from, to }),
+      });
+
+      if (!sessionRes.ok) {
+        throw new Error(`HTTP ${sessionRes.status}: ${await sessionRes.text()}`);
+      }
+
+      const data = await sessionRes.json();
+
+      const sessionId = data.sessionId ?? data.id ?? data.session_id;
+      const count = data.totalCount ?? data.total ?? data.count ?? data.size ?? 0;
+
+      if (!sessionId) {
+        throw new Error(`No sessionId in response. Keys: ${Object.keys(data).join(', ')}`);
+      }
+
+      sessionIdRef.current = sessionId;
+      totalCountRef.current = count;
+      setTotalCount(count);
+      lsSave({ sessionId, totalCount: count, deviceId, from, to });
+
+      if (count === 0) {
+        return false;
+      }
+
+      fetchOverview(sessionId);
+      const firstChunk = await fetchChunk(0, 'append');
+
+      if (!firstChunk) {
+        lsClear();
+        sessionIdRef.current = null;
+        totalCountRef.current = 0;
+        setLoadingSession(false);
+        return initOldApi(deviceId, from, to);
+      }
+
+      return true;
+    } catch (err) {
+      lsClear();
+      sessionIdRef.current = null;
+      totalCountRef.current = 0;
+      setLoadingSession(false);
+      return initOldApi(deviceId, from, to);
+    } finally {
+      setLoadingSession(false);
+    }
+  }, [fetchOverview, fetchChunk, initOldApi]);
 
   const init = useCallback(async (deviceId, from, to) => {
     reset();
