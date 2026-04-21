@@ -26,7 +26,7 @@ const calculateDistance = (coords) => {
     const φ2 = (lat2 * Math.PI) / 180;
     const Δφ = ((lat2 - lat1) * Math.PI) / 180;
     const Δλ = ((lng2 - lng1) * Math.PI) / 180;
-    const a = Math.sin(Δφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
+    const a = Math.sin(Δφ / 2) * 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * 2;
     total += R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
   return total;
@@ -320,7 +320,12 @@ class MeasureControl {
     this.tooltip.style.top = `${point.y - 28}px`;
 
     if (this.points.length === 1) {
-      this.tooltip.innerHTML = `<span class="measure-tooltip-segment">${this.formatDist(segDist)}</span>`;
+      this.tooltip.innerHTML = (
+        <span className="measure-tooltip-segment">
+          $
+          {this.formatDist(segDist)}
+        </span>
+      );
     } else {
       this.tooltip.innerHTML = `
         <span class="measure-tooltip-segment">${this.formatDist(segDist)}</span>
@@ -398,7 +403,7 @@ class MeasureControl {
 
 export const measureControlRef = { current: null };
 
-const MapMeasureDistance = ({ map }) => {
+const MapMeasureDistance = ({ map: mapInstance }) => {
   const t = useTranslation();
   const control = useMemo(() => new MeasureControl(), []);
   const distanceUnit = useAttributePreference('distanceUnit', 'km');
@@ -409,13 +414,13 @@ const MapMeasureDistance = ({ map }) => {
   }, [distanceUnit, t, control]);
 
   useEffect(() => {
-    map.addControl(control, 'top-right');
+    mapInstance.addControl(control, 'top-right');
     measureControlRef.current = control;
     return () => {
       measureControlRef.current = null;
-      map.removeControl(control);
+      mapInstance.removeControl(control);
     };
-  }, [control]);
+  }, [control, mapInstance]);
 
   return null;
 };

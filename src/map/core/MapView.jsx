@@ -108,6 +108,7 @@ const MapView = ({ children }) => {
 
   useEffect(() => {
     if (maxZoom) map.setMaxZoom(maxZoom);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [maxZoom]);
 
   useEffect(() => {
