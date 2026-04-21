@@ -1,160 +1,201 @@
 import React, { useEffect, useRef } from 'react';
+import { makeStyles } from '@mui/styles';
 
-const menuItems = [
-  {
-    key: 'geofence',
-    icon: '⬡',
-    label: 'Create Geofence Here',
-    sub: 'Draw a new geofence at this location',
+const useStyles = makeStyles((theme) => ({
+  paper: {
+    position: 'fixed',
+    zIndex: 2000,
+    minWidth: 242,
+    backgroundColor: theme.palette.background.paper,
+    border: `1px solid ${theme.palette.divider}`,
+    borderRadius: theme.shape.borderRadius,
+    padding: theme.spacing(0.75),
+    boxShadow: theme.shadows[8],
+    fontFamily: theme.typography.fontFamily,
+    userSelect: 'none',
   },
-  {
-    key: 'nearest',
-    icon: '🚗',
-    label: 'Find Nearest Vehicle',
-    sub: 'Locate the closest tracked vehicle',
+  coords: {
+    fontSize: 11,
+    color: theme.palette.text.disabled,
+    padding: `${theme.spacing(0.5)} ${theme.spacing(1.25)} ${theme.spacing(0.75)}`,
+    borderBottom: `1px solid ${theme.palette.divider}`,
+    marginBottom: theme.spacing(0.5),
+    letterSpacing: '0.04em',
+    fontVariantNumeric: 'tabular-nums',
+    userSelect: 'text',
   },
-  {
-    key: 'measure',
-    icon: '📏',
-    label: 'Measure From Here',
-    sub: 'Start a distance measurement',
+  item: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing(1.5),
+    width: '100%',
+    padding: `${theme.spacing(0.875)} ${theme.spacing(1.25)}`,
+    border: 'none',
+    borderRadius: theme.shape.borderRadius,
+    backgroundColor: 'transparent',
+    cursor: 'pointer',
+    textAlign: 'left',
+    fontFamily: theme.typography.fontFamily,
+    color: theme.palette.text.primary,
+    transition: 'background-color 0.1s',
+    '&:hover': {
+      backgroundColor: theme.palette.action.hover,
+    },
+    '&:active': {
+      backgroundColor: theme.palette.action.selected,
+    },
+    '&:disabled': {
+      opacity: 0.45,
+      cursor: 'default',
+      pointerEvents: 'none',
+    },
   },
-];
-
-const actionMap = {
-  geofence: 'onGeofence',
-  nearest: 'onNearestVehicle',
-  measure: 'onMeasure',
-};
+  iconWrap: {
+    width: 32,
+    height: 32,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: theme.shape.borderRadius,
+    backgroundColor: theme.palette.action.hover,
+    flexShrink: 0,
+    fontSize: 16,
+  },
+  labelWrap: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
+    minWidth: 0,
+  },
+  label: {
+    fontSize: theme.typography.body2.fontSize,
+    fontWeight: theme.typography.fontWeightMedium,
+    color: theme.palette.text.primary,
+    lineHeight: 1.3,
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  },
+  sub: {
+    fontSize: 11,
+    color: theme.palette.text.secondary,
+    lineHeight: 1.3,
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  },
+  subHighlight: {
+    fontSize: 11,
+    color: theme.palette.primary.main,
+    fontWeight: theme.typography.fontWeightMedium,
+    lineHeight: 1.3,
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  },
+}));
 
 const ContextMenu = ({
-  visible, x, y, lngLat, onClose, onGeofence, onNearestVehicle, onMeasure,
+  visible,
+  x,
+  y,
+  lngLat,
+  nearestDeviceName,
+  onClose,
+  onGeofence,
+  onNearestVehicle,
+  onMeasure,
 }) => {
+  const classes = useStyles();
   const menuRef = useRef(null);
 
-  // Close on outside click
   useEffect(() => {
     if (!visible) return undefined;
     const handler = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        onClose();
-      }
+      if (menuRef.current && !menuRef.current.contains(e.target)) onClose();
     };
     window.addEventListener('mousedown', handler);
     return () => window.removeEventListener('mousedown', handler);
   }, [visible, onClose]);
 
-  // Close on Escape key
   useEffect(() => {
     if (!visible) return undefined;
-    const handler = (e) => {
-      if (e.key === 'Escape') onClose();
-    };
+    const handler = (e) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [visible, onClose]);
 
   if (!visible) return null;
 
-  // Clamp menu position so it never overflows the viewport
-  const menuWidth = 230;
-  const menuHeight = 175;
+  const menuWidth = 242;
+  const menuHeight = 190;
   const adjustedX = x + menuWidth > window.innerWidth ? x - menuWidth : x;
   const adjustedY = y + menuHeight > window.innerHeight ? y - menuHeight : y;
 
-  const handlers = { onGeofence, onNearestVehicle, onMeasure };
+  const menuItems = [
+    {
+      key: 'geofence',
+      icon: '⬡',
+      label: 'Create Geofence Here',
+      sub: 'Draw a new geofence at this location',
+      subClass: classes.sub,
+      handler: onGeofence,
+      disabled: false,
+    },
+    {
+      key: 'nearest',
+      icon: '🚗',
+      label: 'Find Nearest Vehicle',
+      sub: nearestDeviceName ?? 'No vehicles with positions found',
+      subClass: nearestDeviceName ? classes.subHighlight : classes.sub,
+      handler: onNearestVehicle,
+      disabled: !nearestDeviceName,
+    },
+    {
+      key: 'measure',
+      icon: '📏',
+      label: 'Measure From Here',
+      sub: nearestDeviceName ? `From ${nearestDeviceName} to cursor` : 'No vehicle position available',
+      subClass: nearestDeviceName ? classes.subHighlight : classes.sub,
+      handler: onMeasure,
+      disabled: !nearestDeviceName,
+    },
+  ];
 
   return (
     <div
       ref={menuRef}
-      style={{
-        position: 'fixed',
-        top: adjustedY,
-        left: adjustedX,
-        zIndex: 2000,
-        background: '#ffffff',
-        border: '1px solid #e0e0e0',
-        borderRadius: 10,
-        padding: '6px',
-        minWidth: menuWidth,
-        boxShadow: '0 6px 24px rgba(0,0,0,0.13)',
-        fontFamily: 'inherit',
-      }}
+      className={classes.paper}
+      style={{ top: adjustedY, left: adjustedX }}
     >
-      {/* Coordinates display */}
       {lngLat && (
-        <div style={{
-          fontSize: 11,
-          color: '#999',
-          padding: '3px 10px 7px',
-          borderBottom: '1px solid #f0f0f0',
-          marginBottom: 4,
-          letterSpacing: '0.02em',
-        }}
-        >
-          {lngLat.lat.toFixed(5)},&nbsp;{lngLat.lng.toFixed(5)}
+        <div className={classes.coords}>
+          {lngLat.lat.toFixed(5)}
+          ,&nbsp;
+          {lngLat.lng.toFixed(5)}
         </div>
       )}
 
-      {/* Menu items */}
       {menuItems.map((item) => (
-        <MenuItem
+        <button
           key={item.key}
-          icon={item.icon}
-          label={item.label}
-          sub={item.sub}
+          type="button"
+          className={classes.item}
+          disabled={item.disabled}
           onClick={() => {
-            const handlerFn = handlers[actionMap[item.key]];
-            if (handlerFn) handlerFn(lngLat);
+            if (item.handler) item.handler(lngLat);
             onClose();
           }}
-        />
+        >
+          <span className={classes.iconWrap}>{item.icon}</span>
+          <span className={classes.labelWrap}>
+            <span className={classes.label}>{item.label}</span>
+            <span className={item.subClass}>{item.sub}</span>
+          </span>
+        </button>
       ))}
     </div>
   );
 };
-
-const MenuItem = ({
-  icon, label, sub, onClick,
-}) => (
-  <button
-    type="button"
-    onClick={onClick}
-    style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: 10,
-      width: '100%',
-      padding: '8px 10px',
-      border: 'none',
-      borderRadius: 7,
-      background: 'transparent',
-      cursor: 'pointer',
-      textAlign: 'left',
-      fontFamily: 'inherit',
-    }}
-    onMouseEnter={(e) => { e.currentTarget.style.background = '#f5f5f5'; }}
-    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-  >
-    <span style={{
-      fontSize: 16,
-      width: 28,
-      height: 28,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderRadius: 7,
-      background: '#f0f0f0',
-      flexShrink: 0,
-    }}
-    >
-      {icon}
-    </span>
-    <span>
-      <div style={{ fontSize: 13, fontWeight: 500, color: '#111' }}>{label}</div>
-      <div style={{ fontSize: 11, color: '#888', marginTop: 1 }}>{sub}</div>
-    </span>
-  </button>
-);
 
 export default ContextMenu;
