@@ -26,7 +26,8 @@ const calculateDistance = (coords) => {
     const φ2 = (lat2 * Math.PI) / 180;
     const Δφ = ((lat2 - lat1) * Math.PI) / 180;
     const Δλ = ((lng2 - lng1) * Math.PI) / 180;
-    const a = Math.sin(Δφ / 2) * 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * 2;
+    // FIX: ** 2 (exponent), not * 2 (multiply)
+    const a = Math.sin(Δφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
     total += R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
   return total;
@@ -259,6 +260,9 @@ class MeasureControl {
     document.addEventListener('keydown', this.onKeyDown);
   }
 
+  // Called by ContextMenu "Measure From Here":
+  // seeds [device coord, cursor coord] as the two starting points,
+  // renders the line immediately, then stays active for further clicks.
   startFromPoints(coordPairs) {
     if (this.active) this.deactivate();
     this.activate();
@@ -319,18 +323,11 @@ class MeasureControl {
     this.tooltip.style.left = `${point.x + 14}px`;
     this.tooltip.style.top = `${point.y - 28}px`;
 
+    // FIX: plain template strings only — no JSX in a .js file
     if (this.points.length === 1) {
-      this.tooltip.innerHTML = (
-        <span className="measure-tooltip-segment">
-          $
-          {this.formatDist(segDist)}
-        </span>
-      );
+      this.tooltip.innerHTML = `<span class="measure-tooltip-segment">${this.formatDist(segDist)}</span>`;
     } else {
-      this.tooltip.innerHTML = `
-        <span class="measure-tooltip-segment">${this.formatDist(segDist)}</span>
-        <span class="measure-tooltip-total">Total: ${this.formatDist(totalDist)}</span>
-      `;
+      this.tooltip.innerHTML = `<span class="measure-tooltip-segment">${this.formatDist(segDist)}</span><span class="measure-tooltip-total">Total: ${this.formatDist(totalDist)}</span>`;
     }
   }
 
@@ -403,7 +400,7 @@ class MeasureControl {
 
 export const measureControlRef = { current: null };
 
-const MapMeasureDistance = ({ map: mapInstance }) => {
+const MapMeasureDistance = () => {
   const t = useTranslation();
   const control = useMemo(() => new MeasureControl(), []);
   const distanceUnit = useAttributePreference('distanceUnit', 'km');
@@ -414,13 +411,13 @@ const MapMeasureDistance = ({ map: mapInstance }) => {
   }, [distanceUnit, t, control]);
 
   useEffect(() => {
-    mapInstance.addControl(control, 'top-right');
+    map.addControl(control, 'top-right');
     measureControlRef.current = control;
     return () => {
       measureControlRef.current = null;
-      mapInstance.removeControl(control);
+      map.removeControl(control);
     };
-  }, [control, mapInstance]);
+  }, [control]);
 
   return null;
 };

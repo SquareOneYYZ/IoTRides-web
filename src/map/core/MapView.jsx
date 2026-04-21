@@ -42,6 +42,8 @@ const updateReadyValue = (value) => {
   ready = value;
   readyListeners.forEach((listener) => listener(value));
 };
+
+
 const initMap = async () => {
   if (ready) return;
   if (!map.hasImage('background')) {
@@ -158,39 +160,51 @@ const MapView = ({ children }) => {
     return () => map.off('contextmenu', handleContextMenu);
   }, [devices, positions]);
 
-  useEffect(() => {
-    let isMiddleDown = false;
-    let lastX = 0;
+useEffect(() => {
+  let isMiddleDown = false;
+  let lastX = 0;
+  const canvas = map.getCanvas();
 
-    const onMouseDown = (e) => {
-      if (e.button === 1) {
-        e.preventDefault();
-        isMiddleDown = true;
-        lastX = e.clientX;
-      }
-    };
-    const onMouseMove = (e) => {
-      if (!isMiddleDown) return;
-      const delta = e.clientX - lastX;
+  const onMouseDown = (e) => {
+    if (e.button === 1) {
+      e.preventDefault();
+      isMiddleDown = true;
       lastX = e.clientX;
-      map.rotateTo(map.getBearing() + delta * 0.5, { duration: 0 });
-    };
-    const onMouseUp = (e) => {
-      if (e.button === 1) isMiddleDown = false;
-    };
+      canvas.style.cursor = 'grabbing';
+    }
+  };
 
-    const canvas = map.getCanvas();
-    canvas.addEventListener('mousedown', onMouseDown);
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
+  const onMouseMove = (e) => {
+    if (!isMiddleDown) return;
+    const delta = e.clientX - lastX;
+    lastX = e.clientX;
 
-    return () => {
-      canvas.removeEventListener('mousedown', onMouseDown);
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
-    };
-  }, []);
+    map.setBearing(map.getBearing() + delta * 0.3);
+  };
 
+  const onMouseUp = (e) => {
+    if (e.button === 1) {
+      isMiddleDown = false;
+      canvas.style.cursor = '';
+    }
+  };
+
+  const onAuxClick = (e) => {
+    if (e.button === 1) e.preventDefault();
+  };
+
+  canvas.addEventListener('mousedown', onMouseDown);
+  canvas.addEventListener('auxclick', onAuxClick);
+  window.addEventListener('mousemove', onMouseMove);
+  window.addEventListener('mouseup', onMouseUp);
+
+  return () => {
+    canvas.removeEventListener('mousedown', onMouseDown);
+    canvas.removeEventListener('auxclick', onAuxClick);
+    window.removeEventListener('mousemove', onMouseMove);
+    window.removeEventListener('mouseup', onMouseUp);
+  };
+}, []);
   const handleContextMenuClose = useCallback(() => {
     setContextMenu((prev) => ({ ...prev, visible: false }));
   }, []);
