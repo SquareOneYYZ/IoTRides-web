@@ -3,6 +3,7 @@ import { map } from '../core/MapView';
 import { distanceFromMeters, distanceUnitString } from '../../common/util/converter';
 import { useAttributePreference } from '../../common/util/preferences';
 import { useTranslation } from '../../common/components/LocalizationProvider';
+import measureControlRef from './MeasureControlRef';
 import './mapControls.css';
 
 const MEASURE_SOURCE = 'measure-source';
@@ -26,7 +27,6 @@ const calculateDistance = (coords) => {
     const φ2 = (lat2 * Math.PI) / 180;
     const Δφ = ((lat2 - lat1) * Math.PI) / 180;
     const Δλ = ((lng2 - lng1) * Math.PI) / 180;
-    // FIX: ** 2 (exponent), not * 2 (multiply)
     const a = Math.sin(Δφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
     total += R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
@@ -260,9 +260,6 @@ class MeasureControl {
     document.addEventListener('keydown', this.onKeyDown);
   }
 
-  // Called by ContextMenu "Measure From Here":
-  // seeds [device coord, cursor coord] as the two starting points,
-  // renders the line immediately, then stays active for further clicks.
   startFromPoints(coordPairs) {
     if (this.active) this.deactivate();
     this.activate();
@@ -323,7 +320,6 @@ class MeasureControl {
     this.tooltip.style.left = `${point.x + 14}px`;
     this.tooltip.style.top = `${point.y - 28}px`;
 
-    // FIX: plain template strings only — no JSX in a .js file
     if (this.points.length === 1) {
       this.tooltip.innerHTML = `<span class="measure-tooltip-segment">${this.formatDist(segDist)}</span>`;
     } else {
@@ -397,8 +393,6 @@ class MeasureControl {
     this.label.textContent = dist > 0 ? this.formatDist(dist) : 'Click next point';
   }
 }
-
-export const measureControlRef = { current: null };
 
 const MapMeasureDistance = () => {
   const t = useTranslation();

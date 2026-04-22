@@ -1,4 +1,3 @@
-// eslint-disable-next-line import/no-unresolved
 import mapboxglRtlTextUrl from '@mapbox/mapbox-gl-rtl-text/mapbox-gl-rtl-text.min?url';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import maplibregl from 'maplibre-gl';
@@ -15,12 +14,13 @@ import { mapImages } from './preloadImages';
 import useMapStyles from './useMapStyles';
 import { FullScreenControl } from '../controls/MapFullScreen';
 import ContextMenu from './ContextMenu';
-import { measureControlRef } from '../controls/MapMeasureDistance';
+import measureControlRef from '../controls/MeasureControlRef';
 
 const element = document.createElement('div');
 element.style.width = '100%';
 element.style.height = '100%';
 element.style.boxSizing = 'initial';
+
 maplibregl.setRTLTextPlugin(mapboxglRtlTextUrl);
 maplibregl.addProtocol('google', googleProtocol);
 
@@ -29,20 +29,23 @@ export const map = new maplibregl.Map({
 });
 
 map.dragRotate.disable();
+
 let ready = false;
 const readyListeners = new Set();
+
 const addReadyListener = (listener) => {
   readyListeners.add(listener);
   listener(ready);
 };
+
 const removeReadyListener = (listener) => {
   readyListeners.delete(listener);
 };
+
 const updateReadyValue = (value) => {
   ready = value;
   readyListeners.forEach((listener) => listener(value));
 };
-
 
 const initMap = async () => {
   if (ready) return;
@@ -56,6 +59,7 @@ const initMap = async () => {
 };
 
 map.addControl(new FullScreenControl(), 'top-right');
+
 const switcher = new SwitcherControl(
   () => updateReadyValue(false),
   (styleId) => savePersistedState('selectedMapStyle', styleId),
@@ -109,8 +113,7 @@ const MapView = ({ children }) => {
   const maxZoom = useAttributePreference('web.maxZoom');
 
   useEffect(() => {
-    if (maxZoom) map.setMaxZoom(maxZoom);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    map.setMaxZoom(maxZoom || 22);
   }, [maxZoom]);
 
   useEffect(() => {
@@ -160,51 +163,51 @@ const MapView = ({ children }) => {
     return () => map.off('contextmenu', handleContextMenu);
   }, [devices, positions]);
 
-useEffect(() => {
-  let isMiddleDown = false;
-  let lastX = 0;
-  const canvas = map.getCanvas();
+  useEffect(() => {
+    let isMiddleDown = false;
+    let lastX = 0;
+    const canvas = map.getCanvas();
 
-  const onMouseDown = (e) => {
-    if (e.button === 1) {
-      e.preventDefault();
-      isMiddleDown = true;
+    const onMouseDown = (e) => {
+      if (e.button === 1) {
+        e.preventDefault();
+        isMiddleDown = true;
+        lastX = e.clientX;
+        canvas.style.cursor = 'grabbing';
+      }
+    };
+
+    const onMouseMove = (e) => {
+      if (!isMiddleDown) return;
+      const delta = e.clientX - lastX;
       lastX = e.clientX;
-      canvas.style.cursor = 'grabbing';
-    }
-  };
+      map.setBearing(map.getBearing() + delta * 0.3);
+    };
 
-  const onMouseMove = (e) => {
-    if (!isMiddleDown) return;
-    const delta = e.clientX - lastX;
-    lastX = e.clientX;
+    const onMouseUp = (e) => {
+      if (e.button === 1) {
+        isMiddleDown = false;
+        canvas.style.cursor = '';
+      }
+    };
 
-    map.setBearing(map.getBearing() + delta * 0.3);
-  };
+    const onAuxClick = (e) => {
+      if (e.button === 1) e.preventDefault();
+    };
 
-  const onMouseUp = (e) => {
-    if (e.button === 1) {
-      isMiddleDown = false;
-      canvas.style.cursor = '';
-    }
-  };
+    canvas.addEventListener('mousedown', onMouseDown);
+    canvas.addEventListener('auxclick', onAuxClick);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
 
-  const onAuxClick = (e) => {
-    if (e.button === 1) e.preventDefault();
-  };
+    return () => {
+      canvas.removeEventListener('mousedown', onMouseDown);
+      canvas.removeEventListener('auxclick', onAuxClick);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+  }, []);
 
-  canvas.addEventListener('mousedown', onMouseDown);
-  canvas.addEventListener('auxclick', onAuxClick);
-  window.addEventListener('mousemove', onMouseMove);
-  window.addEventListener('mouseup', onMouseUp);
-
-  return () => {
-    canvas.removeEventListener('mousedown', onMouseDown);
-    canvas.removeEventListener('auxclick', onAuxClick);
-    window.removeEventListener('mousemove', onMouseMove);
-    window.removeEventListener('mouseup', onMouseUp);
-  };
-}, []);
   const handleContextMenuClose = useCallback(() => {
     setContextMenu((prev) => ({ ...prev, visible: false }));
   }, []);
