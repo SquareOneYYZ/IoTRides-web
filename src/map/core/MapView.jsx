@@ -1,17 +1,20 @@
-// eslint-disable-next-line import/no-unresolved
 import mapboxglRtlTextUrl from '@mapbox/mapbox-gl-rtl-text/mapbox-gl-rtl-text.min?url';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import maplibregl from 'maplibre-gl';
 import { googleProtocol } from 'maplibre-google-maps';
 import React, {
-  useRef, useLayoutEffect, useEffect, useState,
+  useRef, useLayoutEffect, useEffect, useState, useCallback,
 } from 'react';
+import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { SwitcherControl } from '../switcher/switcher';
 import { useAttributePreference, usePreference } from '../../common/util/preferences';
 import usePersistedState, { savePersistedState } from '../../common/util/usePersistedState';
 import { mapImages } from './preloadImages';
 import useMapStyles from './useMapStyles';
 import { FullScreenControl } from '../controls/MapFullScreen';
+import ContextMenu from './ContextMenu';
+import measureControlRef from '../controls/MeasureControlRef';
 
 const element = document.createElement('div');
 element.style.width = '100%';
@@ -24,6 +27,8 @@ maplibregl.addProtocol('google', googleProtocol);
 export const map = new maplibregl.Map({
   container: element,
 });
+
+map.dragRotate.disable();
 
 let ready = false;
 const readyListeners = new Set();
@@ -52,6 +57,7 @@ const initMap = async () => {
     });
   }
 };
+
 map.addControl(new FullScreenControl(), 'top-right');
 
 const switcher = new SwitcherControl(
@@ -74,10 +80,31 @@ const switcher = new SwitcherControl(
 
 map.addControl(switcher, 'top-right');
 
+const haversineDistance = (lat1, lng1, lat2, lng2) => {
+  const R = 6371e3;
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2
+    + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
+
 const MapView = ({ children }) => {
   const containerEl = useRef(null);
+  const navigate = useNavigate();
 
   const [mapReady, setMapReady] = useState(false);
+  const [contextMenu, setContextMenu] = useState({
+    visible: false,
+    x: 0,
+    y: 0,
+    lngLat: null,
+    nearestDeviceName: null,
+  });
+
+  const devices = useSelector((state) => state.devices.items);
+  const positions = useSelector((state) => state.session.positions);
 
   const mapStyles = useMapStyles();
   const activeMapStyles = useAttributePreference('activeMapStyles', 'locationIqStreets,locationIqDark,openFreeMap');
@@ -86,9 +113,7 @@ const MapView = ({ children }) => {
   const maxZoom = useAttributePreference('web.maxZoom');
 
   useEffect(() => {
-    if (maxZoom) {
-      map.setMaxZoom(maxZoom);
-    }
+    map.setMaxZoom(maxZoom || 22);
   }, [maxZoom]);
 
   useEffect(() => {
@@ -102,31 +127,179 @@ const MapView = ({ children }) => {
   }, [mapStyles, defaultMapStyle]);
 
   useEffect(() => {
-    const listener = (ready) => setMapReady(ready);
+    const listener = (r) => setMapReady(r);
     addReadyListener(listener);
+    return () => removeReadyListener(listener);
+  }, []);
+
+  useEffect(() => {
+    const handleContextMenu = (e) => {
+      e.preventDefault();
+      const rect = containerEl.current?.getBoundingClientRect();
+      const { lat, lng } = e.lngLat;
+
+      let nearestDeviceName = null;
+      let minDist = Infinity;
+
+      Object.values(positions).forEach((pos) => {
+        const dist = haversineDistance(lat, lng, pos.latitude, pos.longitude);
+        if (dist < minDist) {
+          minDist = dist;
+          const device = devices[pos.deviceId];
+          nearestDeviceName = device?.name ?? null;
+        }
+      });
+
+      setContextMenu({
+        visible: true,
+        x: (rect?.left ?? 0) + e.point.x,
+        y: (rect?.top ?? 0) + e.point.y,
+        lngLat: e.lngLat,
+        nearestDeviceName,
+      });
+    };
+
+    map.on('contextmenu', handleContextMenu);
+    return () => map.off('contextmenu', handleContextMenu);
+  }, [devices, positions]);
+
+  useEffect(() => {
+    let isMiddleDown = false;
+    let lastX = 0;
+    const canvas = map.getCanvas();
+
+    const onMouseDown = (e) => {
+      if (e.button === 1) {
+        e.preventDefault();
+        isMiddleDown = true;
+        lastX = e.clientX;
+        canvas.style.cursor = 'grabbing';
+      }
+    };
+
+    const onMouseMove = (e) => {
+      if (!isMiddleDown) return;
+      const delta = e.clientX - lastX;
+      lastX = e.clientX;
+      map.setBearing(map.getBearing() + delta * 0.3);
+    };
+
+    const onMouseUp = (e) => {
+      if (e.button === 1) {
+        isMiddleDown = false;
+        canvas.style.cursor = '';
+      }
+    };
+
+    const onAuxClick = (e) => {
+      if (e.button === 1) e.preventDefault();
+    };
+
+    canvas.addEventListener('mousedown', onMouseDown);
+    canvas.addEventListener('auxclick', onAuxClick);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+
     return () => {
-      removeReadyListener(listener);
+      canvas.removeEventListener('mousedown', onMouseDown);
+      canvas.removeEventListener('auxclick', onAuxClick);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
     };
   }, []);
+
+  const handleContextMenuClose = useCallback(() => {
+    setContextMenu((prev) => ({ ...prev, visible: false }));
+  }, []);
+
+  const handleGeofence = useCallback(() => {
+    navigate('/geofences');
+  }, [navigate]);
+
+  const handleNearestVehicle = useCallback((lngLat) => {
+    const { lat, lng } = lngLat;
+    let nearestPos = null;
+    let minDist = Infinity;
+
+    Object.values(positions).forEach((pos) => {
+      const dist = haversineDistance(lat, lng, pos.latitude, pos.longitude);
+      if (dist < minDist) {
+        minDist = dist;
+        nearestPos = pos;
+      }
+    });
+
+    if (!nearestPos) return;
+    map.flyTo({
+      center: [nearestPos.longitude, nearestPos.latitude],
+      zoom: Math.max(map.getZoom(), 14),
+    });
+  }, [positions]);
+
+  const handleMeasure = useCallback((lngLat) => {
+    const { lat, lng } = lngLat;
+    let nearestPos = null;
+    let minDist = Infinity;
+
+    Object.values(positions).forEach((pos) => {
+      const dist = haversineDistance(lat, lng, pos.latitude, pos.longitude);
+      if (dist < minDist) {
+        minDist = dist;
+        nearestPos = pos;
+      }
+    });
+
+    if (!nearestPos || !measureControlRef.current) return;
+
+    measureControlRef.current.startFromPoints([
+      [nearestPos.longitude, nearestPos.latitude],
+      [lng, lat],
+    ]);
+  }, [positions]);
 
   useLayoutEffect(() => {
     const currentEl = containerEl.current;
     currentEl.appendChild(element);
     map.resize();
+
+    const suppressNativeMenu = (e) => e.preventDefault();
+    element.addEventListener('contextmenu', suppressNativeMenu);
+
+    const suppressMiddleScroll = (e) => {
+      if (e.button === 1) e.preventDefault();
+    };
+    element.addEventListener('mousedown', suppressMiddleScroll);
+
     return () => {
+      element.removeEventListener('contextmenu', suppressNativeMenu);
+      element.removeEventListener('mousedown', suppressMiddleScroll);
       currentEl.removeChild(element);
     };
   }, [containerEl]);
 
   return (
-    <div style={{ width: '100%', height: '100%' }} ref={containerEl}>
-      {React.Children.map(children, (child) => {
-        if (React.isValidElement(child) && child.type.handlesMapReady) {
-          return React.cloneElement(child, { mapReady });
-        }
-        return mapReady ? child : null;
-      })}
-    </div>
+    <>
+      <div style={{ width: '100%', height: '100%' }} ref={containerEl}>
+        {React.Children.map(children, (child) => {
+          if (React.isValidElement(child) && child.type.handlesMapReady) {
+            return React.cloneElement(child, { mapReady, map });
+          }
+          return mapReady ? child : null;
+        })}
+      </div>
+
+      <ContextMenu
+        visible={contextMenu.visible}
+        x={contextMenu.x}
+        y={contextMenu.y}
+        lngLat={contextMenu.lngLat}
+        nearestDeviceName={contextMenu.nearestDeviceName}
+        onClose={handleContextMenuClose}
+        onGeofence={handleGeofence}
+        onNearestVehicle={handleNearestVehicle}
+        onMeasure={handleMeasure}
+      />
+    </>
   );
 };
 
