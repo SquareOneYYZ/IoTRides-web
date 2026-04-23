@@ -33,7 +33,7 @@ class NotificationControl {
   }
 }
 
-const MapNotification = ({ enabled, onClick }) => {
+const MapNotification = ({ enabled, onClick, panic }) => {
   const control = useMemo(() => new NotificationControl(onClick), [onClick]);
 
   useEffect(() => {
@@ -43,7 +43,12 @@ const MapNotification = ({ enabled, onClick }) => {
 
   useEffect(() => {
     control.setEnabled(enabled);
-  }, [enabled]);
+    if (panic) {
+      control.button.classList.add('maplibre-ctrl-notification-panic');
+    } else {
+      control.button.classList.remove('maplibre-ctrl-notification-panic');
+    }
+  }, [enabled, panic]);
 
   return null;
 };
