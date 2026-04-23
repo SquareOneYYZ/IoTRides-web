@@ -42,12 +42,15 @@ const MapNotification = ({ enabled, onClick, panic }) => {
   }, [onClick]);
 
   useEffect(() => {
-    control.setEnabled(enabled);
-    if (panic) {
-      control.button.classList.add('maplibre-ctrl-notification-panic');
-    } else {
-      control.button.classList.remove('maplibre-ctrl-notification-panic');
-    }
+    const status = enabled ? 'on' : 'off';
+    control.button.className = [
+      'maplibregl-ctrl-icon',
+      'maplibre-ctrl-notification',
+      `maplibre-ctrl-notification-${status}`,
+      panic ? 'maplibre-ctrl-notification-panic' : '',
+    ].filter(Boolean).join(' ');
+
+    control.button.title = enabled ? 'Notifications (active)' : 'Notifications';
   }, [enabled, panic]);
 
   return null;
