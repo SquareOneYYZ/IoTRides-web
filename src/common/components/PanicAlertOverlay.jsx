@@ -10,18 +10,18 @@ const PanicAlertOverlay = ({ panicEvent, onDismiss }) => {
     const [visible, setVisible] = useState(false);
     const t = useTranslation();
 
-    useEffect(() => {
-        if (!panicEvent) return;
+ useEffect(() => {
+    if (!panicEvent) return;
 
-        setVisible(true);
+    setVisible(true);
 
-        const timer = setTimeout(() => {
-            setVisible(false);
-            onDismiss();
-        }, 50000000);
+    const timer = setTimeout(() => {
+        setVisible(false);
+        onDismiss?.();
+    }, 5000);
 
-        return () => clearTimeout(timer);
-    }, [panicEvent, onDismiss]);
+    return () => clearTimeout(timer);
+}, [panicEvent]);
 
     if (!visible || !panicEvent) return null;
 
@@ -68,6 +68,6 @@ const PanicAlertOverlay = ({ panicEvent, onDismiss }) => {
             </div>
         </>
     );
-};
+}
 
 export default PanicAlertOverlay;
