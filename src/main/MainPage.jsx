@@ -109,6 +109,7 @@ const MainPage = () => {
           filteredPositions={filteredPositions}
           selectedPosition={selectedPosition}
           onEventsClick={onEventsClick}
+          panic={!!panicEvent}
         />
       )}
       <div className={classes.sidebar}>
