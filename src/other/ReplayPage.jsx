@@ -114,16 +114,29 @@ const useStyles = makeStyles((theme) => ({
     },
   },
   speedStrip: {
-    position: 'absolute',
-    bottom: 12,
-    left: 12,
-    right: 12,
+    position: 'fixed',
+    bottom: 8,
+    left: 10,
+    right: 10,
     zIndex: 2,
+    borderRadius: 0,
     background: theme.palette.background.paper,
     border: `0.5px solid ${theme.palette.divider}`,
-    borderRadius: theme.shape.borderRadius,
     padding: '5px 8px 4px',
     opacity: 0.93,
+
+    [theme.breakpoints.down('sm')]: {
+      bottom: 56,
+      left: 10,
+      right: 10,
+      borderRadius: 0,
+    },
+
+    [theme.breakpoints.down('md')]: {
+      bottom: 65,
+      left: 10,
+      right: 10,
+    },
   },
   speedStripValue: {
     fontWeight: 500,
@@ -248,6 +261,28 @@ const ReplayPage = () => {
     }
   }, [positions, index, animationProgress]);
 
+  useEffect(() => {
+    const STRIP_HEIGHT = 82; // match actual height of your strip
+    const styleId = 'replay-controls-offset';
+
+    if (!expanded && positions.length > 0) {
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.textContent = `
+      .maplibregl-ctrl-bottom-left {
+        bottom: ${STRIP_HEIGHT}px !important;
+        transition: bottom 0.2s ease;
+      }
+    `;
+      document.head.appendChild(style);
+    }
+
+    return () => {
+      const el = document.getElementById(styleId);
+      if (el) el.remove();
+    };
+  }, [expanded, positions.length]);
+
   const onPointClick = useCallback((_, i) => {
     setIndex(i);
     setAnimationProgress(0);
@@ -303,7 +338,7 @@ const ReplayPage = () => {
       {!expanded && positions.length > 0 && (
         <Box className={classes.speedStrip}>
           <Box display="flex" justifyContent="space-between">
-            <Typography variant="caption" color="text.secondary">speed</Typography>
+            <Typography variant="caption" color="text.secondary">Speed</Typography>
             <Typography variant="caption" className={classes.speedStripValue}>
               {smoothPosition ? `${Math.round(smoothPosition.speed)} km/h` : '—'}
             </Typography>
