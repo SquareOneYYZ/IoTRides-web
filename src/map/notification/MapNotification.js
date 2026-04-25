@@ -33,19 +33,24 @@ class NotificationControl {
   }
 }
 
-const MapNotification = ({ enabled, onClick }) => {
+const MapNotification = ({ enabled, onClick, panic, onButtonReady }) => {
   const control = useMemo(() => new NotificationControl(onClick), [onClick]);
 
   useEffect(() => {
     map.addControl(control, 'top-right');
+    setTimeout(() => {
+      if (onButtonReady && control.button) {
+        onButtonReady(control.button);
+      }
+    }, 100);
     return () => map.removeControl(control);
   }, [onClick]);
 
   useEffect(() => {
-    control.setEnabled(enabled);
-  }, [enabled]);
+    if (!control.button) return;
+    control.button.className = statusClass(enabled ? 'on' : 'off');
+    control.button.title = enabled ? 'Notifications (active)' : 'Notifications';
+  }, [enabled, panic]);
 
   return null;
 };
-
-export default MapNotification;
