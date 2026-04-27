@@ -60,13 +60,14 @@ const CombinedReportPage = () => {
     setPage(0);
   };
 
-  const flattenedData = useMemo(() => items.flatMap((item) => item.events.map((event, index) => ({
+  // FIX: Removed isFirstForDevice — it was based on pre-sort order causing
+  // device name to disappear when sorting changed row positions
+  const flattenedData = useMemo(() => items.flatMap((item) => item.events.map((event) => ({
     id: event.id,
     deviceId: item.deviceId,
     deviceName: devices[item.deviceId]?.name || '',
     eventTime: event.eventTime,
     eventType: event.type,
-    isFirstForDevice: index === 0,
   }))), [items, devices]);
 
   const sortedAndPaginatedData = useMemo(() => {
@@ -90,21 +91,13 @@ const CombinedReportPage = () => {
       }
 
       if (order === 'asc') {
-        if (aVal < bVal) {
-          return -1;
-        }
-        if (aVal > bVal) {
-          return 1;
-        }
+        if (aVal < bVal) return -1;
+        if (aVal > bVal) return 1;
         return 0;
       }
 
-      if (aVal > bVal) {
-        return -1;
-      }
-      if (aVal < bVal) {
-        return 1;
-      }
+      if (aVal > bVal) return -1;
+      if (aVal < bVal) return 1;
       return 0;
     };
 
@@ -150,13 +143,18 @@ const CombinedReportPage = () => {
       </TableRow>
     );
   } else {
-    tableBodyContent = sortedAndPaginatedData.map((row) => (
-      <TableRow key={row.id} hover>
-        <TableCell>{row.isFirstForDevice ? row.deviceName : ''}</TableCell>
-        <TableCell>{formatTime(row.eventTime, 'seconds')}</TableCell>
-        <TableCell>{t(prefixString('event', row.eventType))}</TableCell>
-      </TableRow>
-    ));
+    // FIX: Device name visibility computed after sorting based on adjacent rows,
+    // not a pre-sort flag. Shows name whenever device changes in current sorted order.
+    tableBodyContent = sortedAndPaginatedData.map((row, index, arr) => {
+      const showDeviceName = index === 0 || arr[index - 1].deviceId !== row.deviceId;
+      return (
+        <TableRow key={row.id} hover>
+          <TableCell>{showDeviceName ? row.deviceName : ''}</TableCell>
+          <TableCell>{formatTime(row.eventTime, 'seconds')}</TableCell>
+          <TableCell>{t(prefixString('event', row.eventType))}</TableCell>
+        </TableRow>
+      );
+    });
   }
 
   return (
@@ -243,7 +241,8 @@ const CombinedReportPage = () => {
               loading={loading}
             />
           </div>
-          <Table>
+
+          <Table stickyHeader>
             <TableHead>
               <TableRow>
                 <TableCell>
