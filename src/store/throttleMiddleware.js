@@ -7,16 +7,38 @@ export default () => (next) => {
   const buffer = [];
   let throttle = false;
   let counter = 0;
+  let intervalId = null;
 
-  setInterval(() => {
+  const flushBuffer = () => {
+    if (buffer.length === 0) return;
+
+    const merged = buffer.reduce((acc, action) => {
+      if (!acc) return action;
+      return {
+        ...action,
+        payload: [
+          ...Object.values(
+            [...(acc.payload || []), ...(action.payload || [])]
+              .reduce((map, item) => {
+                map[item.id] = item;
+                return map;
+              }, {}),
+          ),
+        ],
+      };
+    }, null);
+
+    buffer.length = 0;
+    if (merged) batch(() => next(merged));
+  };
+
+  intervalId = setInterval(() => {
     if (throttle) {
       if (buffer.length < threshold) {
         throttle = false;
-      }
-      if (buffer.length > 0) {
-        const latest = buffer[buffer.length - 1];
-        buffer.length = 0;
-        batch(() => next(latest));
+        flushBuffer();
+      } else {
+        flushBuffer();
       }
     } else {
       if (counter > threshold) {
@@ -25,6 +47,8 @@ export default () => (next) => {
       counter = 0;
     }
   }, interval);
+
+  next({ type: '@@throttleMiddleware/init', intervalId });
 
   return (action) => {
     if (action.type === 'devices/update' || action.type === 'positions/update') {
