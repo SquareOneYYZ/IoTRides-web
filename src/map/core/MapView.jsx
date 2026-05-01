@@ -1,4 +1,3 @@
-// eslint-disable-next-line import/no-unresolved
 import mapboxglRtlTextUrl from '@mapbox/mapbox-gl-rtl-text/mapbox-gl-rtl-text.min?url';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import maplibregl from 'maplibre-gl';
@@ -52,7 +51,6 @@ const initMap = async () => {
     });
   }
 };
-map.addControl(new FullScreenControl(), 'top-right');
 
 const switcher = new SwitcherControl(
   () => updateReadyValue(false),
@@ -72,11 +70,8 @@ const switcher = new SwitcherControl(
   },
 );
 
-map.addControl(switcher, 'top-right');
-
 const MapView = ({ children }) => {
   const containerEl = useRef(null);
-
   const [mapReady, setMapReady] = useState(false);
 
   const mapStyles = useMapStyles();
@@ -117,6 +112,16 @@ const MapView = ({ children }) => {
       currentEl.removeChild(element);
     };
   }, [containerEl]);
+
+  useLayoutEffect(() => {
+    const fullscreen = new FullScreenControl();
+    map.addControl(fullscreen, 'top-right');
+    map.addControl(switcher, 'top-right');
+    return () => {
+      map.removeControl(fullscreen);
+      map.removeControl(switcher);
+    };
+  }, []);
 
   return (
     <div style={{ width: '100%', height: '100%' }} ref={containerEl}>
