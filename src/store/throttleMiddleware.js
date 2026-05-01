@@ -10,13 +10,11 @@ export default () => (next) => {
 
   setInterval(() => {
     if (throttle) {
+      if (buffer.length > 0) {
+        batch(() => buffer.splice(0, buffer.length).forEach((action) => next(action)));
+      }
       if (buffer.length < threshold) {
         throttle = false;
-      }
-      if (buffer.length > 0) {
-        const latest = buffer[buffer.length - 1];
-        buffer.length = 0;
-        batch(() => next(latest));
       }
     } else {
       if (counter > threshold) {
@@ -29,7 +27,14 @@ export default () => (next) => {
   return (action) => {
     if (action.type === 'devices/update' || action.type === 'positions/update') {
       if (throttle) {
-        buffer.push(action);
+        const existing = buffer.find((b) => b.type === action.type);
+        if (existing) {
+          const existingIds = new Set(existing.payload.map((p) => p.deviceId ?? p.id));
+          const newItems = action.payload.filter((p) => !existingIds.has(p.deviceId ?? p.id));
+          existing.payload = [...existing.payload, ...newItems];
+        } else {
+          buffer.push({ ...action, payload: [...action.payload] });
+        }
         return null;
       }
       counter += 1;
