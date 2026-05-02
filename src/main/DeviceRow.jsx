@@ -36,19 +36,13 @@ const useStyles = makeStyles((theme) => ({
     fontWeight: 'normal',
     lineHeight: '0.875rem',
   },
-  success: {
-    color: theme.palette.success.main,
-  },
-  warning: {
-    color: theme.palette.warning.main,
-  },
-  error: {
-    color: theme.palette.error.main,
-  },
-  neutral: {
-    color: theme.palette.neutral.main,
-  },
+  success: { color: theme.palette.success.main },
+  warning: { color: theme.palette.warning.main },
+  error:   { color: theme.palette.error.main },
+  neutral: { color: theme.palette.neutral.main },
 }));
+
+const hasOwn = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
 
 const DeviceRow = ({ data, index, style }) => {
   const classes = useStyles();
@@ -98,14 +92,14 @@ const DeviceRow = ({ data, index, style }) => {
         />
         {position && (
           <>
-            {position.attributes.hasOwnProperty('alarm') && (
+            {hasOwn(position.attributes, 'alarm') && (
               <Tooltip title={`${t('eventAlarm')}: ${formatAlarm(position.attributes.alarm, t)}`}>
                 <IconButton size="small">
                   <ErrorIcon fontSize="small" className={classes.error} />
                 </IconButton>
               </Tooltip>
             )}
-            {position.attributes.hasOwnProperty('ignition') && (
+            {hasOwn(position.attributes, 'ignition') && (
               <Tooltip title={`${t('positionIgnition')}: ${formatBoolean(position.attributes.ignition, t)}`}>
                 <IconButton size="small">
                   {position.attributes.ignition ? (
@@ -116,7 +110,7 @@ const DeviceRow = ({ data, index, style }) => {
                 </IconButton>
               </Tooltip>
             )}
-            {position.attributes.hasOwnProperty('batteryLevel') && (
+            {hasOwn(position.attributes, 'batteryLevel') && (
               <Tooltip title={`${t('positionBatteryLevel')}: ${formatPercentage(position.attributes.batteryLevel)}`}>
                 <IconButton size="small">
                   {(position.attributes.batteryLevel > 70 && (

@@ -68,12 +68,12 @@ const allEventTypes = [
 ];
 
 const segmentTypes = [
-  ['all', 'All Segments'],
-  ['open', 'Open Segments Only'],
-  ['reentry', 'Re-Entries Only'],
+  ['all', 'sharedAll'],
+  ['open', 'reportOpenSegments'],
+  ['reentry', 'reportReentries'],
 ];
 
-const GeofenceDistanceReportPage = () => {
+const GeofenceActivityReportPage = () => {
   const navigate = useNavigate();
   const classes = useReportStyles();
   const t = useTranslation();
@@ -394,7 +394,7 @@ const GeofenceDistanceReportPage = () => {
 
       case 'endTime': {
         if (item.open === true) {
-          return 'In Progress';
+          return t('reportInProgress');
         }
         return item.endTime ? formatTime(item.endTime, 'minutes') : 'N/A';
       }
@@ -402,8 +402,8 @@ const GeofenceDistanceReportPage = () => {
       case 'type': {
         if (value === 'enter') return t('geofenceEnter');
         if (value === 'exit') return t('geofenceExit');
-        if (value === 'Inside' || value === 'inside') return 'Inside';
-        if (value === 'Outside' || value === 'outside') return 'Outside';
+        if (value === 'Inside' || value === 'inside') return t('geofenceInside');
+        if (value === 'Outside' || value === 'outside') return t('geofenceOutside');
         return value;
       }
 
@@ -424,7 +424,7 @@ const GeofenceDistanceReportPage = () => {
       case 'distanceTraveled': {
         if (item.distance !== null && item.distance !== undefined) {
           const formattedDistance = formatDistance(item.distance, distanceUnit, t);
-          return item.open === true ? `${formattedDistance} (current)` : formattedDistance;
+          return item.open === true ? `${formattedDistance} (${t('reportCurrent')})` : formattedDistance;
         }
         return 'N/A';
       }
@@ -578,17 +578,14 @@ const GeofenceDistanceReportPage = () => {
                       label="Segment Type"
                       value={selectedSegmentType}
                       onChange={(e) => setSelectedSegmentType(e.target.value)}
-                      sx={{ // ← ADD THIS
+                      sx={{
                         borderRadius: '13px',
                         '& .MuiOutlinedInput-notchedOutline': { borderRadius: '13px' },
-                      }}
-                      MenuProps={{ // ← ADD THIS
-                        PaperProps: { sx: { borderRadius: '13px' } },
                       }}
                     >
                       {segmentTypes.map(([key, label]) => (
                         <MenuItem key={key} value={key}>
-                          {label}
+                          {t(label)}
                         </MenuItem>
                       ))}
                     </Select>
@@ -602,12 +599,9 @@ const GeofenceDistanceReportPage = () => {
                     value={minDistance}
                     onChange={(e) => setMinDistance(e.target.value)}
                     inputProps={{ min: 0, step: 0.1 }}
-                    sx={{ // ← ADD THIS
+                    sx={{
                       borderRadius: '13px',
                       '& .MuiOutlinedInput-notchedOutline': { borderRadius: '13px' },
-                    }}
-                    MenuProps={{ // ← ADD THIS
-                      PaperProps: { sx: { borderRadius: '13px' } },
                     }}
                   />
                 </div>
@@ -626,12 +620,9 @@ const GeofenceDistanceReportPage = () => {
                         setSelectedTypes(values);
                       }}
                       multiple
-                      sx={{ // ← ADD THIS
+                      sx={{
                         borderRadius: '13px',
                         '& .MuiOutlinedInput-notchedOutline': { borderRadius: '13px' },
-                      }}
-                      MenuProps={{ // ← ADD THIS
-                        PaperProps: { sx: { borderRadius: '13px' } },
                       }}
                     >
                       {allEventTypes.map(([key, string]) => (
@@ -657,16 +648,13 @@ const GeofenceDistanceReportPage = () => {
                         setSelectedGeofences(values);
                       }}
                       multiple
-                      sx={{ // ← ADD THIS
+                      sx={{
                         borderRadius: '13px',
                         '& .MuiOutlinedInput-notchedOutline': { borderRadius: '13px' },
                       }}
-                      MenuProps={{ // ← ADD THIS
-                        PaperProps: { sx: { borderRadius: '13px' } },
-                      }}
                     >
                       <MenuItem key="allGeofences" value="allGeofences">
-                        All Geofences
+                        {t('sharedAllGeofences')}
                       </MenuItem>
                       {allGeofences.map((geofence) => (
                         <MenuItem key={geofence.id} value={geofence.id.toString()}>
@@ -774,4 +762,4 @@ const GeofenceDistanceReportPage = () => {
   );
 };
 
-export default GeofenceDistanceReportPage;
+export default GeofenceActivityReportPage;

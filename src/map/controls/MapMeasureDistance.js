@@ -34,33 +34,25 @@ const calculateDistance = (coords) => {
 };
 
 const segmentDistance = (p1, p2) => calculateDistance([p1, p2]);
-
-const midpoint = (p1, p2) => [
-  (p1[0] + p2[0]) / 2,
-  (p1[1] + p2[1]) / 2,
-];
+const midpoint = (p1, p2) => [(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2];
 
 const addTriangleImage = () => {
   if (map.hasImage(TRIANGLE_IMAGE_ID)) return;
-
   const size = 24;
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;
   const ctx = canvas.getContext('2d');
-
   ctx.beginPath();
   ctx.moveTo(size / 2, 2);
   ctx.lineTo(size - 2, size - 2);
   ctx.lineTo(2, size - 2);
   ctx.closePath();
-
   ctx.fillStyle = '#f57c00';
   ctx.fill();
   ctx.strokeStyle = '#ffffff';
   ctx.lineWidth = 2;
   ctx.stroke();
-
   const imageData = ctx.getImageData(0, 0, size, size);
   map.addImage(TRIANGLE_IMAGE_ID, { width: size, height: size, data: imageData.data });
 };
@@ -72,6 +64,27 @@ class MeasureControl {
     this.mousePos = null;
     this.distanceUnit = 'km';
     this.distanceUnitLabel = 'km';
+    this.strings = {
+      measureDistance: 'Measure Distance',
+      measuring: 'Measuring… (Esc or double-click to stop)',
+      clickMap: 'Click map',
+      clickNextPoint: 'Click next point',
+      stopMeasuring: 'Stop measuring (Esc or double-click)',
+      total: 'Total',
+    };
+  }
+
+  setStrings(strings) {
+    this.strings = strings;
+    if (this.button) {
+      this.button.title = this.active ? this.strings.measuring : this.strings.measureDistance;
+    }
+    if (this.closeBtn) {
+      this.closeBtn.title = this.strings.stopMeasuring;
+    }
+    if (this.active && this.points.length === 0 && this.label) {
+      this.label.textContent = this.strings.clickMap;
+    }
   }
 
   setUnit(unit, unitLabel) {
@@ -92,7 +105,7 @@ class MeasureControl {
     this.button = document.createElement('button');
     this.button.className = 'maplibregl-ctrl-icon maplibre-ctrl-measure maplibre-ctrl-measure-off';
     this.button.type = 'button';
-    this.button.title = 'Measure Distance';
+    this.button.title = this.strings.measureDistance;
     this.button.onclick = () => this.toggleMeasure();
 
     this.distanceRow = document.createElement('div');
@@ -106,7 +119,7 @@ class MeasureControl {
     this.closeBtn = document.createElement('button');
     this.closeBtn.className = 'maplibre-ctrl-measure-close';
     this.closeBtn.type = 'button';
-    this.closeBtn.title = 'Stop measuring (Esc or double-click)';
+    this.closeBtn.title = this.strings.stopMeasuring;
     this.closeBtn.innerHTML = '&#x2715;';
     this.closeBtn.onclick = () => this.deactivate();
 
@@ -149,113 +162,25 @@ class MeasureControl {
     this.points = [];
     this.mousePos = null;
     this.button.className = 'maplibregl-ctrl-icon maplibre-ctrl-measure maplibre-ctrl-measure-on';
-    this.button.title = 'Measuring… (Esc or double-click to stop)';
+    this.button.title = this.strings.measuring;
     this.distanceRow.style.display = 'flex';
-    this.label.textContent = 'Click map';
+    this.label.textContent = this.strings.clickMap;
     map.getCanvas().style.cursor = 'crosshair';
 
     addTriangleImage();
 
     if (!map.getSource(MEASURE_SOURCE)) {
       map.addSource(MEASURE_SOURCE, { type: 'geojson', data: this.getGeoJSON() });
-
-      map.addLayer({
-        id: MEASURE_LINE_LAYER,
-        type: 'line',
-        source: MEASURE_SOURCE,
-        layout: { 'line-cap': 'round', 'line-join': 'round' },
-        paint: { 'line-color': '#1976d2', 'line-width': 2.5, 'line-dasharray': [2, 1] },
-        filter: ['==', '$type', 'LineString'],
-      });
-
-      map.addLayer({
-        id: MEASURE_POINTS_LAYER,
-        type: 'circle',
-        source: MEASURE_SOURCE,
-        paint: {
-          'circle-radius': 5,
-          'circle-color': '#fff',
-          'circle-stroke-color': '#1976d2',
-          'circle-stroke-width': 2,
-        },
-        filter: ['==', ['get', 'markerType'], 'point'],
-      });
-
-      map.addLayer({
-        id: MEASURE_MIDPOINTS_LAYER,
-        type: 'symbol',
-        source: MEASURE_SOURCE,
-        layout: {
-          'icon-image': TRIANGLE_IMAGE_ID,
-          'icon-size': 1,
-          'icon-allow-overlap': true,
-          'icon-ignore-placement': true,
-        },
-        filter: ['==', ['get', 'markerType'], 'midpoint'],
-      });
-
-      map.addLayer({
-        id: MEASURE_MIDPOINT_LABELS_LAYER,
-        type: 'symbol',
-        source: MEASURE_SOURCE,
-        layout: {
-          'text-field': ['get', 'label'],
-          'text-size': 11,
-          'text-offset': [0, -1.8],
-          'text-anchor': 'bottom',
-          'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-        },
-        paint: {
-          'text-color': '#f57c00',
-          'text-halo-color': '#ffffff',
-          'text-halo-width': 2,
-        },
-        filter: ['all',
-          ['==', ['get', 'markerType'], 'midpoint'],
-          ['!=', ['get', 'label'], ''],
-        ],
-      });
-
-      map.addLayer({
-        id: MEASURE_LABELS_LAYER,
-        type: 'symbol',
-        source: MEASURE_SOURCE,
-        layout: {
-          'text-field': ['get', 'label'],
-          'text-size': 11,
-          'text-offset': [0, -1.2],
-          'text-anchor': 'bottom',
-          'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-        },
-        paint: {
-          'text-color': '#1976d2',
-          'text-halo-color': '#ffffff',
-          'text-halo-width': 2,
-        },
-        filter: ['all',
-          ['==', ['get', 'markerType'], 'point'],
-          ['!=', ['get', 'label'], ''],
-        ],
-      });
+      map.addLayer({ id: MEASURE_LINE_LAYER, type: 'line', source: MEASURE_SOURCE, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#1976d2', 'line-width': 2.5, 'line-dasharray': [2, 1] }, filter: ['==', '$type', 'LineString'] });
+      map.addLayer({ id: MEASURE_POINTS_LAYER, type: 'circle', source: MEASURE_SOURCE, paint: { 'circle-radius': 5, 'circle-color': '#fff', 'circle-stroke-color': '#1976d2', 'circle-stroke-width': 2 }, filter: ['==', ['get', 'markerType'], 'point'] });
+      map.addLayer({ id: MEASURE_MIDPOINTS_LAYER, type: 'symbol', source: MEASURE_SOURCE, layout: { 'icon-image': TRIANGLE_IMAGE_ID, 'icon-size': 1, 'icon-allow-overlap': true, 'icon-ignore-placement': true }, filter: ['==', ['get', 'markerType'], 'midpoint'] });
+      map.addLayer({ id: MEASURE_MIDPOINT_LABELS_LAYER, type: 'symbol', source: MEASURE_SOURCE, layout: { 'text-field': ['get', 'label'], 'text-size': 11, 'text-offset': [0, -1.8], 'text-anchor': 'bottom', 'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'] }, paint: { 'text-color': '#f57c00', 'text-halo-color': '#ffffff', 'text-halo-width': 2 }, filter: ['all', ['==', ['get', 'markerType'], 'midpoint'], ['!=', ['get', 'label'], '']] });
+      map.addLayer({ id: MEASURE_LABELS_LAYER, type: 'symbol', source: MEASURE_SOURCE, layout: { 'text-field': ['get', 'label'], 'text-size': 11, 'text-offset': [0, -1.2], 'text-anchor': 'bottom', 'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'] }, paint: { 'text-color': '#1976d2', 'text-halo-color': '#ffffff', 'text-halo-width': 2 }, filter: ['all', ['==', ['get', 'markerType'], 'point'], ['!=', ['get', 'label'], '']] });
     }
 
     if (!map.getSource(MEASURE_PREVIEW_SOURCE)) {
-      map.addSource(MEASURE_PREVIEW_SOURCE, {
-        type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] },
-      });
-      map.addLayer({
-        id: MEASURE_PREVIEW_LAYER,
-        type: 'line',
-        source: MEASURE_PREVIEW_SOURCE,
-        layout: { 'line-cap': 'round', 'line-join': 'round' },
-        paint: {
-          'line-color': '#1976d2',
-          'line-width': 1.5,
-          'line-dasharray': [2, 2],
-          'line-opacity': 0.6,
-        },
-      });
+      map.addSource(MEASURE_PREVIEW_SOURCE, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+      map.addLayer({ id: MEASURE_PREVIEW_LAYER, type: 'line', source: MEASURE_PREVIEW_SOURCE, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#1976d2', 'line-width': 1.5, 'line-dasharray': [2, 2], 'line-opacity': 0.6 } });
     }
 
     map.on('click', this.onMapClick);
@@ -269,7 +194,7 @@ class MeasureControl {
     this.points = [];
     this.mousePos = null;
     this.button.className = 'maplibregl-ctrl-icon maplibre-ctrl-measure maplibre-ctrl-measure-off';
-    this.button.title = 'Measure Distance';
+    this.button.title = this.strings.measureDistance;
     this.distanceRow.style.display = 'none';
     this.tooltip.style.display = 'none';
     map.getCanvas().style.cursor = '';
@@ -287,7 +212,6 @@ class MeasureControl {
     if (map.getLayer(MEASURE_PREVIEW_LAYER)) map.removeLayer(MEASURE_PREVIEW_LAYER);
     if (map.getSource(MEASURE_SOURCE)) map.removeSource(MEASURE_SOURCE);
     if (map.getSource(MEASURE_PREVIEW_SOURCE)) map.removeSource(MEASURE_PREVIEW_SOURCE);
-
     if (map.hasImage(TRIANGLE_IMAGE_ID)) map.removeImage(TRIANGLE_IMAGE_ID);
   }
 
@@ -300,29 +224,21 @@ class MeasureControl {
 
   handleMouseMove(e) {
     this.mousePos = [e.lngLat.lng, e.lngLat.lat];
-
-    if (this.points.length === 0) {
-      this.tooltip.style.display = 'none';
-      return;
-    }
-
+    if (this.points.length === 0) { this.tooltip.style.display = 'none'; return; }
     this.updatePreview(this.mousePos);
-
     const lastPoint = this.points[this.points.length - 1];
     const segDist = segmentDistance(lastPoint, this.mousePos);
     const totalDist = calculateDistance(this.points) + segDist;
     const point = map.project(e.lngLat);
-
     this.tooltip.style.display = 'block';
     this.tooltip.style.left = `${point.x + 14}px`;
     this.tooltip.style.top = `${point.y - 28}px`;
-
     if (this.points.length === 1) {
       this.tooltip.innerHTML = `<span class="measure-tooltip-segment">${this.formatDist(segDist)}</span>`;
     } else {
       this.tooltip.innerHTML = `
         <span class="measure-tooltip-segment">${this.formatDist(segDist)}</span>
-        <span class="measure-tooltip-total">Total: ${this.formatDist(totalDist)}</span>
+        <span class="measure-tooltip-total">${this.strings.total}: ${this.formatDist(totalDist)}</span>
       `;
     }
   }
@@ -332,13 +248,7 @@ class MeasureControl {
     const lastPoint = this.points[this.points.length - 1];
     const previewSource = map.getSource(MEASURE_PREVIEW_SOURCE);
     if (previewSource) {
-      previewSource.setData({
-        type: 'FeatureCollection',
-        features: [{
-          type: 'Feature',
-          geometry: { type: 'LineString', coordinates: [lastPoint, mouseCoord] },
-        }],
-      });
+      previewSource.setData({ type: 'FeatureCollection', features: [{ type: 'Feature', geometry: { type: 'LineString', coordinates: [lastPoint, mouseCoord] } }] });
     }
   }
 
@@ -349,48 +259,23 @@ class MeasureControl {
 
   getGeoJSON() {
     const features = [];
-
     this.points.forEach((coord, i) => {
-      if (i === 0) return; // no midpoint before the first click-point
+      if (i === 0) return;
       const dist = segmentDistance(this.points[i - 1], coord);
-      features.push({
-        type: 'Feature',
-        properties: {
-          markerType: 'midpoint',
-          label: this.formatDist(dist),
-        },
-        geometry: {
-          type: 'Point',
-          coordinates: midpoint(this.points[i - 1], coord),
-        },
-      });
+      features.push({ type: 'Feature', properties: { markerType: 'midpoint', label: this.formatDist(dist) }, geometry: { type: 'Point', coordinates: midpoint(this.points[i - 1], coord) } });
     });
-
     this.points.forEach((coord) => {
-      features.push({
-        type: 'Feature',
-        properties: {
-          markerType: 'point',
-          label: '',
-        },
-        geometry: { type: 'Point', coordinates: coord },
-      });
+      features.push({ type: 'Feature', properties: { markerType: 'point', label: '' }, geometry: { type: 'Point', coordinates: coord } });
     });
-
     if (this.points.length > 1) {
-      features.push({
-        type: 'Feature',
-        properties: {},
-        geometry: { type: 'LineString', coordinates: this.points },
-      });
+      features.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: this.points } });
     }
-
     return { type: 'FeatureCollection', features };
   }
 
   updateLabel() {
     const dist = calculateDistance(this.points);
-    this.label.textContent = dist > 0 ? this.formatDist(dist) : 'Click next point';
+    this.label.textContent = dist > 0 ? this.formatDist(dist) : this.strings.clickNextPoint;
   }
 }
 
@@ -403,6 +288,17 @@ const MapMeasureDistance = () => {
     const unitLabel = distanceUnitString(distanceUnit, t);
     control.setUnit(distanceUnit, unitLabel);
   }, [distanceUnit, t, control]);
+
+  useEffect(() => {
+    control.setStrings({
+      measureDistance: t('mapMeasureDistance'),
+      measuring: t('mapMeasuring'),
+      clickMap: t('mapMeasureClickMap'),
+      clickNextPoint: t('mapMeasureClickNextPoint'),
+      stopMeasuring: t('mapMeasureStop'),
+      total: t('sharedTotal'),
+    });
+  }, [t, control]);
 
   useEffect(() => {
     map.addControl(control, 'top-right');
