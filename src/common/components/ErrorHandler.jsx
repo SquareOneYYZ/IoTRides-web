@@ -1,7 +1,6 @@
 import {
   Snackbar, Alert, Dialog, DialogContent, DialogContentText, DialogActions, Typography,
-  Button,
-  Link,
+  Button, Link,
 } from '@mui/material';
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -35,17 +34,15 @@ const ErrorHandler = () => {
         >
           Something went wrong
           {' '}
-          { admin ?? `: ${displayMessage}`}
+          {admin && `: ${displayMessage}`}
           {(multiline && admin) && (
-            <Link color="inherit" href="#" onClick={() => setExpanded(true)}>{t('sharedShowDetails')}</Link>
+            <Link color="inherit" href="#" onClick={() => setExpanded(true)}>
+              {t('sharedShowDetails')}
+            </Link>
           )}
         </Alert>
       </Snackbar>
-      <Dialog
-        open={expanded}
-        onClose={() => setExpanded(false)}
-        maxWidth={false}
-      >
+      <Dialog open={expanded} onClose={() => setExpanded(false)} maxWidth={false}>
         <DialogContent>
           <DialogContentText>
             <Typography variant="caption">

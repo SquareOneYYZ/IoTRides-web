@@ -120,8 +120,6 @@ const WhatsNewPopup = () => {
   const [latestFeature, setLatestFeature] = useState(null);
 
   const userId = useSelector((state) => state.session.user?.id);
-  console.log(userId);
-
   useEffect(() => {
     fetch('/api/feature')
       .then((res) => res.json())

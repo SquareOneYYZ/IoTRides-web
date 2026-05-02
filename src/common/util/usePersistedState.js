@@ -11,12 +11,12 @@ export default (key, defaultValue) => {
   });
 
   useEffect(() => {
-    if (value !== defaultValue) {
+    if (JSON.stringify(value) !== JSON.stringify(defaultValue)) {
       savePersistedState(key, value);
     } else {
       window.localStorage.removeItem(key);
     }
-  }, [key, value]);
+  }, [key, value, defaultValue]);
 
   return [value, setValue];
 };

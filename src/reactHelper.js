@@ -10,19 +10,21 @@ export const usePrevious = (value) => {
   return ref.current;
 };
 
-/* eslint-disable */
 export const useEffectAsync = (effect, deps) => {
   const dispatch = useDispatch();
-  const ref = useRef();
+  const cleanupRef = useRef(null);
+
   useEffect(() => {
     effect()
-      .then((result) => ref.current = result)
+      .then((result) => {
+        cleanupRef.current = typeof result === 'function' ? result : null;
+      })
       .catch((error) => dispatch(errorsActions.push(error.message)));
-      
+
     return () => {
-      const result = ref.current;
-      if (result) {
-        result();
+      if (typeof cleanupRef.current === 'function') {
+        cleanupRef.current();
+        cleanupRef.current = null;
       }
     };
   }, [...deps, dispatch]);

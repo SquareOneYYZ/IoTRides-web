@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import './mapControls.css';
 
 export class FullScreenControl {
@@ -31,9 +30,12 @@ export class FullScreenControl {
     const mapContainer = this.map.getContainer();
     if (!document.fullscreenElement) {
       mapContainer.requestFullscreen().catch((err) => {
+        console.error(`[MapFullScreen] failed to enter fullscreen: ${err.message}`);
       });
     } else {
-      document.exitFullscreen();
+      document.exitFullscreen().catch((err) => {
+        console.error(`[MapFullScreen] failed to exit fullscreen: ${err.message}`);
+      });
     }
   }
 
@@ -43,11 +45,3 @@ export class FullScreenControl {
     this.button.title = this.isFullScreen ? 'Exit Full Screen' : 'Full Screen';
   }
 }
-
-// React component — no-op since control is added at module level in MapView.jsx
-const MapFullScreen = () => {
-  useEffect(() => () => {}, []);
-  return null;
-};
-
-export default MapFullScreen;

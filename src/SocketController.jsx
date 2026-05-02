@@ -12,6 +12,7 @@ import useFeatures from './common/util/useFeatures';
 import { useAttributePreference } from './common/util/preferences';
 
 const logoutCode = 4000;
+const BEEP_RATE_LIMIT_MS = 5000;
 
 const SocketController = () => {
   const dispatch = useDispatch();
@@ -19,10 +20,11 @@ const SocketController = () => {
   const t = useTranslation();
 
   const authenticated = useSelector((state) => !!state.session.user);
-  const devices = useSelector((state) => state.devices.items);
   const includeLogs = useSelector((state) => state.session.includeLogs);
 
   const socketRef = useRef();
+  const audioRef = useRef(new Audio(alarm));
+  const lastBeepRef = useRef(0);
 
   const [events, setEvents] = useState([]);
   const [notifications, setNotifications] = useState([]);
@@ -75,7 +77,7 @@ const SocketController = () => {
         if (!features.disableEvents) {
           dispatch(eventsActions.add(data.events));
         }
-        setEvents(data.events);
+        setEvents((prev) => [...prev, ...data.events]);
       }
       if (data.logs) {
         dispatch(sessionActions.updateLogs(data.logs));
@@ -112,14 +114,21 @@ const SocketController = () => {
       message: event.attributes.message,
       show: true,
     })));
-  }, [events, devices, t]);
+  }, [events]);
 
   useEffect(() => {
-    events.forEach((event) => {
-      if (soundEvents.includes(event.type) || (event.type === 'alarm' && soundAlarms.includes(event.attributes.alarm))) {
-        new Audio(alarm).play();
+    const shouldBeep = events.some((event) => (
+      soundEvents.includes(event.type)
+      || (event.type === 'alarm' && soundAlarms.includes(event.attributes.alarm))
+    ));
+
+    if (shouldBeep) {
+      const now = Date.now();
+      if (now - lastBeepRef.current > BEEP_RATE_LIMIT_MS) {
+        audioRef.current.play();
+        lastBeepRef.current = now;
       }
-    });
+    }
   }, [events, soundEvents, soundAlarms]);
 
   return (
@@ -130,7 +139,7 @@ const SocketController = () => {
           open={notification.show}
           message={notification.message}
           autoHideDuration={snackBarDurationLongMs}
-          onClose={() => setEvents(events.filter((e) => e.id !== notification.id))}
+          onClose={() => setEvents((prev) => prev.filter((e) => e.id !== notification.id))}
         />
       ))}
     </>
