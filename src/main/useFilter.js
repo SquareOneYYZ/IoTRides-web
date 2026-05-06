@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import dayjs from 'dayjs';
+import { selectFilteredDevices } from '../store/selectors';
 
 export default (keyword, filter, filterSort, filterMap, positions, setFilteredDevices, setFilteredPositions) => {
-  const groups = useSelector((state) => state.groups.items);
-  const devices = useSelector((state) => state.devices.items);
+  const { devices, groups } = useSelector(selectFilteredDevices);
 
   useEffect(() => {
     const deviceGroups = (device) => {

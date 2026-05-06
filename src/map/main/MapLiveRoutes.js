@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import { useTheme } from '@mui/styles';
 import { map } from '../core/MapView';
 import { useAttributePreference } from '../../common/util/preferences';
+import { selectLiveRoutesData } from '../../store/selectors';
 
 const MapLiveRoutes = () => {
   const id = useId();
@@ -11,10 +12,7 @@ const MapLiveRoutes = () => {
 
   const type = useAttributePreference('mapLiveRoutes', 'none');
 
-  const devices = useSelector((state) => state.devices.items);
-  const selectedDeviceId = useSelector((state) => state.devices.selectedId);
-
-  const history = useSelector((state) => state.session.history);
+ const { devices, selectedDeviceId, history } = useSelector(selectLiveRoutesData);
 
   const mapLineWidth = useAttributePreference('mapLineWidth', 2);
   const mapLineOpacity = useAttributePreference('mapLineOpacity', 1);

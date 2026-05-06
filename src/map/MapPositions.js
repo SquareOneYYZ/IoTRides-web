@@ -10,6 +10,7 @@ import { mapIconKey } from './core/preloadImages';
 import { useAttributePreference } from '../common/util/preferences';
 import { useCatchCallback } from '../reactHelper';
 import { findFonts } from './core/mapUtil';
+import { selectDevicesAndSelected } from '../store/selectors';
 
 const TELEPORT_THRESHOLD_SQ = 0.0045 * 0.0045;
 const STALE_GAP_MS = 10000;
@@ -24,8 +25,7 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
   const desktop = useMediaQuery(theme.breakpoints.up('md'));
   const iconScale = useAttributePreference('iconScale', desktop ? 0.75 : 1);
 
-  const devices = useSelector((state) => state.devices.items);
-  const selectedDeviceId = useSelector((state) => state.devices.selectedId);
+  const { devices, selectedDeviceId } = useSelector(selectDevicesAndSelected);
 
   const mapCluster = useAttributePreference('mapCluster', true);
   const directionType = useAttributePreference('mapDirection', 'selected');
@@ -41,6 +41,9 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
   const selectedPositionRef = useRef(selectedPosition);
   const lastUpdateTimeRef = useRef({});
   const lastCoordRef = useRef({});
+
+  const featureCacheRef = useRef(new Map());
+  const featureCacheSelectedRef = useRef(new Map());
 
   useEffect(() => {
     devicesRef.current = devices;
@@ -74,9 +77,7 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
   }, [directionType, showStatus]);
 
   const lerp = (a, b, t) => a + (b - a) * t;
-
   const easeInOutCubic = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
-
   const interpolateRotation = (start, end, p) => {
     let diff = end - start;
     if (diff > 180) diff -= 360;
@@ -102,26 +103,60 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
     const currentSelectedId = selectedDeviceIdRef.current;
     const currentSelectedPos = selectedPositionRef.current;
 
+    const caches = { [id]: featureCacheRef.current, [selected]: featureCacheSelectedRef.current };
+
     [id, selected].forEach((source) => {
       const sourceObj = map.getSource(source);
       if (!sourceObj) return;
 
-      const features = vals
+      const cache = caches[source];
+      let dirty = false;
+
+      // Remove stale entries (devices no longer in vals)
+      const activeDeviceIds = new Set(vals.map((ds) => ds.properties.deviceId));
+      cache.forEach((_, deviceId) => {
+        if (!activeDeviceIds.has(deviceId)) {
+          cache.delete(deviceId);
+          dirty = true;
+        }
+      });
+
+      vals
         .filter((ds) => Object.prototype.hasOwnProperty.call(currentDevices, ds.properties.deviceId))
         .filter((ds) => {
           const isSel = ds.properties.deviceId === currentSelectedId;
           return source === id ? !isSel : isSel;
         })
-        .map((ds) => ({
-          type: 'Feature',
-          geometry: { type: 'Point', coordinates: [ds.current.longitude, ds.current.latitude] },
-          properties: {
+        .forEach((ds) => {
+          const { deviceId } = ds.properties;
+          const props = {
             ...createFeature(currentDevices, ds.properties, currentSelectedPos?.id),
             rotation: ds.current.rotation,
-          },
-        }));
+          };
+          const lng = ds.current.longitude;
+          const lat = ds.current.latitude;
 
-      sourceObj.setData({ type: 'FeatureCollection', features });
+          const existing = cache.get(deviceId);
+          const coordChanged = !existing
+            || existing.geometry.coordinates[0] !== lng
+            || existing.geometry.coordinates[1] !== lat;
+          const rotChanged = !existing || existing.properties.rotation !== props.rotation;
+          const colorChanged = !existing || existing.properties.color !== props.color;
+
+          if (!existing || coordChanged || rotChanged || colorChanged) {
+            const feature = {
+              type: 'Feature',
+              geometry: { type: 'Point', coordinates: [lng, lat] },
+              properties: props,
+            };
+            cache.set(deviceId, feature);
+            dirty = true;
+          }
+        });
+
+      if (dirty) {
+        sourceObj.setData({ type: 'FeatureCollection', features: Array.from(cache.values()) });
+      }
     });
   }, [id, selected, createFeature]);
 
@@ -326,6 +361,8 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
 
     return () => {
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+      featureCacheRef.current.clear();
+      featureCacheSelectedRef.current.clear();
 
       map.off('mouseenter', clusters, onMouseEnter);
       map.off('mouseleave', clusters, onMouseLeave);
