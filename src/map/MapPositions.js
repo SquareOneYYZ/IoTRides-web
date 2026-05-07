@@ -314,6 +314,7 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
           'icon-image': '{category}-{color}',
           'icon-size': iconScale,
           'icon-allow-overlap': true,
+          'symbol-sort-key': ['get', 'id'],
           'text-field': `{${titleField || 'name'}}`,
           'text-allow-overlap': true,
           'text-anchor': 'bottom',
@@ -321,7 +322,7 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
           'text-font': findFonts(map),
           'text-size': 12,
         },
-        paint: { 'text-halo-color': 'white', 'text-halo-width': 1 },
+        paint: { 'text-halo-color': 'white', 'text-halo-width': 2 },
       });
       map.addLayer({
         id: `direction-${source}`,

@@ -12,7 +12,7 @@ const MapLiveRoutes = () => {
 
   const type = useAttributePreference('mapLiveRoutes', 'none');
 
- const { devices, selectedDeviceId, history } = useSelector(selectLiveRoutesData);
+  const { devices, selectedDeviceId, history } = useSelector(selectLiveRoutesData);
 
   const mapLineWidth = useAttributePreference('mapLineWidth', 2);
   const mapLineOpacity = useAttributePreference('mapLineOpacity', 1);
