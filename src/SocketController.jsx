@@ -139,12 +139,21 @@ const SocketController = () => {
 
   useEffectAsync(async () => {
     if (authenticated) {
-      const response = await fetch('/api/devices');
-      if (response.ok) {
-        dispatch(devicesActions.refresh(await response.json()));
+      const [devicesResponse, positionsResponse] = await Promise.all([
+        fetch('/api/devices'),
+        fetch('/api/positions'),
+      ]);
+
+      if (devicesResponse.ok) {
+        dispatch(devicesActions.refresh(await devicesResponse.json()));
       } else {
-        throw Error(await response.text());
+        throw Error(await devicesResponse.text());
       }
+
+      if (positionsResponse.ok) {
+        dispatch(sessionActions.updatePositions(await positionsResponse.json()));
+      }
+
       connectSocket();
       return () => closeSocket();
     }
