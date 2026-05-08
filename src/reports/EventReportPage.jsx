@@ -52,7 +52,7 @@ import scheduleReport from './common/scheduleReport';
 import MapScale from '../map/MapScale';
 import SelectField from '../common/components/SelectField';
 import ReplayControl from './components/ReplayControl';
-import { deviceEquality } from '../common/util/deviceEquality';
+import deviceEquality from '../common/util/deviceEquality';
 
 const columnsArray = [
   ['eventTime', 'positionFixTime'],

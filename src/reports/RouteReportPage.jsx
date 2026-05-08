@@ -28,7 +28,7 @@ import scheduleReport from './common/scheduleReport';
 import MapScale from '../map/MapScale';
 import { useRestriction } from '../common/util/permissions';
 import CollectionActions from '../settings/components/CollectionActions';
-import { deviceEquality } from '../common/util/deviceEquality';
+import deviceEquality from '../common/util/deviceEquality';
 
 const RouteReportPage = () => {
   const navigate = useNavigate();

@@ -20,7 +20,7 @@ import MapMarkers from '../map/MapMarkers';
 import MapRouteCoordinates from '../map/MapRouteCoordinates';
 import MapScale from '../map/MapScale';
 import useResizableMap from './common/useResizableMap';
-import { deviceEquality } from '../common/util/deviceEquality';
+import deviceEquality from '../common/util/deviceEquality';
 
 const CombinedReportPage = () => {
   const classes = useReportStyles();

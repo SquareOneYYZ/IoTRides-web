@@ -31,7 +31,7 @@ import { useCatch } from '../reactHelper';
 import useReportStyles from './common/useReportStyles';
 import TableShimmer from '../common/components/TableShimmer';
 import scheduleReport from './common/scheduleReport';
-import { deviceEquality } from '../common/util/deviceEquality';
+import deviceEquality from '../common/util/deviceEquality';
 
 const columnsArray = [
   ['startTime', 'reportStartDate'],

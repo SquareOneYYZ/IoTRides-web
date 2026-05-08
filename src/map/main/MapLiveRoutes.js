@@ -4,7 +4,7 @@ import { useTheme } from '@mui/styles';
 import { map } from '../core/MapView';
 import { useAttributePreference } from '../../common/util/preferences';
 import { selectLiveRoutesData } from '../../store/selectors';
-import { deviceEquality } from '../../common/util/deviceEquality';
+import deviceEquality from '../../common/util/deviceEquality';
 
 const MapLiveRoutes = () => {
   const id = useId();
