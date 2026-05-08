@@ -11,6 +11,7 @@ import { useAttributePreference } from '../common/util/preferences';
 import { useCatchCallback } from '../reactHelper';
 import { findFonts } from './core/mapUtil';
 import { selectDevicesAndSelected } from '../store/selectors';
+import { deviceEquality } from '../common/util/deviceEquality';
 
 const TELEPORT_THRESHOLD_SQ = 0.0045 * 0.0045;
 const STALE_GAP_MS = 10000;
@@ -25,7 +26,11 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
   const desktop = useMediaQuery(theme.breakpoints.up('md'));
   const iconScale = useAttributePreference('iconScale', desktop ? 0.75 : 1);
 
-  const { devices, selectedDeviceId } = useSelector(selectDevicesAndSelected);
+  const { devices, selectedDeviceId } = useSelector(
+    selectDevicesAndSelected,
+    (prev, next) => prev.selectedDeviceId === next.selectedDeviceId
+      && deviceEquality(['id', 'name', 'status', 'category'])(prev.devices, next.devices),
+  );
 
   const mapCluster = useAttributePreference('mapCluster', true);
   const directionType = useAttributePreference('mapDirection', 'selected');

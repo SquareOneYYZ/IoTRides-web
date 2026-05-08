@@ -4,6 +4,7 @@ import { useTheme } from '@mui/styles';
 import { map } from '../core/MapView';
 import { useAttributePreference } from '../../common/util/preferences';
 import { selectLiveRoutesData } from '../../store/selectors';
+import { deviceEquality } from '../../common/util/deviceEquality';
 
 const MapLiveRoutes = () => {
   const id = useId();
@@ -12,7 +13,12 @@ const MapLiveRoutes = () => {
 
   const type = useAttributePreference('mapLiveRoutes', 'none');
 
-  const { devices, selectedDeviceId, history } = useSelector(selectLiveRoutesData);
+  const { devices, selectedDeviceId, history } = useSelector(
+    selectLiveRoutesData,
+    (prev, next) => prev.selectedDeviceId === next.selectedDeviceId
+      && prev.history === next.history
+      && deviceEquality(['id', 'name'])(prev.devices, next.devices),
+  );
 
   const mapLineWidth = useAttributePreference('mapLineWidth', 2);
   const mapLineOpacity = useAttributePreference('mapLineOpacity', 1);
@@ -53,7 +59,7 @@ const MapLiveRoutes = () => {
         }
       };
     }
-    return () => {};
+    return () => { };
   }, [type]);
 
   useEffect(() => {

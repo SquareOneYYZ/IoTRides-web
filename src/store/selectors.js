@@ -6,7 +6,7 @@ const selectPositions = (state) => state.session.positions;
 const selectSelectedId = (state) => state.devices.selectedId;
 const selectHistory = (state) => state.session.history;
 
-export const selectFilteredDevices = createSelector(
+export const selectDevicesAndGroups = createSelector(
   [selectDevices, selectGroups],
   (devices, groups) => ({ devices, groups }),
 );

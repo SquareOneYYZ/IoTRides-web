@@ -1,10 +1,16 @@
 import { useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import dayjs from 'dayjs';
-import { selectFilteredDevices } from '../store/selectors';
+import { selectDevicesAndGroups } from '../store/selectors';
+import { deviceEquality } from '../common/util/deviceEquality';
 
 export default (keyword, filter, filterSort, filterMap, positions, setFilteredDevices, setFilteredPositions) => {
-  const { devices, groups } = useSelector(selectFilteredDevices);
+  const { devices, groups } = useSelector(
+    selectDevicesAndGroups,
+    (prev, next) => deviceEquality(['id', 'name', 'uniqueId'])(prev.devices, next.devices)
+      && deviceEquality(['id', 'name'])(prev.groups, next.groups),
+  );
+
 
   useEffect(() => {
     const deviceGroups = (device) => {

@@ -19,7 +19,7 @@ import { devicesActions } from '../store';
 import MapPositions from '../map/MapPositions';
 import { useCatch } from '../reactHelper';
 import MapScale from '../map/MapScale';
-import  deviceEquality  from '../common/util/deviceEquality';
+import deviceEquality from '../common/util/deviceEquality';
 
 const useStyles = makeStyles((theme) => ({
   root: {
