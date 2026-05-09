@@ -13,7 +13,7 @@ export const selectDevicesAndGroups = createSelector(
 
 export const selectDevicesAndSelected = createSelector(
   [selectDevices, selectSelectedId],
-  (devices, selectedId) => ({ devices, selectedId }),
+  (devices, selectedDeviceId) => ({ devices, selectedDeviceId }),
 );
 
 export const selectLiveRoutesData = createSelector(
