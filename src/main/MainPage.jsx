@@ -17,6 +17,7 @@ import MainToolbar from './MainToolbar';
 import MainMap from './MainMap';
 import { useAttributePreference } from '../common/util/preferences';
 import WhatsNewPopup from '../common/components/WhatsNewPopup';
+import GeofenceToggle from '../common/components/GeofenceToggle';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -136,6 +137,7 @@ const MainPage = () => {
             </div>
           )}
           <Paper square className={classes.contentList} style={devicesOpen ? {} : { visibility: 'hidden' }}>
+            <GeofenceToggle /> 
             <DeviceList devices={filteredDevices} />
           </Paper>
         </div>
