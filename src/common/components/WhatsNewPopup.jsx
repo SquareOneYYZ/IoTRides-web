@@ -20,6 +20,7 @@ const useStyles = makeStyles((theme) => ({
     overflow: 'hidden',
     width: '100%',
     maxWidth: 680,
+    borderRadius: 0,
     margin: theme.spacing(2),
     [theme.breakpoints.down('sm')]: {
       margin: theme.spacing(1),
@@ -53,7 +54,6 @@ const useStyles = makeStyles((theme) => ({
     '&::-webkit-scrollbar': { width: 4 },
     '&::-webkit-scrollbar-thumb': {
       backgroundColor: theme.palette.divider,
-      borderRadius: 4,
     },
   },
   row: {
@@ -163,7 +163,6 @@ const WhatsNewPopup = () => {
       PaperProps={{ className: classes.paper }}
       BackdropProps={{ className: classes.backdrop }}
     >
-      {/* ── Header ── */}
       <div className={classes.header}>
         <div className={classes.headerLeft}>
           <AutoAwesomeIcon className={classes.headerIcon} />
@@ -176,7 +175,6 @@ const WhatsNewPopup = () => {
         </IconButton>
       </div>
 
-      {/* ── Feature list ── */}
       <DialogContent className={classes.content}>
         {features.map((item) => (
           <Box key={item.id} className={classes.row}>
@@ -196,7 +194,6 @@ const WhatsNewPopup = () => {
         ))}
       </DialogContent>
 
-      {/* ── Footer ── */}
       <div className={classes.footer}>
         <FormControlLabel
           control={(
